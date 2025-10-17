@@ -67,8 +67,8 @@ class SQLParser:
 
         Tries multiple extraction strategies in order:
         1. Markdown code blocks (```sql ... ```)
-        2. Raw SQL starting with keywords
-        3. Inline code (`...`)
+        2. Inline code (`...`)
+        3. Raw SQL starting with keywords
 
         Args:
             text: Input text potentially containing SQL
@@ -87,13 +87,13 @@ class SQLParser:
             if sql:
                 return sql
 
-        # Try detecting raw SQL
-        sql = self._extract_raw_sql(text)
+        # Try inline code before raw SQL to avoid matching SQL inside backticks
+        sql = self._extract_from_inline_code(text)
         if sql:
             return sql
 
-        # Try inline code as last resort
-        sql = self._extract_from_inline_code(text)
+        # Try detecting raw SQL as last resort
+        sql = self._extract_raw_sql(text)
         if sql:
             return sql
 
@@ -126,8 +126,9 @@ class SQLParser:
         """
         matches = self.INLINE_CODE_PATTERN.findall(text)
         for match in matches:
+            # Strip whitespace before checking SQL pattern
             match_stripped = match.strip()
-            if self.detect_sql_pattern(match_stripped):
+            if match_stripped and self.detect_sql_pattern(match_stripped):
                 return self.clean_sql(match_stripped)
         return None
 
