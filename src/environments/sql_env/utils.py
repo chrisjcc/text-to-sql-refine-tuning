@@ -30,10 +30,11 @@ def extract_schema_info(context: str) -> Dict[str, List[str]]:
 
     # Pattern to match CREATE TABLE statements
     # Matches: CREATE TABLE table_name (columns...)
-    # Use greedy .* to capture until the last closing paren (handles nested parens in types like VARCHAR(100))
-    table_pattern = r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`\"]?(\w+)[`\"]?\s*\((.*)\)"
+    # Use greedy .* but stop at semicolon to avoid matching across multiple tables
+    # This handles nested parens in types like VARCHAR(100) while respecting statement boundaries
+    table_pattern = r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`\"]?(\w+)[`\"]?\s*\(([^;]*)\)"
 
-    matches = re.finditer(table_pattern, context, re.IGNORECASE | re.DOTALL)
+    matches = re.finditer(table_pattern, context, re.IGNORECASE)
 
     for match in matches:
         table_name = match.group(1)
