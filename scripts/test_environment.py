@@ -34,32 +34,8 @@ def test_environment(cfg: DictConfig):
     print("Text-to-SQL Environment Test")
     print("=" * 80)
 
-    # Load components
-    print("\n[1/4] Initializing components...")
-    parser = SQLParser()
-    rubric = SQLValidationRubric()
-
-    # Get environment config
-    env_cfg = cfg.training.get("environment", {})
-    prompt_template = env_cfg.get("prompt_template", "instructional")
-    include_schema = env_cfg.get("include_schema", True)
-    max_schema_length = env_cfg.get("max_schema_length", 1024)
-
-    print(f"  - Prompt template: {prompt_template}")
-    print(f"  - Include schema: {include_schema}")
-    print(f"  - Max schema length: {max_schema_length}")
-
-    env = TextToSQLEnvironment(
-        rubric=rubric,
-        parser=parser,
-        prompt_template=prompt_template,
-        include_schema=include_schema,
-        max_schema_length=max_schema_length,
-    )
-    print("  ✓ Environment initialized")
-
-    # Load sample data
-    print("\n[2/4] Loading dataset samples...")
+    # Load sample data first (required for environment initialization)
+    print("\n[1/4] Loading dataset samples...")
     try:
         dataset = load_dataset(
             cfg.dataset.name,
@@ -92,6 +68,31 @@ def test_environment(cfg: DictConfig):
         }
         dataset = HFDataset.from_dict(mock_data)
         print(f"  ✓ Created {len(dataset)} mock samples")
+
+    # Initialize components
+    print("\n[2/4] Initializing environment...")
+    parser = SQLParser()
+    rubric = SQLValidationRubric()
+
+    # Get environment config
+    env_cfg = cfg.training.get("environment", {})
+    prompt_template = env_cfg.get("prompt_template", "instructional")
+    include_schema = env_cfg.get("include_schema", True)
+    max_schema_length = env_cfg.get("max_schema_length", 1024)
+
+    print(f"  - Prompt template: {prompt_template}")
+    print(f"  - Include schema: {include_schema}")
+    print(f"  - Max schema length: {max_schema_length}")
+
+    env = TextToSQLEnvironment(
+        rubric=rubric,
+        parser=parser,
+        prompt_template=prompt_template,
+        include_schema=include_schema,
+        max_schema_length=max_schema_length,
+        dataset=dataset,  # Now passing the dataset
+    )
+    print("  ✓ Environment initialized")
 
     # Test environment with samples
     print("\n[3/4] Testing environment...")

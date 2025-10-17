@@ -58,6 +58,8 @@ class TextToSQLEnvironment(SingleTurnEnv):
         include_schema: bool = True,
         max_examples: int = 0,
         max_schema_length: int = 1024,
+        dataset: Optional[Any] = None,
+        eval_dataset: Optional[Any] = None,
         **kwargs
     ):
         """Initialize text-to-SQL environment.
@@ -69,9 +71,13 @@ class TextToSQLEnvironment(SingleTurnEnv):
             include_schema: Whether to include table schema in prompt
             max_examples: Number of few-shot examples to include
             max_schema_length: Maximum characters for schema context
+            dataset: Optional dataset for training (required by verifiers base class)
+            eval_dataset: Optional evaluation dataset (required by verifiers base class)
             **kwargs: Additional arguments for SingleTurnEnv
         """
-        super().__init__(**kwargs)
+        # Initialize base class with dataset parameters
+        # Note: verifiers base class requires either dataset or eval_dataset
+        super().__init__(dataset=dataset, eval_dataset=eval_dataset, **kwargs)
 
         self.rubric = rubric
         self.parser = parser
