@@ -1,0 +1,2701 @@
+pytest tests/test_environment.py -v
+
+============================================================================================ test session starts ============================================================================================
+platform darwin -- Python 3.11.13, pytest-7.4.0, pluggy-1.6.0 -- /Users/christiancontrerascampana/anaconda3/envs/llm_env/bin/python3.11
+cachedir: .pytest_cache
+rootdir: /Users/christiancontrerascampana/Desktop/project/text-to-sql-refine-tuning
+configfile: pyproject.toml
+plugins: anyio-4.11.0, hydra-core-1.3.0, cov-4.1.0, typeguard-4.4.4
+collected 39 items                                                                                                                                                                                          
+
+tests/test_environment.py::TestEnvironmentInitialization::test_initialization_with_defaults FAILED                                                                                                    [  2%]
+tests/test_environment.py::TestEnvironmentInitialization::test_initialization_with_custom_params FAILED                                                                                               [  5%]
+tests/test_environment.py::TestEnvironmentInitialization::test_initialization_with_invalid_template FAILED                                                                                            [  7%]
+tests/test_environment.py::TestEnvironmentInitialization::test_initialization_with_custom_template FAILED                                                                                             [ 10%]
+tests/test_environment.py::TestEnvironmentInitialization::test_custom_template_without_question_placeholder FAILED                                                                                    [ 12%]
+tests/test_environment.py::TestPromptFormatting::test_format_prompt_basic ERROR                                                                                                                       [ 15%]
+tests/test_environment.py::TestPromptFormatting::test_format_prompt_with_schema ERROR                                                                                                                 [ 17%]
+tests/test_environment.py::TestPromptFormatting::test_format_prompt_empty_question ERROR                                                                                                              [ 20%]
+tests/test_environment.py::TestPromptFormatting::test_format_prompt_truncates_long_schema FAILED                                                                                                      [ 23%]
+tests/test_environment.py::TestPromptFormatting::test_format_prompt_without_schema_when_disabled FAILED                                                                                               [ 25%]
+tests/test_environment.py::TestResponseParsing::test_parse_response_valid_sql ERROR                                                                                                                   [ 28%]
+tests/test_environment.py::TestResponseParsing::test_parse_response_with_code_block ERROR                                                                                                             [ 30%]
+tests/test_environment.py::TestResponseParsing::test_parse_response_empty ERROR                                                                                                                       [ 33%]
+tests/test_environment.py::TestResponseParsing::test_parse_response_no_sql ERROR                                                                                                                      [ 35%]
+tests/test_environment.py::TestRewardComputation::test_compute_reward_valid_sql ERROR                                                                                                                 [ 38%]
+tests/test_environment.py::TestRewardComputation::test_compute_reward_invalid_sql ERROR                                                                                                               [ 41%]
+tests/test_environment.py::TestRewardComputation::test_compute_reward_empty ERROR                                                                                                                     [ 43%]
+tests/test_environment.py::TestRewardComputation::test_compute_reward_with_schema_validation ERROR                                                                                                    [ 46%]
+tests/test_environment.py::TestBatchRewardComputation::test_batch_compute_rewards ERROR                                                                                                               [ 48%]
+tests/test_environment.py::TestBatchRewardComputation::test_batch_compute_rewards_empty ERROR                                                                                                         [ 51%]
+tests/test_environment.py::TestBatchRewardComputation::test_batch_compute_rewards_with_references ERROR                                                                                               [ 53%]
+tests/test_environment.py::TestBatchRewardComputation::test_batch_compute_rewards_efficiency ERROR                                                                                                    [ 56%]
+tests/test_environment.py::TestDatasetPreparation::test_prepare_dataset_sample ERROR                                                                                                                  [ 58%]
+tests/test_environment.py::TestDatasetPreparation::test_prepare_dataset_sample_missing_question ERROR                                                                                                 [ 61%]
+tests/test_environment.py::TestMetrics::test_get_metrics ERROR                                                                                                                                        [ 64%]
+tests/test_environment.py::TestMetrics::test_get_metrics_empty ERROR                                                                                                                                  [ 66%]
+tests/test_environment.py::TestPromptTemplates::test_get_prompt_template_valid PASSED                                                                                                                 [ 69%]
+tests/test_environment.py::TestPromptTemplates::test_get_prompt_template_invalid PASSED                                                                                                               [ 71%]
+tests/test_environment.py::TestPromptTemplates::test_all_templates_have_question PASSED                                                                                                               [ 74%]
+tests/test_environment.py::TestPromptTemplates::test_format_schema PASSED                                                                                                                             [ 76%]
+tests/test_environment.py::TestPromptTemplates::test_format_few_shot_examples PASSED                                                                                                                  [ 79%]
+tests/test_environment.py::TestSchemaExtraction::test_extract_schema_info FAILED                                                                                                                      [ 82%]
+tests/test_environment.py::TestSchemaExtraction::test_extract_schema_info_multiple_tables PASSED                                                                                                      [ 84%]
+tests/test_environment.py::TestSchemaExtraction::test_validate_sql_against_schema PASSED                                                                                                              [ 87%]
+tests/test_environment.py::TestSchemaExtraction::test_truncate_schema PASSED                                                                                                                          [ 89%]
+tests/test_environment.py::TestSchemaExtraction::test_count_tables PASSED                                                                                                                             [ 92%]
+tests/test_environment.py::TestSchemaExtraction::test_get_table_names PASSED                                                                                                                          [ 94%]
+tests/test_environment.py::TestGRPOPreparation::test_prepare_for_grpo ERROR                                                                                                                           [ 97%]
+tests/test_environment.py::TestEnvironmentReset::test_reset ERROR                                                                                                                                     [100%]
+
+================================================================================================== ERRORS ===================================================================================================
+______________________________________________________________________ ERROR at setup of TestPromptFormatting.test_format_prompt_basic ______________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a34bb90>, parser = <src.utils.sql_parser.SQLParser object at 0x16a34b7d0>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a34b510>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+___________________________________________________________________ ERROR at setup of TestPromptFormatting.test_format_prompt_with_schema ___________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a324f50>, parser = <src.utils.sql_parser.SQLParser object at 0x16a312d90>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a313d90>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+_________________________________________________________________ ERROR at setup of TestPromptFormatting.test_format_prompt_empty_question __________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a3e5810>, parser = <src.utils.sql_parser.SQLParser object at 0x16a3e6a90>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a3e6050>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+____________________________________________________________________ ERROR at setup of TestResponseParsing.test_parse_response_valid_sql ____________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a409790>, parser = <src.utils.sql_parser.SQLParser object at 0x16a408b50>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a40b250>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+_________________________________________________________________ ERROR at setup of TestResponseParsing.test_parse_response_with_code_block _________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a6bd110>, parser = <src.utils.sql_parser.SQLParser object at 0x16a6beb10>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a6bc1d0>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+______________________________________________________________________ ERROR at setup of TestResponseParsing.test_parse_response_empty ______________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a65f090>, parser = <src.utils.sql_parser.SQLParser object at 0x16a65ce50>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a65e310>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+_____________________________________________________________________ ERROR at setup of TestResponseParsing.test_parse_response_no_sql ______________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a4add90>, parser = <src.utils.sql_parser.SQLParser object at 0x16a4ac250>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a4aed50>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+___________________________________________________________________ ERROR at setup of TestRewardComputation.test_compute_reward_valid_sql ___________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a610390>, parser = <src.utils.sql_parser.SQLParser object at 0x16a613ad0>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a611810>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+__________________________________________________________________ ERROR at setup of TestRewardComputation.test_compute_reward_invalid_sql __________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a4c1990>, parser = <src.utils.sql_parser.SQLParser object at 0x16a4c3310>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a4c2390>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+_____________________________________________________________________ ERROR at setup of TestRewardComputation.test_compute_reward_empty _____________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a483ed0>, parser = <src.utils.sql_parser.SQLParser object at 0x16a482c10>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a483310>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+____________________________________________________________ ERROR at setup of TestRewardComputation.test_compute_reward_with_schema_validation _____________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a3447d0>, parser = <src.utils.sql_parser.SQLParser object at 0x16a344290>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a6e9ed0>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+__________________________________________________________________ ERROR at setup of TestBatchRewardComputation.test_batch_compute_rewards __________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a612b10>, parser = <src.utils.sql_parser.SQLParser object at 0x16a6105d0>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a611c10>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+_______________________________________________________________ ERROR at setup of TestBatchRewardComputation.test_batch_compute_rewards_empty _______________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a6dd1d0>, parser = <src.utils.sql_parser.SQLParser object at 0x16a6dd4d0>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a6ddad0>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+__________________________________________________________ ERROR at setup of TestBatchRewardComputation.test_batch_compute_rewards_with_references __________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a580710>, parser = <src.utils.sql_parser.SQLParser object at 0x16a580c10>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a5823d0>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+____________________________________________________________ ERROR at setup of TestBatchRewardComputation.test_batch_compute_rewards_efficiency _____________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a5ec150>, parser = <src.utils.sql_parser.SQLParser object at 0x16a5ed090>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a5ed950>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+___________________________________________________________________ ERROR at setup of TestDatasetPreparation.test_prepare_dataset_sample ____________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a682190>, parser = <src.utils.sql_parser.SQLParser object at 0x16a682890>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a682ad0>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+___________________________________________________________ ERROR at setup of TestDatasetPreparation.test_prepare_dataset_sample_missing_question ___________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a45e410>, parser = <src.utils.sql_parser.SQLParser object at 0x16a45d490>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a45f4d0>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+______________________________________________________________________________ ERROR at setup of TestMetrics.test_get_metrics _______________________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a480050>, parser = <src.utils.sql_parser.SQLParser object at 0x16a481f50>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a482550>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+___________________________________________________________________________ ERROR at setup of TestMetrics.test_get_metrics_empty ____________________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a66e990>, parser = <src.utils.sql_parser.SQLParser object at 0x16a66f250>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a66ec10>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+________________________________________________________________________ ERROR at setup of TestGRPOPreparation.test_prepare_for_grpo ________________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a6dfa90>, parser = <src.utils.sql_parser.SQLParser object at 0x16a6def50>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a6dd5d0>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+_____________________________________________________________________________ ERROR at setup of TestEnvironmentReset.test_reset _____________________________________________________________________________
+
+rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a4c1b10>, parser = <src.utils.sql_parser.SQLParser object at 0x16a4c2590>
+
+    @pytest.fixture
+    def environment(rubric, parser):
+        """Create environment fixture."""
+>       return TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="default",
+        )
+
+tests/test_environment.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a4c3710>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+================================================================================================= FAILURES ==================================================================================================
+______________________________________________________________________ TestEnvironmentInitialization.test_initialization_with_defaults ______________________________________________________________________
+
+self = <tests.test_environment.TestEnvironmentInitialization object at 0x16a324590>, rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a348890>
+parser = <src.utils.sql_parser.SQLParser object at 0x16a349050>
+
+    def test_initialization_with_defaults(self, rubric, parser):
+        """Test environment initializes with default parameters."""
+>       env = TextToSQLEnvironment(rubric=rubric, parser=parser)
+
+tests/test_environment.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a349350>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+___________________________________________________________________ TestEnvironmentInitialization.test_initialization_with_custom_params ____________________________________________________________________
+
+self = <tests.test_environment.TestEnvironmentInitialization object at 0x16a324d50>, rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a4ad450>
+parser = <src.utils.sql_parser.SQLParser object at 0x16a4ac710>
+
+    def test_initialization_with_custom_params(self, rubric, parser):
+        """Test environment initializes with custom parameters."""
+>       env = TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template="instructional",
+            include_schema=False,
+            max_examples=3,
+            max_schema_length=512,
+        )
+
+tests/test_environment.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a4ad590>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+__________________________________________________________________ TestEnvironmentInitialization.test_initialization_with_invalid_template __________________________________________________________________
+
+self = <tests.test_environment.TestEnvironmentInitialization object at 0x16a3254d0>, rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a327090>
+parser = <src.utils.sql_parser.SQLParser object at 0x16a329b90>
+
+    def test_initialization_with_invalid_template(self, rubric, parser):
+        """Test initialization fails with invalid template name."""
+        with pytest.raises(ValueError, match="Unknown template"):
+>           TextToSQLEnvironment(
+                rubric=rubric,
+                parser=parser,
+                prompt_template="nonexistent_template"
+            )
+
+tests/test_environment.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a3284d0>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+
+During handling of the above exception, another exception occurred:
+
+self = <tests.test_environment.TestEnvironmentInitialization object at 0x16a3254d0>, rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a327090>
+parser = <src.utils.sql_parser.SQLParser object at 0x16a329b90>
+
+    def test_initialization_with_invalid_template(self, rubric, parser):
+        """Test initialization fails with invalid template name."""
+>       with pytest.raises(ValueError, match="Unknown template"):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'Unknown template'
+E        Input: 'Either dataset or eval_dataset must be provided'
+
+tests/test_environment.py:81: AssertionError
+__________________________________________________________________ TestEnvironmentInitialization.test_initialization_with_custom_template ___________________________________________________________________
+
+self = <tests.test_environment.TestEnvironmentInitialization object at 0x16a325c90>, rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a678550>
+parser = <src.utils.sql_parser.SQLParser object at 0x16a678f10>
+
+    def test_initialization_with_custom_template(self, rubric, parser):
+        """Test initialization with custom template string."""
+        custom_template = "Question: {question}\nSchema: {schema}\nSQL:"
+    
+>       env = TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            prompt_template=custom_template
+        )
+
+tests/test_environment.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a678b10>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+______________________________________________________________ TestEnvironmentInitialization.test_custom_template_without_question_placeholder ______________________________________________________________
+
+self = <tests.test_environment.TestEnvironmentInitialization object at 0x16a326410>, rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a443410>
+parser = <src.utils.sql_parser.SQLParser object at 0x16a440490>
+
+    def test_custom_template_without_question_placeholder(self, rubric, parser):
+        """Test custom template must have question placeholder."""
+        invalid_template = "Schema: {schema}\nSQL:"
+    
+        with pytest.raises(ValueError, match="must contain"):
+>           TextToSQLEnvironment(
+                rubric=rubric,
+                parser=parser,
+                prompt_template=invalid_template
+            )
+
+tests/test_environment.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a440c90>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+
+During handling of the above exception, another exception occurred:
+
+self = <tests.test_environment.TestEnvironmentInitialization object at 0x16a326410>, rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a443410>
+parser = <src.utils.sql_parser.SQLParser object at 0x16a440490>
+
+    def test_custom_template_without_question_placeholder(self, rubric, parser):
+        """Test custom template must have question placeholder."""
+        invalid_template = "Schema: {schema}\nSQL:"
+    
+>       with pytest.raises(ValueError, match="must contain"):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'must contain'
+E        Input: 'Either dataset or eval_dataset must be provided'
+
+tests/test_environment.py:104: AssertionError
+_______________________________________________________________________ TestPromptFormatting.test_format_prompt_truncates_long_schema _______________________________________________________________________
+
+self = <tests.test_environment.TestPromptFormatting object at 0x16a327890>, rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a348e50>
+parser = <src.utils.sql_parser.SQLParser object at 0x16a491490>
+
+    def test_format_prompt_truncates_long_schema(self, rubric, parser):
+        """Test long schema gets truncated."""
+>       env = TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            max_schema_length=100
+        )
+
+tests/test_environment.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a491750>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+___________________________________________________________________ TestPromptFormatting.test_format_prompt_without_schema_when_disabled ____________________________________________________________________
+
+self = <tests.test_environment.TestPromptFormatting object at 0x16a327bd0>, rubric = <src.rubrics.sql_rubric.SQLValidationRubric object at 0x16a521bd0>
+parser = <src.utils.sql_parser.SQLParser object at 0x16a523e90>
+
+    def test_format_prompt_without_schema_when_disabled(self, rubric, parser):
+        """Test prompt excludes schema when include_schema=False."""
+>       env = TextToSQLEnvironment(
+            rubric=rubric,
+            parser=parser,
+            include_schema=False
+        )
+
+tests/test_environment.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/environments/sql_env/environment.py:74: in __init__
+    super().__init__(**kwargs)
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/multiturn_env.py:24: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.environments.sql_env.environment.TextToSQLEnvironment object at 0x16a522b90>, dataset = None, eval_dataset = None, system_prompt = None, few_shot = None, parser = None, rubric = None
+sampling_args = None, message_type = 'chat', oai_tools = None, max_workers = 512, kwargs = {}
+
+    def __init__(
+        self,
+        dataset: Dataset | None = None,
+        eval_dataset: Dataset | None = None,
+        system_prompt: str | None = None,
+        few_shot: list[ChatMessage] | None = None,
+        parser: Parser | None = None,
+        rubric: Rubric | None = None,
+        sampling_args: SamplingArgs | None = None,
+        message_type: MessageType = "chat",
+        oai_tools: list[ChatCompletionToolParam] | None = None,
+        max_workers: int = 512,
+        **kwargs,
+    ):
+        self.logger = logging.getLogger(f"verifiers.envs.{self.__class__.__name__}")
+        self.message_type: Literal["chat", "completion"] = message_type
+        self.oai_tools: list[ChatCompletionToolParam] | None = oai_tools
+        self.system_prompt = system_prompt
+        self.few_shot = few_shot
+        self.parser = parser or Parser()
+        self.rubric = rubric or Rubric()
+        if self.parser.__class__ != self.rubric.parser.__class__:
+            self.logger.warning(
+                "The parser and rubric parser are different. This may cause unexpected behavior."
+            )
+    
+        if self.message_type == "chat":
+            if dataset is not None:
+                self.dataset = self.format_dataset(
+                    dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.dataset = None
+            if eval_dataset is not None:
+                self.eval_dataset = self.format_dataset(
+                    eval_dataset, self.system_prompt, self.few_shot
+                )
+            else:
+                self.eval_dataset = None
+        else:
+            if self.system_prompt or self.few_shot:
+                raise ValueError(
+                    'The fields "system_prompt" and "few_shot" are not supported for completion tasks.'
+                    'Please use message_type="chat" instead, or pre-format your dataset '
+                    'to contain a "prompt" column.'
+                )
+            self.dataset = dataset
+            self.eval_dataset = eval_dataset
+    
+        self.sampling_args = {"n": 1, "extra_body": {}}
+        if sampling_args is not None:
+            # merge extra_body if provided
+            self.sampling_args["extra_body"].update(sampling_args.get("extra_body", {}))
+            # copy other keys
+            for key, value in sampling_args.items():
+                if key != "extra_body":
+                    self.sampling_args[key] = value
+    
+        self.max_workers = max_workers
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+        if self.dataset is None and self.eval_dataset is None:
+>           raise ValueError("Either dataset or eval_dataset must be provided")
+E           ValueError: Either dataset or eval_dataset must be provided
+
+../../../anaconda3/envs/llm_env/lib/python3.11/site-packages/verifiers/envs/environment.py:110: ValueError
+_______________________________________________________________________________ TestSchemaExtraction.test_extract_schema_info _______________________________________________________________________________
+
+self = <tests.test_environment.TestSchemaExtraction object at 0x16a33f950>
+
+    def test_extract_schema_info(self):
+        """Test extracting schema info."""
+        schema = "CREATE TABLE users (id INT, name VARCHAR(100), email TEXT)"
+        info = extract_schema_info(schema)
+    
+        assert "users" in info
+        assert "id" in info["users"]
+        assert "name" in info["users"]
+>       assert "email" in info["users"]
+E       AssertionError: assert 'email' in ['id', 'name']
+
+tests/test_environment.py:411: AssertionError
+
+--------- coverage: platform darwin, python 3.11.13-final-0 ----------
+Name                                      Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------
+src/__init__.py                               0      0   100%
+src/environments/__init__.py                  0      0   100%
+src/environments/sql_env/__init__.py          4      0   100%
+src/environments/sql_env/environment.py      97     78    20%   76-85, 97-107, 130-162, 178-198, 227-248, 274-292, 322-335, 365-392, 406
+src/environments/sql_env/prompts.py          38     10    74%   99, 124, 161-177
+src/environments/sql_env/utils.py            70     12    83%   29, 73, 88, 119, 127, 146, 174-195, 214
+src/rubrics/__init__.py                       3      0   100%
+src/rubrics/batch_scorer.py                  99     84    15%   49-55, 63-65, 69, 87-100, 118-136, 154-184, 202-251, 269-290, 322-343
+src/rubrics/sql_rubric.py                   131    105    20%   79, 102-132, 145-198, 209-250, 261-310, 321-355, 383
+src/utils/__init__.py                         0      0   100%
+src/utils/logging_utils.py                   41     41     0%   7-137
+src/utils/sql_parser.py                      92     72    22%   79-100, 111-116, 127-133, 145-160, 172-186, 197-216, 227-250, 261-273, 284
+-----------------------------------------------------------------------
+TOTAL                                       575    402    30%
+
+========================================================================================== short test summary info ==========================================================================================
+FAILED tests/test_environment.py::TestEnvironmentInitialization::test_initialization_with_defaults - ValueError: Either dataset or eval_dataset must be provided
+FAILED tests/test_environment.py::TestEnvironmentInitialization::test_initialization_with_custom_params - ValueError: Either dataset or eval_dataset must be provided
+FAILED tests/test_environment.py::TestEnvironmentInitialization::test_initialization_with_invalid_template - AssertionError: Regex pattern did not match.
+FAILED tests/test_environment.py::TestEnvironmentInitialization::test_initialization_with_custom_template - ValueError: Either dataset or eval_dataset must be provided
+FAILED tests/test_environment.py::TestEnvironmentInitialization::test_custom_template_without_question_placeholder - AssertionError: Regex pattern did not match.
+FAILED tests/test_environment.py::TestPromptFormatting::test_format_prompt_truncates_long_schema - ValueError: Either dataset or eval_dataset must be provided
+FAILED tests/test_environment.py::TestPromptFormatting::test_format_prompt_without_schema_when_disabled - ValueError: Either dataset or eval_dataset must be provided
+FAILED tests/test_environment.py::TestSchemaExtraction::test_extract_schema_info - AssertionError: assert 'email' in ['id', 'name']
+ERROR tests/test_environment.py::TestPromptFormatting::test_format_prompt_basic - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestPromptFormatting::test_format_prompt_with_schema - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestPromptFormatting::test_format_prompt_empty_question - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestResponseParsing::test_parse_response_valid_sql - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestResponseParsing::test_parse_response_with_code_block - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestResponseParsing::test_parse_response_empty - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestResponseParsing::test_parse_response_no_sql - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestRewardComputation::test_compute_reward_valid_sql - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestRewardComputation::test_compute_reward_invalid_sql - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestRewardComputation::test_compute_reward_empty - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestRewardComputation::test_compute_reward_with_schema_validation - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestBatchRewardComputation::test_batch_compute_rewards - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestBatchRewardComputation::test_batch_compute_rewards_empty - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestBatchRewardComputation::test_batch_compute_rewards_with_references - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestBatchRewardComputation::test_batch_compute_rewards_efficiency - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestDatasetPreparation::test_prepare_dataset_sample - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestDatasetPreparation::test_prepare_dataset_sample_missing_question - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestMetrics::test_get_metrics - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestMetrics::test_get_metrics_empty - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestGRPOPreparation::test_prepare_for_grpo - ValueError: Either dataset or eval_dataset must be provided
+ERROR tests/test_environment.py::TestEnvironmentReset::test_reset - ValueError: Either dataset or eval_dataset must be provided
+================================================================================== 8 failed, 10 passed, 21 errors in 3.41s ==================================================================================
