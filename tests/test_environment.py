@@ -39,21 +39,45 @@ def rubric():
 
 
 @pytest.fixture
-def environment(rubric, parser):
+def mock_dataset():
+    """Create a mock dataset for testing."""
+    data = {
+        "question": [
+            "How many users are there?",
+            "List all products",
+            "Get active users"
+        ],
+        "context": [
+            "CREATE TABLE users (id INT, name VARCHAR)",
+            "CREATE TABLE products (id INT, name VARCHAR, price DECIMAL)",
+            "CREATE TABLE users (id INT, active BOOLEAN)"
+        ],
+        "answer": [
+            "SELECT COUNT(*) FROM users",
+            "SELECT * FROM products",
+            "SELECT * FROM users WHERE active = TRUE"
+        ]
+    }
+    return Dataset.from_dict(data)
+
+
+@pytest.fixture
+def environment(rubric, parser, mock_dataset):
     """Create environment fixture."""
     return TextToSQLEnvironment(
         rubric=rubric,
         parser=parser,
         prompt_template="default",
+        dataset=mock_dataset,
     )
 
 
 class TestEnvironmentInitialization:
     """Tests for environment initialization."""
 
-    def test_initialization_with_defaults(self, rubric, parser):
+    def test_initialization_with_defaults(self, rubric, parser, mock_dataset):
         """Test environment initializes with default parameters."""
-        env = TextToSQLEnvironment(rubric=rubric, parser=parser)
+        env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
         assert env.rubric is rubric
         assert env.parser is parser
@@ -61,7 +85,7 @@ class TestEnvironmentInitialization:
         assert env.max_examples == 0
         assert env.max_schema_length == 1024
 
-    def test_initialization_with_custom_params(self, rubric, parser):
+    def test_initialization_with_custom_params(self, rubric, parser, mock_dataset):
         """Test environment initializes with custom parameters."""
         env = TextToSQLEnvironment(
             rubric=rubric,
@@ -70,34 +94,37 @@ class TestEnvironmentInitialization:
             include_schema=False,
             max_examples=3,
             max_schema_length=512,
+            dataset=mock_dataset,
         )
 
         assert env.include_schema is False
         assert env.max_examples == 3
         assert env.max_schema_length == 512
 
-    def test_initialization_with_invalid_template(self, rubric, parser):
+    def test_initialization_with_invalid_template(self, rubric, parser, mock_dataset):
         """Test initialization fails with invalid template name."""
         with pytest.raises(ValueError, match="Unknown template"):
             TextToSQLEnvironment(
                 rubric=rubric,
                 parser=parser,
-                prompt_template="nonexistent_template"
+                prompt_template="nonexistent_template",
+                dataset=mock_dataset,
             )
 
-    def test_initialization_with_custom_template(self, rubric, parser):
+    def test_initialization_with_custom_template(self, rubric, parser, mock_dataset):
         """Test initialization with custom template string."""
         custom_template = "Question: {question}\nSchema: {schema}\nSQL:"
 
         env = TextToSQLEnvironment(
             rubric=rubric,
             parser=parser,
-            prompt_template=custom_template
+            prompt_template=custom_template,
+            dataset=mock_dataset,
         )
 
         assert env.prompt_template == custom_template
 
-    def test_custom_template_without_question_placeholder(self, rubric, parser):
+    def test_custom_template_without_question_placeholder(self, rubric, parser, mock_dataset):
         """Test custom template must have question placeholder."""
         invalid_template = "Schema: {schema}\nSQL:"
 
@@ -105,7 +132,8 @@ class TestEnvironmentInitialization:
             TextToSQLEnvironment(
                 rubric=rubric,
                 parser=parser,
-                prompt_template=invalid_template
+                prompt_template=invalid_template,
+                dataset=mock_dataset,
             )
 
 
@@ -136,12 +164,13 @@ class TestPromptFormatting:
         with pytest.raises(ValueError, match="cannot be empty"):
             environment.format_prompt("")
 
-    def test_format_prompt_truncates_long_schema(self, rubric, parser):
+    def test_format_prompt_truncates_long_schema(self, rubric, parser, mock_dataset):
         """Test long schema gets truncated."""
         env = TextToSQLEnvironment(
             rubric=rubric,
             parser=parser,
-            max_schema_length=100
+            max_schema_length=100,
+            dataset=mock_dataset,
         )
 
         long_schema = "CREATE TABLE users (id INT);" * 50
@@ -153,12 +182,13 @@ class TestPromptFormatting:
         # Prompt should be shorter than full schema
         assert len(prompt) < len(long_schema) + 100
 
-    def test_format_prompt_without_schema_when_disabled(self, rubric, parser):
+    def test_format_prompt_without_schema_when_disabled(self, rubric, parser, mock_dataset):
         """Test prompt excludes schema when include_schema=False."""
         env = TextToSQLEnvironment(
             rubric=rubric,
             parser=parser,
-            include_schema=False
+            include_schema=False,
+            dataset=mock_dataset,
         )
 
         schema = "CREATE TABLE users (id INT)"
