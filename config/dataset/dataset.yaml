@@ -1,11 +1,46 @@
 name: b-mc2/sql-create-context
+
+# Splits configuration
 split:
   train: train
   validation: validation
   test: null
 
+# If dataset doesn't have splits, create them
+create_splits:
+  enabled: true
+  train_size: 0.8
+  val_size: 0.1
+  test_size: 0.1
+  stratify_by_complexity: false  # Set to false initially; requires preprocessing first
+
+# Preprocessing settings
 preprocessing:
-  max_length: 512
-  truncation: true
+  max_question_length: 512
+  max_schema_length: 1024
+  max_sql_length: 512
+  normalize_sql: true
+  filter_invalid: true
+
+  # Cleaning options
+  remove_comments: true
+  standardize_keywords: true
+  fix_encoding: true
+
+# Data filtering
+filtering:
+  min_question_length: 5
+  min_sql_length: 10
+  max_sql_length: 512
+  require_schema: false  # Some samples may not have schema
+  valid_sql_only: true
+
+# Data augmentation (optional, for future)
+augmentation:
+  enabled: false
+  paraphrase_questions: false
+  synonym_replacement: false
 
 cache_dir: ./data_cache
+num_workers: 4
+streaming: false
