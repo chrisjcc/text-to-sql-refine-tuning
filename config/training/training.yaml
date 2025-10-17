@@ -49,3 +49,22 @@ logging_steps: 10
 # Evaluation
 evaluation_strategy: steps
 eval_steps: 500
+
+# Environment Configuration
+environment:
+  type: text_to_sql
+  prompt_template: instructional
+  include_schema: true
+  max_schema_length: 1024
+  few_shot_examples: 0  # Increase for few-shot learning
+
+  # Response handling
+  max_response_length: 512
+  stop_sequences: ["\n\n", "<|eot_id|>", "Question:"]
+
+  # Reward shaping (optional)
+  reward_shaping:
+    enabled: false
+    min_reward: 0.0
+    max_reward: 1.0
+    normalize: false
