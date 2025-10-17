@@ -30,7 +30,8 @@ def extract_schema_info(context: str) -> Dict[str, List[str]]:
 
     # Pattern to match CREATE TABLE statements
     # Matches: CREATE TABLE table_name (columns...)
-    table_pattern = r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`\"]?(\w+)[`\"]?\s*\((.*?)\)"
+    # Use greedy .* to capture until the last closing paren (handles nested parens in types like VARCHAR(100))
+    table_pattern = r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`\"]?(\w+)[`\"]?\s*\((.*)\)"
 
     matches = re.finditer(table_pattern, context, re.IGNORECASE | re.DOTALL)
 
