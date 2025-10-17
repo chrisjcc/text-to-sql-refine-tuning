@@ -185,7 +185,7 @@ class SQLValidationRubric:
 
             for pattern in error_patterns:
                 if pattern in sql_upper:
-                    return False, 0.2  # Partial credit for attempt
+                    return False, 0.15  # Minimal partial credit for attempt
 
             # If we got here, SQL is syntactically valid
             return True, 1.0
