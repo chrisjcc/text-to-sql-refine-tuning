@@ -2,8 +2,22 @@ model:
   name: meta-llama/Llama-3.1-8B-Instruct
   cache_dir: ./cache
   trust_remote_code: true
+  device_map: auto
+
+  # Attention implementation
+  attn_implementation: flash_attention_2  # Requires flash-attn package
+
+  # Torch dtype for non-quantized loading
+  torch_dtype: bfloat16
+
+tokenizer:
+  padding_side: left
+  add_eos_token: true
+  add_bos_token: false
+  use_fast: true
 
 hub:
   push_to_hub: false
   repo_name: null
   private: true
+  token: null  # Will use HF_TOKEN from env
