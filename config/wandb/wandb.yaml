@@ -1,0 +1,5 @@
+enabled: true
+project: text-to-sql-grpo
+entity: null  # Your wandb username
+name: null  # Auto-generated from run_name
+log_model: false

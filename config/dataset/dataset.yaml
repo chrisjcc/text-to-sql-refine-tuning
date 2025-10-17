@@ -1,0 +1,11 @@
+name: b-mc2/sql-create-context
+split:
+  train: train
+  validation: validation
+  test: null
+
+preprocessing:
+  max_length: 512
+  truncation: true
+
+cache_dir: ./data_cache
