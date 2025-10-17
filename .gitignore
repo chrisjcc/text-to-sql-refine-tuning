@@ -205,3 +205,25 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project-specific
+# Logs and outputs
+logs/
+outputs/
+
+# Model caches and data
+cache/
+data_cache/
+
+# Wandb
+wandb/
+
+# Model checkpoints
+*.pt
+*.bin
+*.safetensors
+
+# Hydra
+.hydra/
+hydra/
+multirun/

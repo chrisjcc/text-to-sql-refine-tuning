@@ -1,0 +1,11 @@
+metrics:
+  - valid_sql_percentage
+  - execution_accuracy
+  - exact_match
+
+rubric:
+  sql_keywords: ["SELECT", "FROM", "WHERE", "JOIN", "INSERT", "UPDATE", "DELETE", "CREATE"]
+  check_syntax: true
+  check_executability: false  # Requires DB connection
+
+batch_size: 8

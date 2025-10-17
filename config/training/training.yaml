@@ -1,0 +1,51 @@
+# GRPO Training Configuration
+output_dir: ./outputs
+run_name: grpo-text-to-sql
+
+# Model & LoRA
+use_peft: true
+peft:
+  lora_r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  use_qlora: true
+  bnb_4bit_compute_dtype: bfloat16
+
+# Batch Configuration
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+num_train_epochs: 3
+max_steps: -1
+
+# Learning Rate & Schedule
+learning_rate: 5.0e-6
+lr_scheduler_type: cosine
+warmup_steps: 100
+warmup_ratio: 0.03
+
+# Generation Parameters
+max_new_tokens: 256
+temperature: 0.7
+top_p: 0.9
+do_sample: true
+
+# GRPO-Specific
+num_generations: 4
+kl_coef: 0.05
+gamma: 1.0
+
+# Optimization
+bf16: true
+gradient_checkpointing: true
+optim: adamw_torch
+
+# Saving & Logging
+save_strategy: steps
+save_steps: 500
+save_total_limit: 3
+logging_steps: 10
+
+# Evaluation
+evaluation_strategy: steps
+eval_steps: 500

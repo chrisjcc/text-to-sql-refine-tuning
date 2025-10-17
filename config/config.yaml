@@ -1,0 +1,18 @@
+defaults:
+  - hf: hf
+  - dataset: dataset
+  - wandb: wandb
+  - training: training
+  - evaluation: evaluation
+  - inference: inference
+  - _self_
+
+logging:
+  level: INFO
+  log_dir: logs
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+project:
+  name: text-to-sql-fine-tuning
+  version: 0.1.0
+  seed: 42

@@ -1,0 +1,9 @@
+model:
+  name: meta-llama/Llama-3.1-8B-Instruct
+  cache_dir: ./cache
+  trust_remote_code: true
+
+hub:
+  push_to_hub: false
+  repo_name: null
+  private: true

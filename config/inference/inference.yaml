@@ -1,0 +1,6 @@
+batch_size: 4
+max_new_tokens: 256
+temperature: 0.1
+top_p: 0.95
+num_beams: 1
+do_sample: false
