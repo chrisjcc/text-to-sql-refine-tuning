@@ -235,6 +235,16 @@ class BatchSQLScorer:
                 results.append({
                     "index": i,
                     "total": 0.0,
+                    "syntax": 0.0,
+                    "syntax_valid": False,
+                    "keywords": 0.0,
+                    "format": 0.0,
+                    "extracted_sql": None,
+                    "weights": {
+                        "syntax": self.rubric.syntax_weight,
+                        "keywords": self.rubric.keyword_weight,
+                        "format": self.rubric.format_weight,
+                    },
                     "error": str(e),
                 })
 
