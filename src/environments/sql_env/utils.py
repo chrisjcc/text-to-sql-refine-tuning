@@ -47,8 +47,9 @@ def extract_schema_info(context: str) -> Dict[str, List[str]]:
             col_def = col_def.strip()
             # Match column_name at the start, followed by a data type
             # Pattern captures just the column name
+            # The .* at the end handles any trailing characters (like closing parentheses, constraints, etc.)
             match = re.match(
-                r'[`\"]?(\w+)[`\"]?\s+(?:VARCHAR(?:\s*\(\d+\))?|DATETIME|TIMESTAMP|INTEGER|DECIMAL|NUMERIC|BOOLEAN|DOUBLE|FLOAT|REAL|CHAR|TEXT|TIME|DATE|INT|BOOL|BLOB|CLOB)',
+                r'[`\"]?(\w+)[`\"]?\s+(?:VARCHAR(?:\s*\(\d+\))?|DATETIME|TIMESTAMP|INTEGER|DECIMAL|NUMERIC|BOOLEAN|DOUBLE|FLOAT|REAL|CHAR|TEXT|TIME|DATE|INT|BOOL|BLOB|CLOB).*',
                 col_def,
                 re.IGNORECASE
             )
