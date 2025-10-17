@@ -38,14 +38,22 @@ def extract_schema_info(context: str) -> Dict[str, List[str]]:
         table_name = match.group(1)
         columns_text = match.group(2)
 
-        # Extract column names
-        # Pattern to match column definitions: column_name TYPE [constraints]
-        # Note: Order matters - longer patterns first to avoid partial matches
-        # VARCHAR(100), DATETIME, TIMESTAMP must come before VARCHAR, DATE, TIME, TEXT
-        # Positive lookahead (?=...) ensures type is followed by valid separator without consuming it
-        column_pattern = r"[`\"]?(\w+)[`\"]?\s+(?:DATETIME|TIMESTAMP|VARCHAR\s*(?:\(\d+\))?|INTEGER|DECIMAL|NUMERIC|BOOLEAN|DOUBLE|FLOAT|REAL|CHAR|TEXT|TIME|DATE|INT|BOOL|BLOB|CLOB)(?=\s|,|\)|$)"
+        # Extract column names using a more robust pattern
+        # Split on commas first, then extract column name and type from each part
+        column_defs = columns_text.split(',')
+        columns = []
 
-        columns = re.findall(column_pattern, columns_text, re.IGNORECASE)
+        for col_def in column_defs:
+            col_def = col_def.strip()
+            # Match column_name at the start, followed by a data type
+            # Pattern captures just the column name
+            match = re.match(
+                r'[`\"]?(\w+)[`\"]?\s+(?:VARCHAR(?:\s*\(\d+\))?|DATETIME|TIMESTAMP|INTEGER|DECIMAL|NUMERIC|BOOLEAN|DOUBLE|FLOAT|REAL|CHAR|TEXT|TIME|DATE|INT|BOOL|BLOB|CLOB)',
+                col_def,
+                re.IGNORECASE
+            )
+            if match:
+                columns.append(match.group(1))
 
         if columns:
             schema_info[table_name] = columns
