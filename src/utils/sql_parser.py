@@ -126,8 +126,9 @@ class SQLParser:
         """
         matches = self.INLINE_CODE_PATTERN.findall(text)
         for match in matches:
-            if self.detect_sql_pattern(match):
-                return self.clean_sql(match)
+            match_stripped = match.strip()
+            if self.detect_sql_pattern(match_stripped):
+                return self.clean_sql(match_stripped)
         return None
 
     def _extract_raw_sql(self, text: str) -> Optional[str]:
