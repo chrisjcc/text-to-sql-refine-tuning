@@ -4,8 +4,51 @@ metrics:
   - exact_match
 
 rubric:
-  sql_keywords: ["SELECT", "FROM", "WHERE", "JOIN", "INSERT", "UPDATE", "DELETE", "CREATE"]
-  check_syntax: true
-  check_executability: false  # Requires DB connection
+  type: sql_validation
+
+  # Scoring weights
+  weights:
+    syntax: 0.4
+    keywords: 0.3
+    format: 0.3
+
+  # SQL keyword list
+  sql_keywords:
+    - SELECT
+    - FROM
+    - WHERE
+    - JOIN
+    - LEFT JOIN
+    - RIGHT JOIN
+    - INNER JOIN
+    - OUTER JOIN
+    - GROUP BY
+    - ORDER BY
+    - HAVING
+    - INSERT
+    - UPDATE
+    - DELETE
+    - CREATE
+    - DROP
+    - ALTER
+    - LIMIT
+    - OFFSET
+    - UNION
+    - DISTINCT
+    - AS
+    - ON
+
+  # Parser settings
+  parser:
+    extract_code_blocks: true
+    clean_whitespace: true
+    max_sql_length: 2048
+    min_sql_length: 10
+
+  # Validation settings
+  validation:
+    check_syntax: true
+    strict_mode: false  # If true, syntax errors return 0.0
+    normalize_sql: true
 
 batch_size: 8
