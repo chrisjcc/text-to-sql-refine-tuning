@@ -49,7 +49,17 @@ def prepare_data(cfg: DictConfig):
 
     logger.info(f"Loading dataset: {cfg.dataset.name}")
     try:
-        dataset = loader.load()
+        # Check if we should load with split specifications
+        split_arg = None
+        if cfg.dataset.split.train is not None:
+            # Check if we need to limit the dataset size
+            if cfg.dataset.limit.train is not None:
+                split_arg = f"{cfg.dataset.split.train}[:{cfg.dataset.limit.train}]"
+                logger.info(f"Loading limited train split: {split_arg}")
+            else:
+                split_arg = cfg.dataset.split.train
+
+        dataset = loader.load(split=split_arg)
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
         raise
