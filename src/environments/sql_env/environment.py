@@ -5,6 +5,7 @@ handling prompt formatting, response parsing, and reward computation.
 """
 
 import logging
+import re
 from typing import Dict, List, Any, Optional
 
 from verifiers import SingleTurnEnv
@@ -102,6 +103,13 @@ class TextToSQLEnvironment(SingleTurnEnv):
         # Check if it's a template name
         if template in PROMPT_TEMPLATES:
             return get_prompt_template(template)
+
+        # Check if this looks like an invalid template name
+        # (single word without spaces or special characters that looks like a name)
+        if re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', template):
+            raise ValueError(
+                f"Unknown template: '{template}'. Available templates: {', '.join(PROMPT_TEMPLATES.keys())}"
+            )
 
         # Otherwise, treat as custom template
         # Validate it has required placeholders
