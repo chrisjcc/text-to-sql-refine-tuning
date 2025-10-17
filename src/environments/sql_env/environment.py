@@ -7,7 +7,7 @@ handling prompt formatting, response parsing, and reward computation.
 import logging
 from typing import Dict, List, Any, Optional
 
-from verifiers.environments import SingleTurnEnv
+from verifiers import SingleTurnEnv
 
 from ...rubrics.sql_rubric import SQLValidationRubric
 from ...utils.sql_parser import SQLParser
