@@ -42,7 +42,8 @@ def extract_schema_info(context: str) -> Dict[str, List[str]]:
         # Pattern to match column definitions: column_name TYPE [constraints]
         # Note: Order matters - longer patterns first to avoid partial matches
         # VARCHAR(100), DATETIME, TIMESTAMP must come before VARCHAR, DATE, TIME, TEXT
-        column_pattern = r"[`\"]?(\w+)[`\"]?\s+(?:DATETIME|TIMESTAMP|VARCHAR\s*(?:\(\d+\))?|INTEGER|DECIMAL|NUMERIC|BOOLEAN|DOUBLE|FLOAT|REAL|CHAR|TEXT|TIME|DATE|INT|BOOL|BLOB|CLOB)"
+        # Word boundary \b at end ensures we match complete type names
+        column_pattern = r"[`\"]?(\w+)[`\"]?\s+(?:DATETIME|TIMESTAMP|VARCHAR\s*(?:\(\d+\))?|INTEGER|DECIMAL|NUMERIC|BOOLEAN|DOUBLE|FLOAT|REAL|CHAR|TEXT|TIME|DATE|INT|BOOL|BLOB|CLOB)\b"
 
         columns = re.findall(column_pattern, columns_text, re.IGNORECASE)
 
