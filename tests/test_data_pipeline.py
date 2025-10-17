@@ -277,7 +277,15 @@ def test_grpo_formatting():
 
     rubric = SQLValidationRubric()
     parser = SQLParser()
-    env = TextToSQLEnvironment(rubric=rubric, parser=parser)
+
+    # Create a minimal mock dataset (required by verifiers base class)
+    mock_dataset = Dataset.from_dict({
+        'question': ['Mock question?'],
+        'context': ['CREATE TABLE mock (id INT)'],
+        'answer': ['SELECT * FROM mock']
+    })
+
+    env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     # Create a mock tokenizer
     class MockTokenizer:
@@ -320,7 +328,15 @@ def test_tokenization_validation():
 
     rubric = SQLValidationRubric()
     parser = SQLParser()
-    env = TextToSQLEnvironment(rubric=rubric, parser=parser)
+
+    # Create a minimal mock dataset (required by verifiers base class)
+    mock_dataset = Dataset.from_dict({
+        'question': ['Mock question?'],
+        'context': ['CREATE TABLE mock (id INT)'],
+        'answer': ['SELECT * FROM mock']
+    })
+
+    env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
         def encode(self, text, add_special_tokens=True):
@@ -353,7 +369,15 @@ def test_evaluation_set_creation():
 
     rubric = SQLValidationRubric()
     parser = SQLParser()
-    env = TextToSQLEnvironment(rubric=rubric, parser=parser)
+
+    # Create a minimal mock dataset (required by verifiers base class)
+    mock_dataset = Dataset.from_dict({
+        'question': ['Mock question?'],
+        'context': ['CREATE TABLE mock (id INT)'],
+        'answer': ['SELECT * FROM mock']
+    })
+
+    env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
         def encode(self, text, add_special_tokens=True):
@@ -407,7 +431,15 @@ def test_full_pipeline():
 
     rubric = SQLValidationRubric()
     parser = SQLParser()
-    env = TextToSQLEnvironment(rubric=rubric, parser=parser)
+
+    # Create a minimal mock dataset (required by verifiers base class)
+    mock_dataset = Dataset.from_dict({
+        'question': ['Mock question?'],
+        'context': ['CREATE TABLE mock (id INT)'],
+        'answer': ['SELECT * FROM mock']
+    })
+
+    env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
         def encode(self, text, add_special_tokens=True):
