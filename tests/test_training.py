@@ -113,21 +113,28 @@ def hydra_config():
 
 def test_grpo_config_creation():
     """Test GRPO config creation with default parameters."""
-    trainer = SQLGRPOTrainer(
-        model=Mock(),
-        tokenizer=Mock(),
-        environment=Mock(),
-        rubric=Mock(),
-        train_dataset=Mock()
-    )
+    # Mock GRPOTrainer to avoid initialization issues
+    with patch('src.training.grpo_trainer.GRPOTrainer'):
+        # Create properly mocked model with valid config._name_or_path
+        mock_model = Mock()
+        mock_model.config = Mock()
+        mock_model.config._name_or_path = "meta-llama/Llama-3-8B"
 
-    config = trainer.create_default_config()
+        trainer = SQLGRPOTrainer(
+            model=mock_model,
+            tokenizer=Mock(),
+            environment=Mock(),
+            rubric=Mock(),
+            train_dataset=Mock()
+        )
 
-    assert config.num_train_epochs == 3
-    assert config.per_device_train_batch_size == 1
-    assert config.gradient_accumulation_steps == 8
-    assert config.learning_rate == 5e-6
-    assert config.num_generations == 4
+        config = trainer.create_default_config()
+
+        assert config.num_train_epochs == 3
+        assert config.per_device_train_batch_size == 1
+        assert config.gradient_accumulation_steps == 8
+        assert config.learning_rate == 5e-6
+        assert config.num_generations == 4
 
 
 def test_grpo_config_from_hydra(hydra_config):
