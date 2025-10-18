@@ -66,7 +66,7 @@ class TestModelLoader:
         assert config.r == 16
         assert config.lora_alpha == 32
         assert config.lora_dropout == 0.05
-        assert config.target_modules == ["q_proj", "v_proj"]
+        assert config.target_modules == {"q_proj", "v_proj"}
         assert config.bias == "none"
 
     def test_lora_config_default_target_modules(self):
@@ -301,7 +301,7 @@ class TestConfigUtils:
         assert config.r == 32
         assert config.lora_alpha == 64
         assert config.lora_dropout == 0.1
-        assert config.target_modules == ["q_proj", "v_proj", "k_proj"]
+        assert config.target_modules == {"q_proj", "v_proj", "k_proj"}
 
     def test_memory_estimation(self):
         """Test memory requirement estimation."""
