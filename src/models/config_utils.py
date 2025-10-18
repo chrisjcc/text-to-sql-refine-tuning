@@ -28,6 +28,10 @@ def create_model_config_from_hydra(cfg: DictConfig) -> Dict:
         "use_peft": cfg.training.use_peft,
     }
 
+    # Add attention implementation if specified in config
+    if hasattr(cfg.hf.model, 'attn_implementation'):
+        model_config["attn_implementation"] = cfg.hf.model.attn_implementation
+
     return model_config
 
 
