@@ -5,7 +5,9 @@ model:
   device_map: auto
 
   # Attention implementation
-  attn_implementation: flash_attention_2  # Requires flash-attn package
+  # Options: "auto" (try flash_attention_2, fallback to default), "flash_attention_2", "sdpa", "eager", null
+  # "auto" is recommended - uses flash-attn if available, falls back gracefully if not
+  attn_implementation: auto
 
   # Torch dtype for non-quantized loading
   torch_dtype: bfloat16
