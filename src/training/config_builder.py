@@ -64,7 +64,7 @@ class GRPOConfigBuilder:
             save_total_limit=cfg.training.save_total_limit,
 
             # Evaluation
-            evaluation_strategy=cfg.training.evaluation_strategy,
+            eval_strategy=cfg.training.evaluation_strategy,
             eval_steps=cfg.training.eval_steps,
 
             # Miscellaneous

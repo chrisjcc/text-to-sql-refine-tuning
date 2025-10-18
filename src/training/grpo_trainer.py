@@ -61,10 +61,11 @@ class SQLGRPOTrainer:
         self.config = config
 
         # Initialize TRL's GRPOTrainer
+        # Note: tokenizer is stored in the class but not passed to GRPOTrainer
+        # as it's handled internally by TRL's trainer
         self.trainer = GRPOTrainer(
             model=model,
-            tokenizer=tokenizer,
-            config=config,
+            args=config,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             reward_function=self.compute_rewards,
