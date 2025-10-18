@@ -89,11 +89,6 @@ class SQLGRPOTrainer:
             gradient_checkpointing=True,
             # GRPO-specific
             num_generations=4,
-            kl_coef=0.05,
-            gamma=1.0,
-            max_new_tokens=256,
-            temperature=0.7,
-            top_p=0.9,
         )
 
     def compute_rewards(
