@@ -21,7 +21,7 @@ import re
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from datasets import load_from_disk
-from src.utils.logging_utils import setup_logging
+from utils.logging_utils import setup_logging
 
 
 def analyze_complexity_distribution(dataset):

@@ -7,19 +7,19 @@ import torch
 from pathlib import Path
 from datasets import load_from_disk
 
-from src.models.model_loader import ModelLoader
-from src.models.config_utils import (
+from models.model_loader import ModelLoader
+from models.config_utils import (
     create_bnb_config_from_hydra,
     create_lora_config_from_hydra
 )
-from src.data.grpo_formatter import GRPODatasetFormatter
-from src.environments.sql_env.environment import TextToSQLEnvironment
-from src.rubrics.sql_rubric import SQLValidationRubric
-from src.utils.sql_parser import SQLParser
-from src.training.grpo_trainer import SQLGRPOTrainer
-from src.training.config_builder import GRPOConfigBuilder
-from src.training.callbacks import SQLEvaluationCallback, WandbLoggingCallback
-from src.utils.logging_utils import setup_logging
+from data.grpo_formatter import GRPODatasetFormatter
+from environments.sql_env.environment import TextToSQLEnvironment
+from rubrics.sql_rubric import SQLValidationRubric
+from utils.sql_parser import SQLParser
+from training.grpo_trainer import SQLGRPOTrainer
+from training.config_builder import GRPOConfigBuilder
+from training.callbacks import SQLEvaluationCallback, WandbLoggingCallback
+from utils.logging_utils import setup_logging
 
 try:
     import wandb

@@ -18,9 +18,9 @@ import hydra
 from omegaconf import DictConfig
 from datasets import load_dataset
 
-from src.environments.sql_env import TextToSQLEnvironment
-from src.rubrics.sql_rubric import SQLValidationRubric
-from src.utils.sql_parser import SQLParser
+from environments.sql_env import TextToSQLEnvironment
+from rubrics.sql_rubric import SQLValidationRubric
+from utils.sql_parser import SQLParser
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
