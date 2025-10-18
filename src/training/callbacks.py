@@ -8,8 +8,8 @@ from typing import Dict, Any
 import logging
 import torch
 
-from ..environments.sql_env.environment import TextToSQLEnvironment
-from ..rubrics.sql_rubric import SQLValidationRubric
+from environments.sql_env.environment import TextToSQLEnvironment
+from rubrics.sql_rubric import SQLValidationRubric
 
 try:
     import wandb

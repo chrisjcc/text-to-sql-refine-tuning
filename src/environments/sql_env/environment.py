@@ -10,8 +10,8 @@ from typing import Dict, List, Any, Optional
 
 from verifiers import SingleTurnEnv
 
-from ...rubrics.sql_rubric import SQLValidationRubric
-from ...utils.sql_parser import SQLParser
+from rubrics.sql_rubric import SQLValidationRubric
+from utils.sql_parser import SQLParser
 from .prompts import (
     PROMPT_TEMPLATES,
     get_prompt_template,
