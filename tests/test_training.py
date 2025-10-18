@@ -45,12 +45,13 @@ def sql_rubric(sql_parser):
 
 
 @pytest.fixture
-def text_to_sql_env(sql_rubric, sql_parser):
+def text_to_sql_env(sql_rubric, sql_parser, sample_dataset):
     """Create text-to-SQL environment."""
     return TextToSQLEnvironment(
         rubric=sql_rubric,
         parser=sql_parser,
-        prompt_template="default"
+        prompt_template="default",
+        dataset=sample_dataset
     )
 
 
@@ -127,8 +128,6 @@ def test_grpo_config_creation():
     assert config.gradient_accumulation_steps == 8
     assert config.learning_rate == 5e-6
     assert config.num_generations == 4
-    assert config.kl_coef == 0.05
-    assert config.gamma == 1.0
 
 
 def test_grpo_config_from_hydra(hydra_config):
@@ -140,7 +139,6 @@ def test_grpo_config_from_hydra(hydra_config):
     assert config.num_train_epochs == 3
     assert config.learning_rate == 5e-6
     assert config.num_generations == 4
-    assert config.kl_coef == 0.05
     assert config.seed == 42
     assert config.report_to == []
 

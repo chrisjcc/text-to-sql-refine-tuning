@@ -55,16 +55,8 @@ class GRPOConfigBuilder:
             fp16=False,  # Use bf16 instead
             gradient_checkpointing=cfg.training.gradient_checkpointing,
 
-            # Generation parameters
-            max_new_tokens=cfg.training.max_new_tokens,
-            temperature=cfg.training.temperature,
-            top_p=cfg.training.top_p,
-            do_sample=cfg.training.do_sample,
-
             # GRPO-specific parameters
             num_generations=cfg.training.num_generations,
-            kl_coef=cfg.training.kl_coef,
-            gamma=cfg.training.gamma,
 
             # Checkpointing
             save_strategy=cfg.training.save_strategy,
