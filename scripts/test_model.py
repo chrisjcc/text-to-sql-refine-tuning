@@ -9,17 +9,21 @@ from omegaconf import DictConfig
 import torch
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables before anything else
+load_dotenv()
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.models.model_loader import ModelLoader
-from src.models.config_utils import (
+from models.model_loader import ModelLoader
+from models.config_utils import (
     create_bnb_config_from_hydra,
     create_lora_config_from_hydra,
     estimate_memory_requirements
 )
-from src.utils.logging_utils import setup_logging_from_config
+from utils.logging_utils import setup_logging_from_config
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -52,11 +56,15 @@ def test_model(cfg: DictConfig):
     bnb_config = create_bnb_config_from_hydra(cfg)
     lora_config = create_lora_config_from_hydra(cfg)
 
+    # Get attention implementation from config if available
+    attn_impl = cfg.hf.model.get('attn_implementation', 'auto')
+
     model, tokenizer = loader.load_model_and_tokenizer(
         use_quantization=cfg.training.peft.use_qlora,
         use_peft=cfg.training.use_peft,
         bnb_config=bnb_config,
-        lora_config=lora_config
+        lora_config=lora_config,
+        attn_implementation=attn_impl
     )
 
     # Print model info

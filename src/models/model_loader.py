@@ -126,7 +126,8 @@ class ModelLoader:
         use_peft: bool = True,
         bnb_config: Optional[BitsAndBytesConfig] = None,
         lora_config: Optional[LoraConfig] = None,
-        torch_dtype: Optional[torch.dtype] = None
+        torch_dtype: Optional[torch.dtype] = None,
+        attn_implementation: Optional[str] = "auto"
     ) -> AutoModelForCausalLM:
         """
         Load model with optional quantization and LoRA adapters.
@@ -137,6 +138,8 @@ class ModelLoader:
             bnb_config: Custom BnB config (created if None)
             lora_config: Custom LoRA config (created if None)
             torch_dtype: Base dtype for non-quantized loading
+            attn_implementation: Attention implementation ("flash_attention_2", "sdpa", "eager", or "auto")
+                                "auto" will try flash_attention_2 and fall back to default if unavailable
 
         Returns:
             Loaded model (with PEFT if enabled)
@@ -153,16 +156,53 @@ class ModelLoader:
             if torch_dtype is None:
                 torch_dtype = torch.bfloat16
 
+        # Determine attention implementation
+        attn_impl = None
+        if attn_implementation == "auto":
+            # Try flash_attention_2 if CUDA is available
+            if torch.cuda.is_available():
+                try:
+                    # Test if flash_attn can be imported
+                    import flash_attn
+                    attn_impl = "flash_attention_2"
+                    self.logger.info("Using Flash Attention 2 for improved performance")
+                except (ImportError, ModuleNotFoundError):
+                    self.logger.warning(
+                        "Flash Attention 2 not available. Install with: pip install flash-attn --no-build-isolation"
+                    )
+                    attn_impl = None  # Use default attention
+        elif attn_implementation is not None:
+            attn_impl = attn_implementation
+
         # Load base model
-        model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            quantization_config=quantization_config,
-            device_map=self.device_map,
-            trust_remote_code=self.trust_remote_code,
-            cache_dir=self.cache_dir,
-            torch_dtype=torch_dtype if not use_quantization else None,
-            attn_implementation="flash_attention_2" if torch.cuda.is_available() else None
-        )
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                quantization_config=quantization_config,
+                device_map=self.device_map,
+                trust_remote_code=self.trust_remote_code,
+                cache_dir=self.cache_dir,
+                torch_dtype=torch_dtype if not use_quantization else None,
+                attn_implementation=attn_impl
+            )
+        except Exception as e:
+            # If flash attention fails during model loading, retry without it
+            if attn_impl == "flash_attention_2" and "flash_attn" in str(e):
+                self.logger.warning(
+                    f"Failed to load model with Flash Attention 2: {str(e)}"
+                )
+                self.logger.info("Retrying with default attention implementation...")
+                model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    quantization_config=quantization_config,
+                    device_map=self.device_map,
+                    trust_remote_code=self.trust_remote_code,
+                    cache_dir=self.cache_dir,
+                    torch_dtype=torch_dtype if not use_quantization else None,
+                    attn_implementation=None
+                )
+            else:
+                raise
 
         self.logger.info(f"Model loaded. Memory footprint: "
                         f"{model.get_memory_footprint() / 1e9:.2f} GB")

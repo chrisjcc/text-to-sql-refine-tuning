@@ -12,9 +12,9 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.data.dataset_loader import SQLDatasetLoader
-from src.data.preprocessor import SQLDataPreprocessor
-from src.utils.logging_utils import setup_logging
+from data.dataset_loader import SQLDatasetLoader
+from data.preprocessor import SQLDataPreprocessor
+from utils.logging_utils import setup_logging
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")

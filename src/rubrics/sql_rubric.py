@@ -12,7 +12,7 @@ import sqlparse
 from sqlparse import sql as sql_tokens
 from sqlparse.exceptions import SQLParseError
 
-from ..utils.sql_parser import SQLParser
+from utils.sql_parser import SQLParser
 
 
 logger = logging.getLogger(__name__)
