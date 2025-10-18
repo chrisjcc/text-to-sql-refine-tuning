@@ -1,6 +1,20 @@
-batch_size: 4
+# Model configuration
+model_path: ./outputs/final_model
+load_in_4bit: false
+
+# Dataset configuration
+dataset_path: ./data_cache/processed
+split: test  # or validation
+
+# Generation parameters
+batch_size: 8
 max_new_tokens: 256
 temperature: 0.1
 top_p: 0.95
 num_beams: 1
 do_sample: false
+
+# Output
+output_dir: ./inference_results
+save_predictions: true
+save_metrics: true
