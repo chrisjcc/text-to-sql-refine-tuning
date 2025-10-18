@@ -85,3 +85,28 @@ environment:
     min_reward: 0.0
     max_reward: 1.0
     normalize: false
+
+# GRPO Advanced Parameters
+grpo_advanced:
+  # Async generation for faster sampling
+  use_async_generation: false
+  async_batch_size: 4
+
+  # Value function for advantage estimation
+  use_value_function: false
+  value_loss_coef: 0.1
+
+  # Clipping
+  cliprange: 0.2
+  cliprange_value: 0.2
+
+  # Reference model
+  use_reference_model: true
+  reference_free: false
+
+# Stop sequences for generation
+stop_sequences:
+  - "\n\n"
+  - "<|eot_id|>"
+  - "Question:"
+  - "Schema:"
