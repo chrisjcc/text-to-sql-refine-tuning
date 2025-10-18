@@ -9,8 +9,8 @@ from typing import Dict, List, Optional, Any
 import logging
 from datasets import Dataset
 
-from ..environments.sql_env.environment import TextToSQLEnvironment
-from ..rubrics.sql_rubric import SQLValidationRubric
+from environments.sql_env.environment import TextToSQLEnvironment
+from rubrics.sql_rubric import SQLValidationRubric
 
 
 logger = logging.getLogger(__name__)

@@ -9,7 +9,7 @@ import logging
 from datasets import Dataset
 import numpy as np
 
-from ..environments.sql_env.environment import TextToSQLEnvironment
+from environments.sql_env.environment import TextToSQLEnvironment
 
 
 logger = logging.getLogger(__name__)
