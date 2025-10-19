@@ -19,7 +19,7 @@ from utils.sql_parser import SQLParser
 from training.grpo_trainer import SQLGRPOTrainer
 from training.config_builder import GRPOConfigBuilder
 from training.callbacks import SQLEvaluationCallback, WandbLoggingCallback
-from utils.logging_utils import setup_logging
+from utils.logging_utils import setup_logging_from_config
 
 try:
     import wandb
@@ -44,7 +44,7 @@ def train(cfg: DictConfig):
     7. Train model
     8. Save and evaluate
     """
-    logger = setup_logging(cfg)
+    logger = setup_logging_from_config(cfg)
     logger.info("="*80)
     logger.info("Starting GRPO Training for Text-to-SQL")
     logger.info("="*80)
