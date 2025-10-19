@@ -43,7 +43,7 @@ class SQLEvaluator:
         batch_size: int = 8,
         compute_execution: bool = False,
         **generation_kwargs,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Evaluate model on dataset with comprehensive metrics.
 
@@ -109,7 +109,7 @@ class SQLEvaluator:
 
     def _compute_sample_metrics(
         self, predicted: str, reference: str, compute_execution: bool = False
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """Compute all metrics for a single sample."""
         metrics_dict = {}
 

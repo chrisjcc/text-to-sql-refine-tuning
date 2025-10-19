@@ -28,8 +28,8 @@ class SQLInferenceEngine:
         base_model_name: Optional[str] = None,
         device: str = "auto",
         load_in_4bit: bool = False,
-        environment: Optional[any] = None,
-        parser: Optional[any] = None,
+        environment: Optional[Any] = None,
+        parser: Optional[Any] = None,
     ):
         """
         Initialize inference engine.
@@ -172,7 +172,7 @@ class SQLInferenceEngine:
         num_beams: int = 1,
         do_sample: bool = False,
         **generation_kwargs,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Generate SQL query from natural language question.
 
@@ -240,7 +240,7 @@ class SQLInferenceEngine:
         schemas: Optional[List[str]] = None,
         batch_size: int = 4,
         **generation_kwargs,
-    ) -> List[Dict[str, any]]:
+    ) -> List[Dict[str, Any]]:
         """
         Generate SQL queries for multiple questions in batches.
 
@@ -305,7 +305,7 @@ class SQLInferenceEngine:
 
         return results
 
-    def evaluate_on_dataset(self, dataset: List[Dict], **generation_kwargs) -> Dict[str, any]:
+    def evaluate_on_dataset(self, dataset: List[Dict], **generation_kwargs) -> Dict[str, Any]:
         """
         Evaluate model on a dataset.
 

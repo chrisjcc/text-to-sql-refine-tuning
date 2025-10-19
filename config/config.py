@@ -4,14 +4,12 @@ This module provides utilities for loading and managing configuration
 files using Hydra's compositional config system.
 """
 
-import os
 from pathlib import Path
 from typing import Optional
 
-import hydra
+from dotenv import load_dotenv
 from hydra import compose, initialize_config_dir
 from omegaconf import DictConfig, OmegaConf
-from dotenv import load_dotenv
 
 
 def load_config(
@@ -70,10 +68,10 @@ def save_config(cfg: DictConfig, output_path: str) -> None:
         cfg: Configuration to save
         output_path: Path where to save the config file
     """
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path_obj = Path(output_path)
+    output_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path_obj, 'w') as f:
         OmegaConf.save(cfg, f)
 
 

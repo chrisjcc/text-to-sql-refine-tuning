@@ -5,6 +5,7 @@ Loads, preprocesses, and formats the SQL dataset.
 
 import sys
 from pathlib import Path
+from typing import Dict
 
 import hydra
 from omegaconf import DictConfig
@@ -136,7 +137,7 @@ def prepare_data(cfg: DictConfig):
         # Compute complexity distribution
         if "complexity" in dataset[split_name].column_names:
             complexities = dataset[split_name]["complexity"]
-            complexity_dist = {}
+            complexity_dist: Dict[str, int] = {}
             for c in complexities:
                 complexity_dist[c] = complexity_dist.get(c, 0) + 1
 

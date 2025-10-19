@@ -4,18 +4,19 @@ This module contains comprehensive tests for the ModelLoader class
 and configuration utilities.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 import torch
-from unittest.mock import Mock, patch, MagicMock
 from omegaconf import OmegaConf
 
-from src.models.model_loader import ModelLoader
 from src.models.config_utils import (
-    create_model_config_from_hydra,
     create_bnb_config_from_hydra,
     create_lora_config_from_hydra,
+    create_model_config_from_hydra,
     estimate_memory_requirements,
 )
+from src.models.model_loader import ModelLoader
 
 
 class TestModelLoader:
@@ -100,7 +101,7 @@ class TestModelLoader:
         mock_get_peft.return_value = mock_model
 
         loader = ModelLoader(model_name="test-model")
-        model = loader.load_model(
+        _model = loader.load_model(
             use_quantization=True,
             use_peft=True
         )
@@ -118,7 +119,7 @@ class TestModelLoader:
         mock_auto_model.from_pretrained.return_value = mock_model
 
         loader = ModelLoader(model_name="test-model")
-        model = loader.load_model(
+        _model = loader.load_model(
             use_quantization=False,
             use_peft=False
         )
@@ -140,7 +141,7 @@ class TestModelLoader:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        tokenizer = loader.load_tokenizer(
+        _tokenizer = loader.load_tokenizer(
             padding_side="left",
             add_eos_token=True,
             add_bos_token=False
@@ -170,13 +171,14 @@ class TestModelLoader:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        model, tokenizer = loader.load_model_and_tokenizer(
+        _model, _tokenizer = loader.load_model_and_tokenizer(
             use_quantization=False,
             use_peft=False
         )
 
-        assert model is not None
-        assert tokenizer is not None
+        # These are not None assertions
+        assert _model is not None
+        assert _tokenizer is not None
 
     @patch('src.models.model_loader.AutoModelForCausalLM')
     @patch('src.models.model_loader.prepare_model_for_kbit_training')

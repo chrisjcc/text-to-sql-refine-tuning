@@ -4,10 +4,9 @@ Tests the SQLParser, SQLValidationRubric, and BatchSQLScorer components
 used for computing rewards during GRPO training.
 """
 
-import pytest
-from src.utils.sql_parser import SQLParser
-from src.rubrics.sql_rubric import SQLValidationRubric
 from src.rubrics.batch_scorer import BatchSQLScorer
+from src.rubrics.sql_rubric import SQLValidationRubric
+from src.utils.sql_parser import SQLParser
 
 
 class TestSQLParser:

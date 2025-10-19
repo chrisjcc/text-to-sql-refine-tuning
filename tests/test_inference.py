@@ -3,12 +3,13 @@
 Tests for inference engine, CLI, and API components.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
-from pathlib import Path
 import json
-import tempfile
 import os
+import tempfile
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 # Mock imports to avoid loading heavy dependencies in tests
@@ -182,7 +183,7 @@ class TestInferenceEngine:
         with patch('src.rubrics.sql_rubric.SQLValidationRubric'), \
              patch('src.environments.sql_env.TextToSQLEnvironment'):
 
-            engine = SQLInferenceEngine(
+            _engine = SQLInferenceEngine(
                 model_path=temp_model_dir,
                 base_model_name="test-model"
             )
@@ -199,7 +200,7 @@ class TestInferenceEngine:
             with patch('src.rubrics.sql_rubric.SQLValidationRubric'), \
                  patch('src.environments.sql_env.TextToSQLEnvironment'):
 
-                engine = SQLInferenceEngine(
+                _engine = SQLInferenceEngine(
                     model_path=tmpdir,
                     base_model_name="test-model"
                 )
