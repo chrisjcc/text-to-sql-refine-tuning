@@ -205,13 +205,30 @@ class SQLMetrics:
 
     def _normalize_sql(self, sql: str) -> str:
         """Normalize SQL query for comparison."""
-        return sqlparse.format(
+        import re
+        # First use sqlparse for basic normalization
+        normalized = sqlparse.format(
             sql,
             keyword_case='upper',
             identifier_case='lower',
             strip_whitespace=True,
             reindent=False
         ).strip()
+
+        # Additional normalization: standardize spacing around operators
+        # Add spaces around = , < , > , != , <= , >= operators
+        normalized = re.sub(r'\s*=\s*', ' = ', normalized)
+        normalized = re.sub(r'\s*!=\s*', ' != ', normalized)
+        normalized = re.sub(r'\s*<>\s*', ' <> ', normalized)
+        normalized = re.sub(r'\s*<=\s*', ' <= ', normalized)
+        normalized = re.sub(r'\s*>=\s*', ' >= ', normalized)
+        normalized = re.sub(r'\s*<\s*', ' < ', normalized)
+        normalized = re.sub(r'\s*>\s*', ' > ', normalized)
+
+        # Remove extra spaces
+        normalized = re.sub(r'\s+', ' ', normalized)
+
+        return normalized.strip()
 
     def _tokenize_sql(self, sql: str) -> List[str]:
         """Tokenize SQL query."""
