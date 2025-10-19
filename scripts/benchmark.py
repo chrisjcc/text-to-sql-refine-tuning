@@ -15,7 +15,7 @@ import pandas as pd
 from src.inference.inference_engine import SQLInferenceEngine
 from src.evaluation.evaluator import SQLEvaluator
 from src.evaluation.metrics import SQLMetrics
-from src.utils.logging_utils import setup_logging
+from src.utils.logging_utils import setup_logging_from_config
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -23,7 +23,7 @@ def benchmark(cfg: DictConfig):
     """
     Benchmark multiple model checkpoints.
     """
-    logger = setup_logging(cfg)
+    logger = setup_logging_from_config(cfg)
     logger.info("Starting benchmark evaluation")
 
     # Load dataset
