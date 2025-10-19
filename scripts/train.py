@@ -4,7 +4,6 @@ Main training script for GRPO fine-tuning.
 from pathlib import Path
 
 import hydra
-import torch
 from datasets import load_from_disk
 from omegaconf import DictConfig, OmegaConf
 
@@ -13,7 +12,7 @@ from environments.sql_env.environment import TextToSQLEnvironment
 from models.config_utils import create_bnb_config_from_hydra, create_lora_config_from_hydra
 from models.model_loader import ModelLoader
 from rubrics.sql_rubric import SQLValidationRubric
-from training.callbacks import SQLEvaluationCallback, WandbLoggingCallback
+from training.callbacks import SQLEvaluationCallback
 from training.config_builder import GRPOConfigBuilder
 from training.grpo_trainer import SQLGRPOTrainer
 from utils.logging_utils import setup_logging_from_config

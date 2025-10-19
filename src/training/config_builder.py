@@ -4,7 +4,6 @@ Builds GRPOConfig from Hydra configuration files.
 """
 
 import logging
-from typing import Optional
 
 from omegaconf import DictConfig
 from trl import GRPOConfig

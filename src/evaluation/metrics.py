@@ -4,7 +4,7 @@ Comprehensive SQL evaluation metrics.
 import logging
 from collections import Counter
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 
 import numpy as np
 import sqlparse
