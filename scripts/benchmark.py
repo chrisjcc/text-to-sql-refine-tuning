@@ -4,14 +4,14 @@ Benchmark multiple model checkpoints on test dataset.
 import sys
 from pathlib import Path
 
-# Add project root to Python path
-project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(project_root))
-
 import hydra
 import pandas as pd
 from datasets import load_from_disk
 from omegaconf import DictConfig
+
+# Add project root to Python path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
 
 from src.evaluation.evaluator import SQLEvaluator
 from src.evaluation.metrics import SQLMetrics

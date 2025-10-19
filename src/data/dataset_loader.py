@@ -9,7 +9,7 @@ import logging
 import re
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 from datasets import Dataset, DatasetDict, load_dataset

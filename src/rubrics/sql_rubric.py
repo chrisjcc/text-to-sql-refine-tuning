@@ -9,7 +9,6 @@ import logging
 from typing import Dict, List, Optional, Tuple
 
 import sqlparse
-from sqlparse import sql as sql_tokens
 from sqlparse.exceptions import SQLParseError
 
 from utils.sql_parser import SQLParser

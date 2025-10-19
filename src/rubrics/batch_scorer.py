@@ -5,7 +5,7 @@ with support for parallel processing and caching.
 """
 
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
 from .sql_rubric import SQLValidationRubric

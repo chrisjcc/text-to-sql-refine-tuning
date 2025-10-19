@@ -6,7 +6,7 @@ memory-efficient fine-tuning on A100 GPUs.
 """
 
 import logging
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 import torch
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
@@ -164,7 +164,7 @@ class ModelLoader:
             if torch.cuda.is_available():
                 try:
                     # Test if flash_attn can be imported
-                    import flash_attn
+                    import flash_attn  # noqa: F401
 
                     attn_impl = "flash_attention_2"
                     self.logger.info("Using Flash Attention 2 for improved performance")

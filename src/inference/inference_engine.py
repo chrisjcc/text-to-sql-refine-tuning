@@ -7,7 +7,7 @@ from natural language questions using fine-tuned models.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import torch
 from peft import PeftModel

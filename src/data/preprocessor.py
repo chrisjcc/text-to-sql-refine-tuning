@@ -7,7 +7,7 @@ and SQL normalization.
 
 import logging
 import re
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import sqlparse
 from datasets import Dataset

@@ -6,7 +6,6 @@ with schema loading, syntax highlighting, and result visualization.
 
 import argparse
 import logging
-from typing import Optional
 
 from rich.console import Console
 from rich.panel import Panel

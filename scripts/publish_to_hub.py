@@ -7,7 +7,7 @@ import logging
 import os
 from pathlib import Path
 
-from huggingface_hub import HfApi, create_repo, upload_folder
+from huggingface_hub import create_repo, upload_folder
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -156,9 +156,6 @@ def publish_model(model_path: str, repo_name: str, private: bool = True, token: 
         token = os.getenv("HF_TOKEN")
         if token is None:
             raise ValueError("HF_TOKEN not found in environment")
-
-    # Initialize API
-    api = HfApi(token=token)
 
     # Create repository
     logger.info(f"Creating repository: {repo_name}")
