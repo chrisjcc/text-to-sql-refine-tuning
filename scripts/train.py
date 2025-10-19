@@ -19,12 +19,12 @@ from utils.logging_utils import setup_logging_from_config
 from utils.sql_parser import SQLParser
 
 try:
-    import wandb
+    import wandb  # type: ignore
 
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
-    wandb = None
+    wandb = None  # type: ignore
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")

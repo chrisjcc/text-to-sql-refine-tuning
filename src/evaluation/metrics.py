@@ -129,7 +129,7 @@ class SQLMetrics:
 
         return {"precision": precision, "recall": recall, "f1": f1}
 
-    def complexity_score(self, sql: str) -> Dict[str, any]:
+    def complexity_score(self, sql: str) -> Dict[str, Any]:
         """
         Analyze SQL query complexity.
 
@@ -180,8 +180,8 @@ class SQLMetrics:
         else:
             complexity_level = "complex"
 
-        complexity["complexity_level"] = complexity_level
-        complexity["complexity_score"] = score
+        complexity["complexity_level"] = str(complexity_level)
+        complexity["complexity_score"] = float(score)
 
         return complexity
 
@@ -250,7 +250,7 @@ class SQLMetrics:
         """Extract structural components of SQL query."""
         sql_upper = sql.upper()
 
-        structure = {
+        structure: Dict[str, set] = {
             "select_columns": set(),
             "from_tables": set(),
             "join_tables": set(),
@@ -339,7 +339,7 @@ class ExecutionMetrics:
 
     def execution_accuracy(
         self, predicted: str, reference: str, timeout: int = 5
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Check if predicted SQL produces same results as reference.
 

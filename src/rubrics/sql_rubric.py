@@ -345,7 +345,7 @@ class SQLValidationRubric:
                 "syntax": 0.0,
                 "keywords": 0.0,
                 "format": 0.0,
-                "extracted_sql": None,
+                "extracted_sql": None,  # type: ignore[dict-item]
             }
 
         # Extract SQL
@@ -360,7 +360,7 @@ class SQLValidationRubric:
                 "syntax": 0.0,
                 "keywords": 0.0,
                 "format": format_score,
-                "extracted_sql": None,
+                "extracted_sql": None,  # type: ignore[dict-item]
             }
 
         is_valid, syntax_score = self.check_syntax(sql)
@@ -380,7 +380,7 @@ class SQLValidationRubric:
             "keywords": keyword_score,
             "format": format_score,
             "extracted_sql": sql,
-            "weights": {
+            "weights": {  # type: ignore[dict-item]
                 "syntax": self.syntax_weight,
                 "keywords": self.keyword_weight,
                 "format": self.format_weight,

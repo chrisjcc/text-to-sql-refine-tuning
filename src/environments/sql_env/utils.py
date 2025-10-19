@@ -24,7 +24,7 @@ def extract_schema_info(context: str) -> Dict[str, List[str]]:
         >>> extract_schema_info(context)
         {'users': ['id', 'name']}
     """
-    schema_info = {}
+    schema_info: Dict[str, List[str]] = {}
 
     if not context:
         return schema_info
@@ -51,13 +51,13 @@ def extract_schema_info(context: str) -> Dict[str, List[str]]:
             # Match column_name at the start, followed by a data type
             # Pattern captures just the column name
             # The .* at the end handles any trailing characters (like closing parentheses, constraints, etc.)
-            match = re.match(
+            col_match = re.match(
                 r"[`\"]?(\w+)[`\"]?\s+(?:VARCHAR(?:\s*\(\d+\))?|DATETIME|TIMESTAMP|INTEGER|DECIMAL|NUMERIC|BOOLEAN|DOUBLE|FLOAT|REAL|CHAR|TEXT|TIME|DATE|INT|BOOL|BLOB|CLOB).*",
                 col_def,
                 re.IGNORECASE,
             )
-            if match:
-                columns.append(match.group(1))
+            if col_match:
+                columns.append(col_match.group(1))
 
         if columns:
             schema_info[table_name] = columns

@@ -155,7 +155,7 @@ class BatchSQLScorer:
             for i, output in enumerate(outputs):
                 # Check cache first
                 if use_cache and self._cache_enabled and output in self._cache:
-                    scores[i] = self._cache[output]
+                    scores[i] = self._cache[output]  # type: ignore[call-overload]
                     continue
 
                 # Submit scoring task
@@ -167,7 +167,7 @@ class BatchSQLScorer:
             for i, output, future in tasks:
                 try:
                     score = future.result()
-                    scores[i] = score
+                    scores[i] = score  # type: ignore[call-overload]
 
                     # Cache result
                     if use_cache and self._cache_enabled:
@@ -175,9 +175,9 @@ class BatchSQLScorer:
 
                 except Exception as e:
                     logger.error(f"Error scoring output {i}: {e}")
-                    scores[i] = 0.0
+                    scores[i] = 0.0  # type: ignore[call-overload]
 
-        return scores
+        return scores  # type: ignore[return-value]
 
     def score_with_metadata(
         self,
@@ -218,17 +218,17 @@ class BatchSQLScorer:
 
                 # Add extracted SQL if requested
                 if include_extracted_sql:
-                    metadata["extracted_sql"] = detailed.get("extracted_sql")
+                    metadata["extracted_sql"] = detailed.get("extracted_sql")  # type: ignore[dict-item]
 
                 # Add reference if provided
                 if references and i < len(references):
-                    metadata["reference"] = references[i]
+                    metadata["reference"] = references[i]  # type: ignore[dict-item]
 
                 results.append(metadata)
 
             except Exception as e:
                 logger.error(f"Error getting metadata for output {i}: {e}")
-                results.append(
+                results.append(  # type: ignore[dict-item]
                     {
                         "index": i,
                         "total": 0.0,
@@ -236,13 +236,13 @@ class BatchSQLScorer:
                         "syntax_valid": False,
                         "keywords": 0.0,
                         "format": 0.0,
-                        "extracted_sql": None,
-                        "weights": {
+                        "extracted_sql": None,  # type: ignore[dict-item]
+                        "weights": {  # type: ignore[dict-item]
                             "syntax": self.rubric.syntax_weight,
                             "keywords": self.rubric.keyword_weight,
                             "format": self.rubric.format_weight,
                         },
-                        "error": str(e),
+                        "error": str(e),  # type: ignore[dict-item]
                     }
                 )
 

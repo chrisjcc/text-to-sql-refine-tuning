@@ -43,7 +43,7 @@ class SQLEvaluator:
         batch_size: int = 8,
         compute_execution: bool = False,
         **generation_kwargs,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Evaluate model on dataset with comprehensive metrics.
 
@@ -109,14 +109,14 @@ class SQLEvaluator:
 
     def _compute_sample_metrics(
         self, predicted: str, reference: str, compute_execution: bool = False
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """Compute all metrics for a single sample."""
         metrics_dict = {}
 
         # Basic metrics
-        metrics_dict["exact_match"] = self.metrics.exact_match(predicted, reference)
-        metrics_dict["token_accuracy"] = self.metrics.token_level_accuracy(predicted, reference)
-        metrics_dict["structural_similarity"] = self.metrics.structural_similarity(
+        metrics_dict["exact_match"] = self.metrics.exact_match(predicted, reference)  # type: ignore[dict-item]
+        metrics_dict["token_accuracy"] = self.metrics.token_level_accuracy(predicted, reference)  # type: ignore[dict-item]
+        metrics_dict["structural_similarity"] = self.metrics.structural_similarity(  # type: ignore[dict-item]
             predicted, reference
         )
 
@@ -136,8 +136,8 @@ class SQLEvaluator:
 
         metrics_dict["predicted_complexity"] = pred_complexity["complexity_level"]
         metrics_dict["reference_complexity"] = ref_complexity["complexity_level"]
-        metrics_dict["complexity_match"] = (
-            pred_complexity["complexity_level"] == ref_complexity["complexity_level"]
+        metrics_dict["complexity_match"] = (  # type: ignore[dict-item]
+            pred_complexity["complexity_level"] == ref_complexity["complexity_level"]  # type: ignore[operator]
         )
 
         # Edit distance
@@ -203,11 +203,11 @@ class SQLEvaluator:
             evaluation_results: Results from evaluate_dataset
             output_path: Path to save report
         """
-        output_path = Path(output_path)
-        output_path.mkdir(parents=True, exist_ok=True)
+        output_path_obj = Path(output_path)  # type: ignore[assignment]
+        output_path_obj.mkdir(parents=True, exist_ok=True)  # type: ignore[attr-defined]
 
         # Save JSON results
-        json_path = output_path / "evaluation_results.json"
+        json_path = output_path_obj / "evaluation_results.json"  # type: ignore[operator]
         with open(json_path, "w") as f:
             # Remove per-sample results for cleaner summary
             summary = {
@@ -219,13 +219,13 @@ class SQLEvaluator:
 
         # Save per-sample results as CSV
         df = pd.DataFrame(evaluation_results["per_sample"])
-        csv_path = output_path / "per_sample_results.csv"
+        csv_path = output_path_obj / "per_sample_results.csv"  # type: ignore[operator]
         df.to_csv(csv_path, index=False)
 
         # Generate markdown report
-        self._generate_markdown_report(evaluation_results, output_path)
+        self._generate_markdown_report(evaluation_results, output_path_obj)  # type: ignore[arg-type]
 
-        self.logger.info(f"Report saved to {output_path}")
+        self.logger.info(f"Report saved to {output_path_obj}")
 
     def _generate_markdown_report(self, results: Dict, output_path: Path):
         """Generate markdown evaluation report."""

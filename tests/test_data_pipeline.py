@@ -3,17 +3,19 @@
 Tests for dataset loading, preprocessing, and GRPO formatting.
 """
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from datasets import Dataset, DatasetDict
-from src.data.dataset_loader import SQLDatasetLoader
-from src.data.preprocessor import SQLDataPreprocessor
-from src.data.grpo_formatter import GRPODatasetFormatter
+from datasets import Dataset, DatasetDict  # noqa: E402
+
+from src.data.dataset_loader import SQLDatasetLoader  # noqa: E402
+from src.data.grpo_formatter import GRPODatasetFormatter  # noqa: E402
+from src.data.preprocessor import SQLDataPreprocessor  # noqa: E402
 
 
 # ============================================================================

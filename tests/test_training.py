@@ -1,15 +1,16 @@
 """Unit tests for training module."""
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
-from omegaconf import DictConfig, OmegaConf
-from datasets import Dataset
+from unittest.mock import MagicMock, Mock, patch
 
-from src.training.grpo_trainer import SQLGRPOTrainer
-from src.training.config_builder import GRPOConfigBuilder
-from src.training.callbacks import SQLEvaluationCallback, WandbLoggingCallback
+import pytest
+from datasets import Dataset
+from omegaconf import OmegaConf
+
 from src.environments.sql_env.environment import TextToSQLEnvironment
 from src.rubrics.sql_rubric import SQLValidationRubric
+from src.training.callbacks import SQLEvaluationCallback, WandbLoggingCallback
+from src.training.config_builder import GRPOConfigBuilder
+from src.training.grpo_trainer import SQLGRPOTrainer
 from src.utils.sql_parser import SQLParser
 
 
