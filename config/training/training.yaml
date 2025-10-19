@@ -53,9 +53,9 @@ kl_coef: 0.05
 gamma: 1.0
 
 # Optimization
-# Note: bf16 is set to false because we're using QLoRA with bnb_4bit_compute_dtype=bfloat16
-# Mixed precision training can interfere with quantized model dtypes during generation
-bf16: false
+# Note: bf16 must be true to match QLoRA's bnb_4bit_compute_dtype=bfloat16
+# This ensures the Trainer uses BFloat16 for non-quantized layers (like lm_head)
+bf16: true
 gradient_checkpointing: true
 optim: adamw_torch
 
