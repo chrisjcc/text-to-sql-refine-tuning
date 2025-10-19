@@ -4,14 +4,14 @@ This module wraps TRL's GRPOTrainer for text-to-SQL applications,
 integrating environment, rubric, and evaluation components.
 """
 
-from trl import GRPOConfig, GRPOTrainer
-from typing import Dict, List, Optional, Any
 import logging
+from typing import Any, Dict, List, Optional
+
 from datasets import Dataset
+from trl import GRPOConfig, GRPOTrainer
 
 from environments.sql_env.environment import TextToSQLEnvironment
 from rubrics.sql_rubric import SQLValidationRubric
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class SQLGRPOTrainer:
         train_dataset: Dataset,
         eval_dataset: Optional[Dataset] = None,
         config: Optional[GRPOConfig] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize GRPO trainer.
@@ -70,7 +70,7 @@ class SQLGRPOTrainer:
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             reward_funcs=[self.compute_rewards],
-            **kwargs
+            **kwargs,
         )
 
         self.logger.info("SQLGRPOTrainer initialized")
@@ -93,12 +93,7 @@ class SQLGRPOTrainer:
             num_generations=4,
         )
 
-    def compute_rewards(
-        self,
-        prompts: List[str],
-        responses: List[str],
-        **kwargs
-    ) -> List[float]:
+    def compute_rewards(self, prompts: List[str], responses: List[str], **kwargs) -> List[float]:
         """
         Compute rewards for generated responses.
 

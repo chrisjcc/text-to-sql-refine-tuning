@@ -14,7 +14,6 @@ from sqlparse.exceptions import SQLParseError
 
 from utils.sql_parser import SQLParser
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -65,18 +64,34 @@ class SQLValidationRubric:
         # Default SQL keywords if not provided
         if sql_keywords is None:
             sql_keywords = [
-                "SELECT", "FROM", "WHERE", "JOIN", "LEFT JOIN", "RIGHT JOIN",
-                "INNER JOIN", "OUTER JOIN", "GROUP BY", "ORDER BY", "HAVING",
-                "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER",
-                "LIMIT", "OFFSET", "UNION", "DISTINCT", "AS", "ON"
+                "SELECT",
+                "FROM",
+                "WHERE",
+                "JOIN",
+                "LEFT JOIN",
+                "RIGHT JOIN",
+                "INNER JOIN",
+                "OUTER JOIN",
+                "GROUP BY",
+                "ORDER BY",
+                "HAVING",
+                "INSERT",
+                "UPDATE",
+                "DELETE",
+                "CREATE",
+                "DROP",
+                "ALTER",
+                "LIMIT",
+                "OFFSET",
+                "UNION",
+                "DISTINCT",
+                "AS",
+                "ON",
             ]
 
         # Filter out non-string values (e.g., boolean true/false from config parsing)
         # and convert to uppercase
-        self.sql_keywords = [
-            kw.upper() for kw in sql_keywords
-            if isinstance(kw, str)
-        ]
+        self.sql_keywords = [kw.upper() for kw in sql_keywords if isinstance(kw, str)]
 
         # Validate weights sum to 1.0
         total_weight = syntax_weight + keyword_weight + format_weight
@@ -128,9 +143,9 @@ class SQLValidationRubric:
 
         # Compute weighted score
         total_score = (
-            self.syntax_weight * syntax_score +
-            self.keyword_weight * keyword_score +
-            self.format_weight * format_score
+            self.syntax_weight * syntax_score
+            + self.keyword_weight * keyword_score
+            + self.format_weight * format_score
         )
 
         # Ensure score is in valid range
@@ -171,8 +186,7 @@ class SQLValidationRubric:
             # Basic validity checks
             # 1. Should have at least one meaningful token
             meaningful_tokens = [
-                t for t in statement.tokens
-                if not t.is_whitespace and str(t).strip()
+                t for t in statement.tokens if not t.is_whitespace and str(t).strip()
             ]
 
             if not meaningful_tokens:
@@ -230,7 +244,8 @@ class SQLValidationRubric:
                 else:
                     # Check word boundaries
                     import re
-                    pattern = r'\b' + re.escape(keyword) + r'\b'
+
+                    pattern = r"\b" + re.escape(keyword) + r"\b"
                     if re.search(pattern, sql_upper):
                         keywords_found.append(keyword)
 
@@ -297,14 +312,16 @@ class SQLValidationRubric:
             score += 0.1  # Minimal credit for short queries
 
         # 3. SQL is not truncated (doesn't end mid-word)
-        if sql and not sql.endswith(('...', '\u2026')):  # Regular and Unicode ellipsis
+        if sql and not sql.endswith(("...", "\u2026")):  # Regular and Unicode ellipsis
             score += 0.15
         else:
             score += 0.05
 
         # 4. SQL has proper structure (has both query type and table reference)
         sql_upper = sql.upper()
-        has_query_type = any(kw in sql_upper for kw in ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE"])
+        has_query_type = any(
+            kw in sql_upper for kw in ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE"]
+        )
         has_table_ref = "FROM" in sql_upper or "INTO" in sql_upper or "TABLE" in sql_upper
 
         if has_query_type and has_table_ref:
@@ -352,9 +369,9 @@ class SQLValidationRubric:
 
         # Compute total
         total_score = (
-            self.syntax_weight * syntax_score +
-            self.keyword_weight * keyword_score +
-            self.format_weight * format_score
+            self.syntax_weight * syntax_score
+            + self.keyword_weight * keyword_score
+            + self.format_weight * format_score
         )
 
         return {
@@ -368,13 +385,11 @@ class SQLValidationRubric:
                 "syntax": self.syntax_weight,
                 "keywords": self.keyword_weight,
                 "format": self.format_weight,
-            }
+            },
         }
 
     def score_batch(
-        self,
-        outputs: List[str],
-        references: Optional[List[str]] = None
+        self, outputs: List[str], references: Optional[List[str]] = None
     ) -> List[float]:
         """Score multiple outputs.
 

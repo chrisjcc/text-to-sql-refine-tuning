@@ -37,11 +37,7 @@ def test_environment(cfg: DictConfig):
     # Load sample data first (required for environment initialization)
     print("\n[1/4] Loading dataset samples...")
     try:
-        dataset = load_dataset(
-            cfg.dataset.name,
-            split="train[:10]",
-            trust_remote_code=True
-        )
+        dataset = load_dataset(cfg.dataset.name, split="train[:10]", trust_remote_code=True)
         print(f"  ✓ Loaded {len(dataset)} samples from {cfg.dataset.name}")
     except Exception as e:
         print(f"  ✗ Failed to load dataset: {e}")
@@ -49,22 +45,23 @@ def test_environment(cfg: DictConfig):
 
         # Create mock dataset
         from datasets import Dataset as HFDataset
+
         mock_data = {
             "question": [
                 "How many users are in the database?",
                 "List all product names",
-                "Get users who joined in 2024"
+                "Get users who joined in 2024",
             ],
             "context": [
                 "CREATE TABLE users (id INT, name VARCHAR(100), email VARCHAR(100))",
                 "CREATE TABLE products (id INT, name VARCHAR(200), price DECIMAL(10,2))",
-                "CREATE TABLE users (id INT, name VARCHAR(100), joined_date DATE)"
+                "CREATE TABLE users (id INT, name VARCHAR(100), joined_date DATE)",
             ],
             "answer": [
                 "SELECT COUNT(*) FROM users",
                 "SELECT name FROM products",
-                "SELECT * FROM users WHERE YEAR(joined_date) = 2024"
-            ]
+                "SELECT * FROM users WHERE YEAR(joined_date) = 2024",
+            ],
         }
         dataset = HFDataset.from_dict(mock_data)
         print(f"  ✓ Created {len(dataset)} mock samples")
@@ -107,12 +104,13 @@ def test_environment(cfg: DictConfig):
 
         # Format prompt
         prompt = env.format_prompt(
-            question=sample["question"],
-            context={"schema": sample["context"]}
+            question=sample["question"], context={"schema": sample["context"]}
         )
 
         print(f"\n📝 Question: {sample['question']}")
-        print(f"\n🗃️  Schema:\n{sample['context'][:200]}{'...' if len(sample['context']) > 200 else ''}")
+        print(
+            f"\n🗃️  Schema:\n{sample['context'][:200]}{'...' if len(sample['context']) > 200 else ''}"
+        )
         print(f"\n💬 Prompt:\n{prompt[:300]}{'...' if len(prompt) > 300 else ''}")
 
         # Test with reference answer
@@ -127,10 +125,7 @@ def test_environment(cfg: DictConfig):
             print(f"  - Extracted SQL: {parsed['sql']}")
 
             # Compute reward
-            reward = env.compute_reward(
-                reference_sql,
-                context={"schema": sample["context"]}
-            )
+            reward = env.compute_reward(reference_sql, context={"schema": sample["context"]})
             print(f"\n⭐ Reward Score: {reward:.3f}")
 
             all_responses.append(reference_sql)

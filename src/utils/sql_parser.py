@@ -27,20 +27,24 @@ class SQLParser:
 
     # SQL keywords that typically start a query
     SQL_KEYWORDS = [
-        "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP",
-        "ALTER", "TRUNCATE", "WITH", "EXPLAIN", "DESCRIBE", "SHOW"
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "CREATE",
+        "DROP",
+        "ALTER",
+        "TRUNCATE",
+        "WITH",
+        "EXPLAIN",
+        "DESCRIBE",
+        "SHOW",
     ]
 
     # Patterns for detecting SQL in text
-    CODE_BLOCK_PATTERN = re.compile(
-        r"```(?:sql|SQL)?\s*\n(.*?)```",
-        re.DOTALL | re.IGNORECASE
-    )
+    CODE_BLOCK_PATTERN = re.compile(r"```(?:sql|SQL)?\s*\n(.*?)```", re.DOTALL | re.IGNORECASE)
 
-    INLINE_CODE_PATTERN = re.compile(
-        r"`([^`]+)`",
-        re.DOTALL
-    )
+    INLINE_CODE_PATTERN = re.compile(r"`([^`]+)`", re.DOTALL)
 
     def __init__(
         self,
@@ -153,7 +157,7 @@ class SQLParser:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 # Extract from keyword to end
-                sql = text[match.start():]
+                sql = text[match.start() :]
                 sql = self._extract_until_end(sql)
                 return self.clean_sql(sql) if sql else None
 
@@ -198,20 +202,20 @@ class SQLParser:
             return sql
 
         # Remove common prefixes
-        sql = re.sub(r'^(SQL:|Query:|Answer:)\s*', '', sql, flags=re.IGNORECASE)
+        sql = re.sub(r"^(SQL:|Query:|Answer:)\s*", "", sql, flags=re.IGNORECASE)
 
         # Clean whitespace if enabled
         if self.clean_whitespace:
             # Normalize multiple spaces to single space
-            sql = re.sub(r'\s+', ' ', sql)
+            sql = re.sub(r"\s+", " ", sql)
             # But preserve line breaks for readability
-            sql = sql.replace(' ;', ';')
+            sql = sql.replace(" ;", ";")
 
         sql = sql.strip()
 
         # Check length constraints
         if len(sql) > self.max_sql_length:
-            sql = sql[:self.max_sql_length]
+            sql = sql[: self.max_sql_length]
 
         return sql
 
@@ -236,11 +240,11 @@ class SQLParser:
 
         # Check for common SQL patterns
         sql_patterns = [
-            r'\bSELECT\b.*\bFROM\b',
-            r'\bINSERT\s+INTO\b',
-            r'\bUPDATE\b.*\bSET\b',
-            r'\bDELETE\s+FROM\b',
-            r'\bCREATE\s+(TABLE|DATABASE|INDEX|VIEW)\b',
+            r"\bSELECT\b.*\bFROM\b",
+            r"\bINSERT\s+INTO\b",
+            r"\bUPDATE\b.*\bSET\b",
+            r"\bDELETE\s+FROM\b",
+            r"\bCREATE\s+(TABLE|DATABASE|INDEX|VIEW)\b",
         ]
 
         for pattern in sql_patterns:

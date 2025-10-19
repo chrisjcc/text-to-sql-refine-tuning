@@ -69,7 +69,7 @@ def setup_logging(
 
         log_file_path = log_dir_path / log_file
 
-        file_handler = logging.FileHandler(log_file_path, mode='a')
+        file_handler = logging.FileHandler(log_file_path, mode="a")
         file_handler.setLevel(numeric_level)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     logger = setup_logging(
         log_level="INFO",
         log_dir="logs",
-        format_string="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format_string="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     logger.debug("This is a debug message")

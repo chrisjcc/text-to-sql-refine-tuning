@@ -5,14 +5,15 @@ with schema loading, syntax highlighting, and result visualization.
 """
 
 import argparse
+import logging
 from typing import Optional
-from .inference_engine import SQLInferenceEngine
+
 from rich.console import Console
 from rich.panel import Panel
-from rich.syntax import Syntax
 from rich.prompt import Prompt
-import logging
+from rich.syntax import Syntax
 
+from .inference_engine import SQLInferenceEngine
 
 logger = logging.getLogger(__name__)
 
@@ -39,70 +40,59 @@ class SQLInteractiveCLI:
 
     def load_schema_from_file(self, filepath: str):
         """Load schema from file."""
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             self.schema = f.read()
         self.console.print(f"[green]Schema loaded from {filepath}[/green]")
 
     def generate(self, question: str, **kwargs) -> dict:
         """Generate SQL from question."""
-        result = self.engine.generate_sql(
-            question=question,
-            schema=self.schema,
-            **kwargs
-        )
+        result = self.engine.generate_sql(question=question, schema=self.schema, **kwargs)
         return result
 
     def display_result(self, result: dict):
         """Display generation result."""
         # Display SQL
-        sql_syntax = Syntax(
-            result['sql'],
-            "sql",
-            theme="monokai",
-            line_numbers=True
-        )
+        sql_syntax = Syntax(result["sql"], "sql", theme="monokai", line_numbers=True)
 
-        self.console.print(Panel(
-            sql_syntax,
-            title="Generated SQL",
-            border_style="blue"
-        ))
+        self.console.print(Panel(sql_syntax, title="Generated SQL", border_style="blue"))
 
         # Display metadata
-        valid_status = "[green]✓ Valid[/green]" if result['valid'] else "[red]✗ Invalid[/red]"
+        valid_status = "[green]✓ Valid[/green]" if result["valid"] else "[red]✗ Invalid[/red]"
         self.console.print(f"\nStatus: {valid_status}")
 
-        if result['metadata']:
+        if result["metadata"]:
             self.console.print("\nMetadata:")
-            for key, value in result['metadata'].items():
+            for key, value in result["metadata"].items():
                 self.console.print(f"  {key}: {value}")
 
     def run(self):
         """Run interactive CLI."""
-        self.console.print(Panel.fit(
-            "[bold cyan]Text-to-SQL Interactive CLI[/bold cyan]\n"
-            "Type 'help' for commands, 'quit' to exit",
-            border_style="cyan"
-        ))
+        self.console.print(
+            Panel.fit(
+                "[bold cyan]Text-to-SQL Interactive CLI[/bold cyan]\n"
+                "Type 'help' for commands, 'quit' to exit",
+                border_style="cyan",
+            )
+        )
 
         while True:
             try:
                 question = Prompt.ask("\n[yellow]Question[/yellow]")
 
-                if question.lower() in ['quit', 'exit', 'q']:
+                if question.lower() in ["quit", "exit", "q"]:
                     self.console.print("[green]Goodbye![/green]")
                     break
 
-                if question.lower() == 'help':
+                if question.lower() == "help":
                     self.show_help()
                     continue
 
-                if question.lower().startswith('schema '):
+                if question.lower().startswith("schema "):
                     filepath = question[7:].strip()
                     self.load_schema_from_file(filepath)
                     continue
 
-                if question.lower() == 'clear':
+                if question.lower() == "clear":
                     self.schema = None
                     self.console.print("[green]Schema cleared[/green]")
                     continue
@@ -138,29 +128,12 @@ class SQLInteractiveCLI:
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="Text-to-SQL Interactive CLI")
+    parser.add_argument("--model-path", type=str, required=True, help="Path to fine-tuned model")
     parser.add_argument(
-        "--model-path",
-        type=str,
-        required=True,
-        help="Path to fine-tuned model"
+        "--base-model", type=str, default=None, help="Base model name (for PEFT models)"
     )
-    parser.add_argument(
-        "--base-model",
-        type=str,
-        default=None,
-        help="Base model name (for PEFT models)"
-    )
-    parser.add_argument(
-        "--schema",
-        type=str,
-        default=None,
-        help="Path to schema file"
-    )
-    parser.add_argument(
-        "--load-in-4bit",
-        action="store_true",
-        help="Use 4-bit quantization"
-    )
+    parser.add_argument("--schema", type=str, default=None, help="Path to schema file")
+    parser.add_argument("--load-in-4bit", action="store_true", help="Use 4-bit quantization")
 
     args = parser.parse_args()
 
@@ -169,9 +142,7 @@ def main():
     console.print("[cyan]Loading model...[/cyan]")
 
     engine = SQLInferenceEngine(
-        model_path=args.model_path,
-        base_model_name=args.base_model,
-        load_in_4bit=args.load_in_4bit
+        model_path=args.model_path, base_model_name=args.base_model, load_in_4bit=args.load_in_4bit
     )
 
     # Initialize CLI

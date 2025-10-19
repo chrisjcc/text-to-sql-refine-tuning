@@ -3,16 +3,18 @@
 Custom callbacks for SQL evaluation and enhanced WandB logging during training.
 """
 
-from transformers import TrainerCallback, TrainerState, TrainerControl
-from typing import Dict, Any
 import logging
+from typing import Any, Dict
+
 import torch
+from transformers import TrainerCallback, TrainerControl, TrainerState
 
 from environments.sql_env.environment import TextToSQLEnvironment
 from rubrics.sql_rubric import SQLValidationRubric
 
 try:
     import wandb
+
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
@@ -36,7 +38,7 @@ class SQLEvaluationCallback(TrainerCallback):
         tokenizer: Any,
         eval_frequency: int = 500,
         num_samples: int = 10,
-        log_examples: bool = True
+        log_examples: bool = True,
     ):
         """
         Initialize evaluation callback.
@@ -59,13 +61,7 @@ class SQLEvaluationCallback(TrainerCallback):
         self.log_examples = log_examples
         self.logger = logging.getLogger(__name__)
 
-    def on_step_end(
-        self,
-        args: Any,
-        state: TrainerState,
-        control: TrainerControl,
-        **kwargs
-    ):
+    def on_step_end(self, args: Any, state: TrainerState, control: TrainerControl, **kwargs):
         """Run evaluation at specified intervals."""
         if state.global_step % self.eval_frequency == 0:
             self.run_evaluation(state.global_step, **kwargs)
@@ -99,8 +95,7 @@ class SQLEvaluationCallback(TrainerCallback):
         for i, sample in enumerate(eval_samples):
             # Generate SQL
             prompt = self.environment.format_prompt(
-                question=sample['question'],
-                context={'schema': sample['schema']}
+                question=sample["question"], context={"schema": sample["schema"]}
             )
 
             inputs = self.tokenizer(prompt, return_tensors="pt").to(model.device)
@@ -111,11 +106,11 @@ class SQLEvaluationCallback(TrainerCallback):
                     max_new_tokens=256,
                     temperature=0.1,
                     do_sample=False,
-                    pad_token_id=self.tokenizer.pad_token_id
+                    pad_token_id=self.tokenizer.pad_token_id,
                 )
 
             generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            generated_sql = generated_text[len(prompt):].strip()
+            generated_sql = generated_text[len(prompt) :].strip()
 
             # Compute metrics
             parsed = self.environment.parse_response(generated_sql)
@@ -123,31 +118,33 @@ class SQLEvaluationCallback(TrainerCallback):
             detailed_scores = self.rubric.get_detailed_scores(generated_sql)
 
             # Update metrics
-            if parsed['valid']:
-                metrics['valid_sql_count'] += 1
-            metrics['total_reward'] += reward
-            if detailed_scores['syntax'] > 0.5:
-                metrics['syntax_correct'] += 1
-            if detailed_scores['keywords'] > 0.5:
-                metrics['keyword_present'] += 1
+            if parsed["valid"]:
+                metrics["valid_sql_count"] += 1
+            metrics["total_reward"] += reward
+            if detailed_scores["syntax"] > 0.5:
+                metrics["syntax_correct"] += 1
+            if detailed_scores["keywords"] > 0.5:
+                metrics["keyword_present"] += 1
 
             # Collect examples for logging
             if self.log_examples and i < 3:
-                examples.append({
-                    'question': sample['question'],
-                    'reference': sample.get('reference', sample.get('sql', '')),
-                    'generated': generated_sql,
-                    'reward': reward,
-                    'valid': parsed['valid']
-                })
+                examples.append(
+                    {
+                        "question": sample["question"],
+                        "reference": sample.get("reference", sample.get("sql", "")),
+                        "generated": generated_sql,
+                        "reward": reward,
+                        "valid": parsed["valid"],
+                    }
+                )
 
         # Compute aggregate metrics
         n = len(eval_samples)
         eval_metrics = {
-            f"eval/valid_sql_pct": metrics['valid_sql_count'] / n * 100,
-            f"eval/avg_reward": metrics['total_reward'] / n,
-            f"eval/syntax_correct_pct": metrics['syntax_correct'] / n * 100,
-            f"eval/keyword_present_pct": metrics['keyword_present'] / n * 100,
+            f"eval/valid_sql_pct": metrics["valid_sql_count"] / n * 100,
+            f"eval/avg_reward": metrics["total_reward"] / n,
+            f"eval/syntax_correct_pct": metrics["syntax_correct"] / n * 100,
+            f"eval/keyword_present_pct": metrics["keyword_present"] / n * 100,
         }
 
         # Log to wandb
@@ -158,8 +155,16 @@ class SQLEvaluationCallback(TrainerCallback):
                 # Create a table with examples
                 table = wandb.Table(
                     columns=["Question", "Reference SQL", "Generated SQL", "Reward", "Valid"],
-                    data=[[ex['question'], ex['reference'], ex['generated'],
-                          ex['reward'], ex['valid']] for ex in examples]
+                    data=[
+                        [
+                            ex["question"],
+                            ex["reference"],
+                            ex["generated"],
+                            ex["reward"],
+                            ex["valid"],
+                        ]
+                        for ex in examples
+                    ],
                 )
                 wandb.log({f"eval/examples_step_{step}": table}, step=step)
 
@@ -184,13 +189,7 @@ class WandbLoggingCallback(TrainerCallback):
         self.config = config
         self.logger = logging.getLogger(__name__)
 
-    def on_train_begin(
-        self,
-        args: Any,
-        state: TrainerState,
-        control: TrainerControl,
-        **kwargs
-    ):
+    def on_train_begin(self, args: Any, state: TrainerState, control: TrainerControl, **kwargs):
         """Initialize WandB run."""
         if not WANDB_AVAILABLE:
             self.logger.warning("WandB not available, skipping initialization")
@@ -198,9 +197,9 @@ class WandbLoggingCallback(TrainerCallback):
 
         if wandb.run is None and args.report_to and "wandb" in args.report_to:
             wandb.init(
-                project=self.config.get('project', 'text-to-sql-grpo'),
-                name=self.config.get('name', args.run_name),
-                config=self.config
+                project=self.config.get("project", "text-to-sql-grpo"),
+                name=self.config.get("name", args.run_name),
+                config=self.config,
             )
             self.logger.info("WandB logging initialized")
 
@@ -210,7 +209,7 @@ class WandbLoggingCallback(TrainerCallback):
         state: TrainerState,
         control: TrainerControl,
         logs: Dict[str, float] = None,
-        **kwargs
+        **kwargs,
     ):
         """Log metrics to WandB."""
         if not WANDB_AVAILABLE:

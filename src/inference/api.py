@@ -4,13 +4,14 @@ This module provides a FastAPI-based REST API for generating SQL queries
 from natural language questions, with support for single and batch requests.
 """
 
+import logging
+from typing import List, Optional
+
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, List
-import uvicorn
-import logging
-from .inference_engine import SQLInferenceEngine
 
+from .inference_engine import SQLInferenceEngine
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def create_app(engine: SQLInferenceEngine) -> FastAPI:
     app = FastAPI(
         title="Text-to-SQL API",
         description="REST API for generating SQL queries from natural language",
-        version="1.0.0"
+        version="1.0.0",
     )
 
     @app.get("/")
@@ -64,8 +65,8 @@ def create_app(engine: SQLInferenceEngine) -> FastAPI:
             "endpoints": {
                 "generate": "/generate",
                 "batch_generate": "/batch_generate",
-                "health": "/health"
-            }
+                "health": "/health",
+            },
         }
 
     @app.get("/health")
@@ -86,14 +87,14 @@ def create_app(engine: SQLInferenceEngine) -> FastAPI:
                 temperature=request.temperature,
                 top_p=request.top_p,
                 num_beams=request.num_beams,
-                do_sample=request.do_sample
+                do_sample=request.do_sample,
             )
 
             return SQLGenerationResponse(
-                sql=result['sql'],
-                raw_output=result['raw_output'],
-                valid=result['valid'],
-                metadata=result['metadata']
+                sql=result["sql"],
+                raw_output=result["raw_output"],
+                valid=result["valid"],
+                metadata=result["metadata"],
             )
 
         except Exception as e:
@@ -111,23 +112,20 @@ def create_app(engine: SQLInferenceEngine) -> FastAPI:
                 schemas=request.schemas,
                 batch_size=request.batch_size,
                 max_new_tokens=request.max_new_tokens,
-                temperature=request.temperature
+                temperature=request.temperature,
             )
 
             responses = [
                 SQLGenerationResponse(
-                    sql=r['sql'],
-                    raw_output=r['raw_output'],
-                    valid=r['valid'],
-                    metadata=r['metadata']
+                    sql=r["sql"],
+                    raw_output=r["raw_output"],
+                    valid=r["valid"],
+                    metadata=r["metadata"],
                 )
                 for r in results
             ]
 
-            return BatchSQLGenerationResponse(
-                results=responses,
-                total_count=len(responses)
-            )
+            return BatchSQLGenerationResponse(results=responses, total_count=len(responses))
 
         except Exception as e:
             logger.error(f"Batch generation error: {e}")
@@ -141,7 +139,7 @@ def serve_api(
     base_model_name: Optional[str] = None,
     host: str = "0.0.0.0",
     port: int = 8000,
-    load_in_4bit: bool = False
+    load_in_4bit: bool = False,
 ):
     """
     Start API server.
@@ -158,9 +156,7 @@ def serve_api(
     # Initialize engine
     logger.info("Loading model...")
     engine = SQLInferenceEngine(
-        model_path=model_path,
-        base_model_name=base_model_name,
-        load_in_4bit=load_in_4bit
+        model_path=model_path, base_model_name=base_model_name, load_in_4bit=load_in_4bit
     )
 
     # Create app
@@ -187,5 +183,5 @@ if __name__ == "__main__":
         base_model_name=args.base_model,
         host=args.host,
         port=args.port,
-        load_in_4bit=args.load_in_4bit
+        load_in_4bit=args.load_in_4bit,
     )

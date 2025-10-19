@@ -32,9 +32,7 @@ def prepare_data(cfg: DictConfig):
     """
     # Setup logging
     logger = setup_logging(
-        log_level=cfg.logging.level,
-        log_dir=cfg.logging.log_dir,
-        log_file="data_preparation.log"
+        log_level=cfg.logging.level, log_dir=cfg.logging.log_dir, log_file="data_preparation.log"
     )
     logger.info("=" * 80)
     logger.info("Starting data preparation pipeline")
@@ -42,9 +40,7 @@ def prepare_data(cfg: DictConfig):
 
     # Load dataset
     loader = SQLDatasetLoader(
-        dataset_name=cfg.dataset.name,
-        cache_dir=cfg.dataset.cache_dir,
-        seed=cfg.project.seed
+        dataset_name=cfg.dataset.name, cache_dir=cfg.dataset.cache_dir, seed=cfg.project.seed
     )
 
     logger.info(f"Loading dataset: {cfg.dataset.name}")
@@ -77,12 +73,13 @@ def prepare_data(cfg: DictConfig):
                 train_size=cfg.dataset.create_splits.train_size,
                 val_size=cfg.dataset.create_splits.val_size,
                 test_size=cfg.dataset.create_splits.test_size,
-                stratify=cfg.dataset.create_splits.stratify_by_complexity
+                stratify=cfg.dataset.create_splits.stratify_by_complexity,
             )
         else:
             # Convert to DatasetDict with just train split
             from datasets import DatasetDict
-            dataset = DatasetDict({'train': dataset})
+
+            dataset = DatasetDict({"train": dataset})
             logger.info("Using entire dataset as training set")
 
     # Log initial statistics
@@ -94,7 +91,7 @@ def prepare_data(cfg: DictConfig):
         logger.info(f"  Samples: {len(dataset[split_name])}")
         stats = loader.get_statistics(dataset[split_name])
         for key, value in stats.items():
-            if key != 'sql_keyword_distribution':
+            if key != "sql_keyword_distribution":
                 logger.info(f"  {key}: {value}")
             else:
                 logger.info(f"  {key}:")
@@ -107,7 +104,7 @@ def prepare_data(cfg: DictConfig):
         max_schema_length=cfg.dataset.preprocessing.max_schema_length,
         max_sql_length=cfg.dataset.preprocessing.max_sql_length,
         normalize_sql=cfg.dataset.preprocessing.normalize_sql,
-        filter_invalid=cfg.dataset.preprocessing.filter_invalid
+        filter_invalid=cfg.dataset.preprocessing.filter_invalid,
     )
 
     # Preprocess each split
@@ -120,15 +117,12 @@ def prepare_data(cfg: DictConfig):
 
         # Preprocess
         dataset[split_name] = preprocessor.preprocess_dataset(
-            dataset[split_name],
-            num_proc=cfg.dataset.num_workers
+            dataset[split_name], num_proc=cfg.dataset.num_workers
         )
 
         # Filter invalid samples
         if cfg.dataset.preprocessing.filter_invalid:
-            dataset[split_name] = preprocessor.filter_dataset(
-                dataset[split_name]
-            )
+            dataset[split_name] = preprocessor.filter_dataset(dataset[split_name])
 
     # Compute final statistics
     logger.info("\n" + "=" * 80)
@@ -140,8 +134,8 @@ def prepare_data(cfg: DictConfig):
         logger.info(f"  Total samples: {len(dataset[split_name])}")
 
         # Compute complexity distribution
-        if 'complexity' in dataset[split_name].column_names:
-            complexities = dataset[split_name]['complexity']
+        if "complexity" in dataset[split_name].column_names:
+            complexities = dataset[split_name]["complexity"]
             complexity_dist = {}
             for c in complexities:
                 complexity_dist[c] = complexity_dist.get(c, 0) + 1
@@ -152,17 +146,25 @@ def prepare_data(cfg: DictConfig):
                 logger.info(f"    {complexity}: {count} ({pct:.1f}%)")
 
         # Compute validation statistics
-        if 'is_valid' in dataset[split_name].column_names:
-            valid_count = sum(dataset[split_name]['is_valid'])
+        if "is_valid" in dataset[split_name].column_names:
+            valid_count = sum(dataset[split_name]["is_valid"])
             valid_pct = (valid_count / len(dataset[split_name])) * 100
             logger.info(f"  Valid samples: {valid_count} ({valid_pct:.1f}%)")
 
         # Length statistics
-        if all(col in dataset[split_name].column_names for col in ['question_length', 'sql_length', 'schema_length']):
+        if all(
+            col in dataset[split_name].column_names
+            for col in ["question_length", "sql_length", "schema_length"]
+        ):
             import numpy as np
-            logger.info(f"  Avg question length: {np.mean(dataset[split_name]['question_length']):.1f} words")
+
+            logger.info(
+                f"  Avg question length: {np.mean(dataset[split_name]['question_length']):.1f} words"
+            )
             logger.info(f"  Avg SQL length: {np.mean(dataset[split_name]['sql_length']):.1f} words")
-            logger.info(f"  Avg schema length: {np.mean(dataset[split_name]['schema_length']):.1f} words")
+            logger.info(
+                f"  Avg schema length: {np.mean(dataset[split_name]['schema_length']):.1f} words"
+            )
 
     # Save processed dataset
     output_path = Path(cfg.dataset.cache_dir) / "processed"

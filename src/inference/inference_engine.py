@@ -4,14 +4,14 @@ This module provides the main inference engine for generating SQL queries
 from natural language questions using fine-tuned models.
 """
 
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import PeftModel
-from typing import List, Dict, Optional, Union
+import json
 import logging
 from pathlib import Path
-import json
+from typing import Dict, List, Optional, Union
 
+import torch
+from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class SQLInferenceEngine:
         device: str = "auto",
         load_in_4bit: bool = False,
         environment: Optional[any] = None,
-        parser: Optional[any] = None
+        parser: Optional[any] = None,
     ):
         """
         Initialize inference engine.
@@ -51,6 +51,7 @@ class SQLInferenceEngine:
         # Import parser if not provided
         if parser is None:
             from ..utils.sql_parser import SQLParser
+
             parser = SQLParser()
         self.parser = parser
 
@@ -59,14 +60,12 @@ class SQLInferenceEngine:
 
         # Setup environment
         if environment is None:
-            from ..rubrics.sql_rubric import SQLValidationRubric
             from ..environments.sql_env import TextToSQLEnvironment
+            from ..rubrics.sql_rubric import SQLValidationRubric
 
             rubric = SQLValidationRubric(sql_keywords=[])
             environment = TextToSQLEnvironment(
-                rubric=rubric,
-                parser=self.parser,
-                prompt_template="instructional"
+                rubric=rubric, parser=self.parser, prompt_template="instructional"
             )
         self.environment = environment
 
@@ -106,32 +105,31 @@ class SQLInferenceEngine:
             # Load base model
             if self.load_in_4bit:
                 from transformers import BitsAndBytesConfig
+
                 bnb_config = BitsAndBytesConfig(
                     load_in_4bit=True,
                     bnb_4bit_compute_dtype=torch.bfloat16,
                     bnb_4bit_quant_type="nf4",
-                    bnb_4bit_use_double_quant=True
+                    bnb_4bit_use_double_quant=True,
                 )
                 base_model = AutoModelForCausalLM.from_pretrained(
                     self.base_model_name,
                     quantization_config=bnb_config,
                     device_map=self.device,
-                    trust_remote_code=True
+                    trust_remote_code=True,
                 )
             else:
                 base_model = AutoModelForCausalLM.from_pretrained(
                     self.base_model_name,
                     device_map=self.device,
                     torch_dtype=torch.bfloat16,
-                    trust_remote_code=True
+                    trust_remote_code=True,
                 )
 
             # Load PEFT adapters
             self.logger.info(f"Loading PEFT adapters from {resolved_model_path}")
             model = PeftModel.from_pretrained(
-                base_model,
-                resolved_model_path,
-                local_files_only=is_local_path
+                base_model, resolved_model_path, local_files_only=is_local_path
             )
             model = model.merge_and_unload()  # Merge adapters for faster inference
 
@@ -143,7 +141,7 @@ class SQLInferenceEngine:
                 device_map=self.device,
                 torch_dtype=torch.bfloat16,
                 trust_remote_code=True,
-                local_files_only=is_local_path
+                local_files_only=is_local_path,
             )
 
         # Load tokenizer - determine source path
@@ -151,9 +149,7 @@ class SQLInferenceEngine:
         is_tokenizer_local = Path(tokenizer_path).exists()
 
         tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_path,
-            trust_remote_code=True,
-            local_files_only=is_tokenizer_local
+            tokenizer_path, trust_remote_code=True, local_files_only=is_tokenizer_local
         )
 
         if tokenizer.pad_token is None:
@@ -175,7 +171,7 @@ class SQLInferenceEngine:
         top_p: float = 0.95,
         num_beams: int = 1,
         do_sample: bool = False,
-        **generation_kwargs
+        **generation_kwargs,
     ) -> Dict[str, any]:
         """
         Generate SQL query from natural language question.
@@ -199,16 +195,13 @@ class SQLInferenceEngine:
                 - metadata: Additional information
         """
         # Format prompt
-        context = {'schema': schema} if schema else None
+        context = {"schema": schema} if schema else None
         prompt = self.environment.format_prompt(question, context)
 
         # Tokenize
-        inputs = self.tokenizer(
-            prompt,
-            return_tensors="pt",
-            padding=True,
-            truncation=True
-        ).to(self.model.device)
+        inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True).to(
+            self.model.device
+        )
 
         # Generate
         with torch.no_grad():
@@ -221,24 +214,24 @@ class SQLInferenceEngine:
                 do_sample=do_sample,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs
+                **generation_kwargs,
             )
 
         # Decode
         generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
         # Extract SQL from output
-        sql_output = generated_text[len(prompt):].strip()
+        sql_output = generated_text[len(prompt) :].strip()
 
         # Parse and validate
         parsed = self.environment.parse_response(sql_output)
 
         return {
-            'sql': parsed.get('sql', sql_output),
-            'raw_output': sql_output,
-            'valid': parsed.get('valid', False),
-            'metadata': parsed.get('metadata', {}),
-            'prompt': prompt
+            "sql": parsed.get("sql", sql_output),
+            "raw_output": sql_output,
+            "valid": parsed.get("valid", False),
+            "metadata": parsed.get("metadata", {}),
+            "prompt": prompt,
         }
 
     def batch_generate_sql(
@@ -246,7 +239,7 @@ class SQLInferenceEngine:
         questions: List[str],
         schemas: Optional[List[str]] = None,
         batch_size: int = 4,
-        **generation_kwargs
+        **generation_kwargs,
     ) -> List[Dict[str, any]]:
         """
         Generate SQL queries for multiple questions in batches.
@@ -269,22 +262,19 @@ class SQLInferenceEngine:
         results = []
 
         for i in range(0, len(questions), batch_size):
-            batch_questions = questions[i:i+batch_size]
-            batch_schemas = schemas[i:i+batch_size]
+            batch_questions = questions[i : i + batch_size]
+            batch_schemas = schemas[i : i + batch_size]
 
             # Process batch
             batch_prompts = []
             for q, s in zip(batch_questions, batch_schemas):
-                context = {'schema': s} if s else None
+                context = {"schema": s} if s else None
                 prompt = self.environment.format_prompt(q, context)
                 batch_prompts.append(prompt)
 
             # Tokenize batch
             inputs = self.tokenizer(
-                batch_prompts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True
+                batch_prompts, return_tensors="pt", padding=True, truncation=True
             ).to(self.model.device)
 
             # Generate
@@ -293,31 +283,29 @@ class SQLInferenceEngine:
                     **inputs,
                     **generation_kwargs,
                     pad_token_id=self.tokenizer.pad_token_id,
-                    eos_token_id=self.tokenizer.eos_token_id
+                    eos_token_id=self.tokenizer.eos_token_id,
                 )
 
             # Decode and parse
             for j, output in enumerate(outputs):
                 generated_text = self.tokenizer.decode(output, skip_special_tokens=True)
-                sql_output = generated_text[len(batch_prompts[j]):].strip()
+                sql_output = generated_text[len(batch_prompts[j]) :].strip()
                 parsed = self.environment.parse_response(sql_output)
 
-                results.append({
-                    'sql': parsed.get('sql', sql_output),
-                    'raw_output': sql_output,
-                    'valid': parsed.get('valid', False),
-                    'metadata': parsed.get('metadata', {}),
-                    'question': batch_questions[j],
-                    'schema': batch_schemas[j]
-                })
+                results.append(
+                    {
+                        "sql": parsed.get("sql", sql_output),
+                        "raw_output": sql_output,
+                        "valid": parsed.get("valid", False),
+                        "metadata": parsed.get("metadata", {}),
+                        "question": batch_questions[j],
+                        "schema": batch_schemas[j],
+                    }
+                )
 
         return results
 
-    def evaluate_on_dataset(
-        self,
-        dataset: List[Dict],
-        **generation_kwargs
-    ) -> Dict[str, any]:
+    def evaluate_on_dataset(self, dataset: List[Dict], **generation_kwargs) -> Dict[str, any]:
         """
         Evaluate model on a dataset.
 
@@ -330,39 +318,37 @@ class SQLInferenceEngine:
         """
         self.logger.info(f"Evaluating on {len(dataset)} samples")
 
-        questions = [item['question'] for item in dataset]
-        schemas = [item.get('schema') for item in dataset]
-        references = [item.get('sql') for item in dataset]
+        questions = [item["question"] for item in dataset]
+        schemas = [item.get("schema") for item in dataset]
+        references = [item.get("sql") for item in dataset]
 
         # Generate predictions
-        predictions = self.batch_generate_sql(
-            questions,
-            schemas,
-            **generation_kwargs
-        )
+        predictions = self.batch_generate_sql(questions, schemas, **generation_kwargs)
 
         # Compute metrics
         from ..rubrics.sql_rubric import SQLValidationRubric
+
         rubric = SQLValidationRubric(sql_keywords=[])
 
-        valid_count = sum(1 for p in predictions if p['valid'])
-        rewards = [rubric.score(p['sql']) for p in predictions]
+        valid_count = sum(1 for p in predictions if p["valid"])
+        rewards = [rubric.score(p["sql"]) for p in predictions]
 
         metrics = {
-            'total_samples': len(dataset),
-            'valid_sql_pct': valid_count / len(dataset) * 100,
-            'avg_reward': sum(rewards) / len(rewards),
-            'min_reward': min(rewards),
-            'max_reward': max(rewards),
+            "total_samples": len(dataset),
+            "valid_sql_pct": valid_count / len(dataset) * 100,
+            "avg_reward": sum(rewards) / len(rewards),
+            "min_reward": min(rewards),
+            "max_reward": max(rewards),
         }
 
         # Compute exact match if references available
         if all(r is not None for r in references):
             exact_matches = sum(
-                1 for p, r in zip(predictions, references)
-                if self._normalize_sql(p['sql']) == self._normalize_sql(r)
+                1
+                for p, r in zip(predictions, references)
+                if self._normalize_sql(p["sql"]) == self._normalize_sql(r)
             )
-            metrics['exact_match_pct'] = exact_matches / len(dataset) * 100
+            metrics["exact_match_pct"] = exact_matches / len(dataset) * 100
 
         self.logger.info("Evaluation complete")
         for key, value in metrics.items():
@@ -373,8 +359,5 @@ class SQLInferenceEngine:
     def _normalize_sql(self, sql: str) -> str:
         """Normalize SQL for comparison."""
         import sqlparse
-        return sqlparse.format(
-            sql,
-            keyword_case='upper',
-            strip_whitespace=True
-        ).strip()
+
+        return sqlparse.format(sql, keyword_case="upper", strip_whitespace=True).strip()

@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 
 from .sql_rubric import SQLValidationRubric
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -89,10 +88,7 @@ class BatchSQLScorer:
 
         # Determine if we should use parallel processing
         # Use parallel for batches larger than 10 items
-        should_parallelize = (
-            self.use_parallel and
-            len(outputs) > 10
-        )
+        should_parallelize = self.use_parallel and len(outputs) > 10
 
         if should_parallelize:
             return self._score_parallel(outputs, references, use_cache)
@@ -232,21 +228,23 @@ class BatchSQLScorer:
 
             except Exception as e:
                 logger.error(f"Error getting metadata for output {i}: {e}")
-                results.append({
-                    "index": i,
-                    "total": 0.0,
-                    "syntax": 0.0,
-                    "syntax_valid": False,
-                    "keywords": 0.0,
-                    "format": 0.0,
-                    "extracted_sql": None,
-                    "weights": {
-                        "syntax": self.rubric.syntax_weight,
-                        "keywords": self.rubric.keyword_weight,
-                        "format": self.rubric.format_weight,
-                    },
-                    "error": str(e),
-                })
+                results.append(
+                    {
+                        "index": i,
+                        "total": 0.0,
+                        "syntax": 0.0,
+                        "syntax_valid": False,
+                        "keywords": 0.0,
+                        "format": 0.0,
+                        "extracted_sql": None,
+                        "weights": {
+                            "syntax": self.rubric.syntax_weight,
+                            "keywords": self.rubric.keyword_weight,
+                            "format": self.rubric.format_weight,
+                        },
+                        "error": str(e),
+                    }
+                )
 
         return results
 

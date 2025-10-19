@@ -9,12 +9,13 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 import hydra
-from omegaconf import DictConfig
-from datasets import load_from_disk
 import pandas as pd
-from src.inference.inference_engine import SQLInferenceEngine
+from datasets import load_from_disk
+from omegaconf import DictConfig
+
 from src.evaluation.evaluator import SQLEvaluator
 from src.evaluation.metrics import SQLMetrics
+from src.inference.inference_engine import SQLInferenceEngine
 from src.utils.logging_utils import setup_logging_from_config
 
 
@@ -31,7 +32,7 @@ def benchmark(cfg: DictConfig):
     dataset = load_from_disk(str(dataset_path))
 
     # Use test or validation split
-    split = cfg.evaluation.split or 'validation'
+    split = cfg.evaluation.split or "validation"
     data = dataset[split]
 
     logger.info(f"Loaded {split} split: {len(data)} samples")
@@ -39,10 +40,10 @@ def benchmark(cfg: DictConfig):
     # Convert to evaluation format
     eval_data = [
         {
-            'question': item['question'],
-            'schema': item.get('schema'),
-            'sql': item['sql'],
-            'complexity': item.get('complexity', 'unknown')
+            "question": item["question"],
+            "schema": item.get("schema"),
+            "sql": item["sql"],
+            "complexity": item.get("complexity", "unknown"),
         }
         for item in data
     ]
@@ -69,15 +70,12 @@ def benchmark(cfg: DictConfig):
         engine = SQLInferenceEngine(
             model_path=checkpoint_path,
             base_model_name=cfg.hf.model.name,
-            load_in_4bit=cfg.evaluation.load_in_4bit
+            load_in_4bit=cfg.evaluation.load_in_4bit,
         )
 
         # Create evaluator
         metrics = SQLMetrics()
-        evaluator = SQLEvaluator(
-            inference_engine=engine,
-            metrics=metrics
-        )
+        evaluator = SQLEvaluator(inference_engine=engine, metrics=metrics)
 
         # Run evaluation
         results = evaluator.evaluate_dataset(
@@ -85,7 +83,7 @@ def benchmark(cfg: DictConfig):
             batch_size=cfg.evaluation.batch_size,
             compute_execution=False,
             max_new_tokens=cfg.inference.max_new_tokens,
-            temperature=cfg.inference.temperature
+            temperature=cfg.inference.temperature,
         )
 
         # Save results
@@ -93,11 +91,11 @@ def benchmark(cfg: DictConfig):
         output_path = Path(cfg.evaluation.output_dir) / checkpoint_name
         evaluator.generate_report(results, str(output_path))
 
-        all_results[checkpoint_name] = results['aggregate']
+        all_results[checkpoint_name] = results["aggregate"]
 
         # Log summary
         logger.info(f"\nResults for {checkpoint_name}:")
-        for key, value in results['aggregate'].items():
+        for key, value in results["aggregate"].items():
             logger.info(f"  {key}: {value:.2f}")
 
     # Compare checkpoints

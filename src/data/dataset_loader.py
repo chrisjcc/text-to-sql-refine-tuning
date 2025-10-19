@@ -5,13 +5,14 @@ from HuggingFace Hub, specifically designed for the b-mc2/sql-create-context
 dataset and similar text-to-SQL datasets.
 """
 
-from datasets import load_dataset, Dataset, DatasetDict
-from typing import Optional, Dict, List, Any
 import logging
-from pathlib import Path
-import numpy as np
-from collections import Counter
 import re
+from collections import Counter
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import numpy as np
+from datasets import Dataset, DatasetDict, load_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class SQLDatasetLoader:
         self,
         dataset_name: str = "b-mc2/sql-create-context",
         cache_dir: Optional[str] = None,
-        seed: int = 42
+        seed: int = 42,
     ):
         """
         Initialize dataset loader.
@@ -44,11 +45,7 @@ class SQLDatasetLoader:
         # Set random seed for reproducibility
         np.random.seed(seed)
 
-    def load(
-        self,
-        split: Optional[str] = None,
-        streaming: bool = False
-    ) -> DatasetDict:
+    def load(self, split: Optional[str] = None, streaming: bool = False) -> DatasetDict:
         """
         Load dataset from HuggingFace Hub.
 
@@ -63,10 +60,7 @@ class SQLDatasetLoader:
 
         try:
             dataset = load_dataset(
-                self.dataset_name,
-                split=split,
-                cache_dir=self.cache_dir,
-                streaming=streaming
+                self.dataset_name, split=split, cache_dir=self.cache_dir, streaming=streaming
             )
 
             if split is None:
@@ -86,7 +80,7 @@ class SQLDatasetLoader:
         train_size: float = 0.8,
         val_size: float = 0.1,
         test_size: float = 0.1,
-        stratify: bool = False
+        stratify: bool = False,
     ) -> DatasetDict:
         """
         Create train/val/test splits if not already split.
@@ -106,43 +100,35 @@ class SQLDatasetLoader:
         if not np.isclose(total, 1.0):
             raise ValueError(f"Split sizes must sum to 1.0, got {total}")
 
-        self.logger.info(
-            f"Creating splits: train={train_size}, val={val_size}, test={test_size}"
-        )
+        self.logger.info(f"Creating splits: train={train_size}, val={val_size}, test={test_size}")
 
         if stratify:
             self.logger.info("Stratifying by SQL complexity")
             # This would require preprocessing first to get complexity
             # For now, we'll do simple random split
             self.logger.warning(
-                "Stratified splitting requires preprocessing. "
-                "Falling back to random split."
+                "Stratified splitting requires preprocessing. " "Falling back to random split."
             )
 
         # First split: train vs rest
-        train_test = dataset.train_test_split(
-            test_size=(val_size + test_size),
-            seed=self.seed
-        )
+        train_test = dataset.train_test_split(test_size=(val_size + test_size), seed=self.seed)
 
         # Second split: validation vs test
         if test_size > 0:
             val_test_ratio = test_size / (val_size + test_size)
-            val_test = train_test['test'].train_test_split(
-                test_size=val_test_ratio,
-                seed=self.seed
-            )
+            val_test = train_test["test"].train_test_split(test_size=val_test_ratio, seed=self.seed)
 
-            dataset_dict = DatasetDict({
-                'train': train_test['train'],
-                'validation': val_test['train'],
-                'test': val_test['test']
-            })
+            dataset_dict = DatasetDict(
+                {
+                    "train": train_test["train"],
+                    "validation": val_test["train"],
+                    "test": val_test["test"],
+                }
+            )
         else:
-            dataset_dict = DatasetDict({
-                'train': train_test['train'],
-                'validation': train_test['test']
-            })
+            dataset_dict = DatasetDict(
+                {"train": train_test["train"], "validation": train_test["test"]}
+            )
 
         # Log split sizes
         for split_name, split_data in dataset_dict.items():
@@ -166,10 +152,7 @@ class SQLDatasetLoader:
         self.logger.info("Computing dataset statistics")
 
         if len(dataset) == 0:
-            return {
-                "total_samples": 0,
-                "error": "Empty dataset"
-            }
+            return {"total_samples": 0, "error": "Empty dataset"}
 
         # Initialize counters
         question_lengths = []
@@ -180,9 +163,24 @@ class SQLDatasetLoader:
 
         # SQL keywords to track
         keywords_to_track = [
-            'SELECT', 'FROM', 'WHERE', 'JOIN', 'INNER JOIN', 'LEFT JOIN',
-            'RIGHT JOIN', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT',
-            'UNION', 'DISTINCT', 'COUNT', 'SUM', 'AVG', 'MAX', 'MIN'
+            "SELECT",
+            "FROM",
+            "WHERE",
+            "JOIN",
+            "INNER JOIN",
+            "LEFT JOIN",
+            "RIGHT JOIN",
+            "GROUP BY",
+            "ORDER BY",
+            "HAVING",
+            "LIMIT",
+            "UNION",
+            "DISTINCT",
+            "COUNT",
+            "SUM",
+            "AVG",
+            "MAX",
+            "MIN",
         ]
 
         # Sample up to 10000 examples for statistics
@@ -193,15 +191,15 @@ class SQLDatasetLoader:
             sample = dataset[int(idx)]
 
             # Question length
-            question = sample.get('question', '')
+            question = sample.get("question", "")
             question_lengths.append(len(question.split()))
 
             # SQL length
-            answer = sample.get('answer', '')
+            answer = sample.get("answer", "")
             sql_lengths.append(len(answer.split()))
 
             # Schema length
-            context = sample.get('context', '')
+            context = sample.get("context", "")
             schema_lengths.append(len(context.split()))
 
             # Extract keywords from SQL
@@ -211,7 +209,7 @@ class SQLDatasetLoader:
                     sql_keywords.append(keyword)
 
             # Extract table names from schema
-            table_pattern = r'CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(\w+)'
+            table_pattern = r"CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(\w+)"
             table_matches = re.findall(table_pattern, context, re.IGNORECASE)
             tables.update(table_matches)
 
@@ -248,6 +246,7 @@ class SQLDatasetLoader:
 
         try:
             from datasets import load_from_disk
+
             dataset = load_from_disk(path)
             self.logger.info(f"Successfully loaded dataset from {path}")
             return dataset

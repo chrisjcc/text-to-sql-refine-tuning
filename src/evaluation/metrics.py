@@ -1,12 +1,13 @@
 """
 Comprehensive SQL evaluation metrics.
 """
-import sqlparse
-from typing import List, Dict, Optional, Tuple
-import numpy as np
-from collections import Counter
 import logging
+from collections import Counter
 from difflib import SequenceMatcher
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+import sqlparse
 
 
 class SQLMetrics:
@@ -33,11 +34,7 @@ class SQLMetrics:
         ref_norm = self._normalize_sql(reference)
         return pred_norm == ref_norm
 
-    def token_level_accuracy(
-        self,
-        predicted: str,
-        reference: str
-    ) -> float:
+    def token_level_accuracy(self, predicted: str, reference: str) -> float:
         """
         Token-level accuracy (proportion of matching tokens).
 
@@ -63,11 +60,7 @@ class SQLMetrics:
 
         return matching / total
 
-    def structural_similarity(
-        self,
-        predicted: str,
-        reference: str
-    ) -> float:
+    def structural_similarity(self, predicted: str, reference: str) -> float:
         """
         Measure structural similarity of SQL queries.
         Compares clauses, joins, aggregations, etc.
@@ -101,11 +94,7 @@ class SQLMetrics:
 
         return np.mean(scores) if scores else 0.0
 
-    def keyword_f1(
-        self,
-        predicted: str,
-        reference: str
-    ) -> Dict[str, float]:
+    def keyword_f1(self, predicted: str, reference: str) -> Dict[str, float]:
         """
         F1 score for SQL keywords (SELECT, FROM, WHERE, etc.).
 
@@ -120,21 +109,25 @@ class SQLMetrics:
         ref_keywords = self._extract_keywords(reference)
 
         if len(ref_keywords) == 0:
-            return {'precision': 0.0, 'recall': 0.0, 'f1': 0.0}
+            return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
 
         true_positives = len(pred_keywords & ref_keywords)
         false_positives = len(pred_keywords - ref_keywords)
         false_negatives = len(ref_keywords - pred_keywords)
 
-        precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0.0
-        recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0.0
+        precision = (
+            true_positives / (true_positives + false_positives)
+            if (true_positives + false_positives) > 0
+            else 0.0
+        )
+        recall = (
+            true_positives / (true_positives + false_negatives)
+            if (true_positives + false_negatives) > 0
+            else 0.0
+        )
         f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
 
-        return {
-            'precision': precision,
-            'recall': recall,
-            'f1': f1
-        }
+        return {"precision": precision, "recall": recall, "f1": f1}
 
     def complexity_score(self, sql: str) -> Dict[str, any]:
         """
@@ -149,40 +142,46 @@ class SQLMetrics:
         parsed = sqlparse.parse(sql)
 
         if not parsed:
-            return {'complexity': 'invalid', 'score': 0}
+            return {"complexity": "invalid", "score": 0}
 
         complexity = {
-            'num_tokens': len(self._tokenize_sql(sql)),
-            'num_tables': self._count_tables(sql),
-            'num_joins': sql.upper().count('JOIN'),
-            'has_subquery': 'SELECT' in sql.upper()[sql.upper().find('FROM'):] if 'FROM' in sql.upper() else False,
-            'has_aggregation': any(agg in sql.upper() for agg in ['SUM', 'COUNT', 'AVG', 'MAX', 'MIN']),
-            'has_group_by': 'GROUP BY' in sql.upper(),
-            'has_order_by': 'ORDER BY' in sql.upper(),
-            'has_having': 'HAVING' in sql.upper(),
-            'num_conditions': sql.upper().count('WHERE') + sql.upper().count('AND') + sql.upper().count('OR'),
+            "num_tokens": len(self._tokenize_sql(sql)),
+            "num_tables": self._count_tables(sql),
+            "num_joins": sql.upper().count("JOIN"),
+            "has_subquery": "SELECT" in sql.upper()[sql.upper().find("FROM") :]
+            if "FROM" in sql.upper()
+            else False,
+            "has_aggregation": any(
+                agg in sql.upper() for agg in ["SUM", "COUNT", "AVG", "MAX", "MIN"]
+            ),
+            "has_group_by": "GROUP BY" in sql.upper(),
+            "has_order_by": "ORDER BY" in sql.upper(),
+            "has_having": "HAVING" in sql.upper(),
+            "num_conditions": sql.upper().count("WHERE")
+            + sql.upper().count("AND")
+            + sql.upper().count("OR"),
         }
 
         # Compute overall complexity score
         score = (
-            complexity['num_tokens'] * 0.1 +
-            complexity['num_tables'] * 5 +
-            complexity['num_joins'] * 10 +
-            (20 if complexity['has_subquery'] else 0) +
-            (10 if complexity['has_aggregation'] else 0) +
-            (10 if complexity['has_group_by'] else 0) +
-            complexity['num_conditions'] * 3
+            complexity["num_tokens"] * 0.1
+            + complexity["num_tables"] * 5
+            + complexity["num_joins"] * 10
+            + (20 if complexity["has_subquery"] else 0)
+            + (10 if complexity["has_aggregation"] else 0)
+            + (10 if complexity["has_group_by"] else 0)
+            + complexity["num_conditions"] * 3
         )
 
         if score < 20:
-            complexity_level = 'simple'
+            complexity_level = "simple"
         elif score < 50:
-            complexity_level = 'medium'
+            complexity_level = "medium"
         else:
-            complexity_level = 'complex'
+            complexity_level = "complex"
 
-        complexity['complexity_level'] = complexity_level
-        complexity['complexity_score'] = score
+        complexity["complexity_level"] = complexity_level
+        complexity["complexity_score"] = score
 
         return complexity
 
@@ -201,32 +200,35 @@ class SQLMetrics:
         ref_norm = self._normalize_sql(reference)
 
         # Use difflib for similarity
-        return len(ref_norm) - int(SequenceMatcher(None, pred_norm, ref_norm).ratio() * len(ref_norm))
+        return len(ref_norm) - int(
+            SequenceMatcher(None, pred_norm, ref_norm).ratio() * len(ref_norm)
+        )
 
     def _normalize_sql(self, sql: str) -> str:
         """Normalize SQL query for comparison."""
         import re
+
         # First use sqlparse for basic normalization
         normalized = sqlparse.format(
             sql,
-            keyword_case='upper',
-            identifier_case='lower',
+            keyword_case="upper",
+            identifier_case="lower",
             strip_whitespace=True,
-            reindent=False
+            reindent=False,
         ).strip()
 
         # Additional normalization: standardize spacing around operators
         # Add spaces around = , < , > , != , <= , >= operators
-        normalized = re.sub(r'\s*=\s*', ' = ', normalized)
-        normalized = re.sub(r'\s*!=\s*', ' != ', normalized)
-        normalized = re.sub(r'\s*<>\s*', ' <> ', normalized)
-        normalized = re.sub(r'\s*<=\s*', ' <= ', normalized)
-        normalized = re.sub(r'\s*>=\s*', ' >= ', normalized)
-        normalized = re.sub(r'\s*<\s*', ' < ', normalized)
-        normalized = re.sub(r'\s*>\s*', ' > ', normalized)
+        normalized = re.sub(r"\s*=\s*", " = ", normalized)
+        normalized = re.sub(r"\s*!=\s*", " != ", normalized)
+        normalized = re.sub(r"\s*<>\s*", " <> ", normalized)
+        normalized = re.sub(r"\s*<=\s*", " <= ", normalized)
+        normalized = re.sub(r"\s*>=\s*", " >= ", normalized)
+        normalized = re.sub(r"\s*<\s*", " < ", normalized)
+        normalized = re.sub(r"\s*>\s*", " > ", normalized)
 
         # Remove extra spaces
-        normalized = re.sub(r'\s+', ' ', normalized)
+        normalized = re.sub(r"\s+", " ", normalized)
 
         return normalized.strip()
 
@@ -249,41 +251,62 @@ class SQLMetrics:
         sql_upper = sql.upper()
 
         structure = {
-            'select_columns': set(),
-            'from_tables': set(),
-            'join_tables': set(),
-            'where_conditions': set(),
-            'aggregations': set(),
-            'group_by': set(),
-            'order_by': set(),
+            "select_columns": set(),
+            "from_tables": set(),
+            "join_tables": set(),
+            "where_conditions": set(),
+            "aggregations": set(),
+            "group_by": set(),
+            "order_by": set(),
         }
 
         # Extract SELECT columns (simplified)
-        if 'SELECT' in sql_upper:
-            select_part = sql_upper.split('FROM')[0].replace('SELECT', '').strip()
-            structure['select_columns'] = set(select_part.split(','))
+        if "SELECT" in sql_upper:
+            select_part = sql_upper.split("FROM")[0].replace("SELECT", "").strip()
+            structure["select_columns"] = set(select_part.split(","))
 
         # Extract table names (simplified)
         tokens = self._tokenize_sql(sql)
         for i, token in enumerate(tokens):
-            if token == 'FROM' and i + 1 < len(tokens):
-                structure['from_tables'].add(tokens[i + 1])
-            if token == 'JOIN' and i + 1 < len(tokens):
-                structure['join_tables'].add(tokens[i + 1])
+            if token == "FROM" and i + 1 < len(tokens):
+                structure["from_tables"].add(tokens[i + 1])
+            if token == "JOIN" and i + 1 < len(tokens):
+                structure["join_tables"].add(tokens[i + 1])
 
         # Extract aggregations
-        aggs = ['SUM', 'COUNT', 'AVG', 'MAX', 'MIN']
-        structure['aggregations'] = set(agg for agg in aggs if agg in sql_upper)
+        aggs = ["SUM", "COUNT", "AVG", "MAX", "MIN"]
+        structure["aggregations"] = set(agg for agg in aggs if agg in sql_upper)
 
         return structure
 
     def _extract_keywords(self, sql: str) -> set:
         """Extract SQL keywords."""
         keywords = [
-            'SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER',
-            'ON', 'GROUP BY', 'HAVING', 'ORDER BY', 'LIMIT', 'OFFSET',
-            'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER',
-            'UNION', 'INTERSECT', 'EXCEPT', 'DISTINCT', 'AS'
+            "SELECT",
+            "FROM",
+            "WHERE",
+            "JOIN",
+            "LEFT",
+            "RIGHT",
+            "INNER",
+            "OUTER",
+            "ON",
+            "GROUP BY",
+            "HAVING",
+            "ORDER BY",
+            "LIMIT",
+            "OFFSET",
+            "INSERT",
+            "UPDATE",
+            "DELETE",
+            "CREATE",
+            "DROP",
+            "ALTER",
+            "UNION",
+            "INTERSECT",
+            "EXCEPT",
+            "DISTINCT",
+            "AS",
         ]
 
         sql_upper = sql.upper()
@@ -294,7 +317,7 @@ class SQLMetrics:
         tokens = self._tokenize_sql(sql)
         count = 0
         for i, token in enumerate(tokens):
-            if token in ['FROM', 'JOIN'] and i + 1 < len(tokens):
+            if token in ["FROM", "JOIN"] and i + 1 < len(tokens):
                 count += 1
         return count
 
@@ -315,10 +338,7 @@ class ExecutionMetrics:
         self.logger = logging.getLogger(__name__)
 
     def execution_accuracy(
-        self,
-        predicted: str,
-        reference: str,
-        timeout: int = 5
+        self, predicted: str, reference: str, timeout: int = 5
     ) -> Dict[str, any]:
         """
         Check if predicted SQL produces same results as reference.
@@ -333,45 +353,42 @@ class ExecutionMetrics:
         """
         if self.db_connection is None:
             return {
-                'execution_match': None,
-                'error': 'No database connection',
-                'predicted_executable': None,
-                'reference_executable': None
+                "execution_match": None,
+                "error": "No database connection",
+                "predicted_executable": None,
+                "reference_executable": None,
             }
 
         try:
             # Execute reference query
             ref_result = self._execute_query(reference, timeout)
-            ref_executable = ref_result['success']
+            ref_executable = ref_result["success"]
 
             # Execute predicted query
             pred_result = self._execute_query(predicted, timeout)
-            pred_executable = pred_result['success']
+            pred_executable = pred_result["success"]
 
             # Compare results if both executed
             if ref_executable and pred_executable:
-                execution_match = self._compare_results(
-                    pred_result['data'],
-                    ref_result['data']
-                )
+                execution_match = self._compare_results(pred_result["data"], ref_result["data"])
             else:
                 execution_match = False
 
             return {
-                'execution_match': execution_match,
-                'predicted_executable': pred_executable,
-                'reference_executable': ref_executable,
-                'predicted_error': pred_result.get('error'),
-                'reference_error': ref_result.get('error')
+                "execution_match": execution_match,
+                "predicted_executable": pred_executable,
+                "reference_executable": ref_executable,
+                "predicted_error": pred_result.get("error"),
+                "reference_error": ref_result.get("error"),
             }
 
         except Exception as e:
             self.logger.error(f"Execution error: {e}")
             return {
-                'execution_match': False,
-                'error': str(e),
-                'predicted_executable': None,
-                'reference_executable': None
+                "execution_match": False,
+                "error": str(e),
+                "predicted_executable": None,
+                "reference_executable": None,
             }
 
     def _execute_query(self, sql: str, timeout: int) -> Dict:

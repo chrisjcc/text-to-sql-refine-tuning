@@ -1,8 +1,8 @@
 """Data loading and preprocessing modules for text-to-SQL training."""
 
 from .dataset_loader import SQLDatasetLoader
-from .preprocessor import SQLDataPreprocessor
 from .grpo_formatter import GRPODatasetFormatter
+from .preprocessor import SQLDataPreprocessor
 
 __all__ = [
     "SQLDatasetLoader",

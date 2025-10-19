@@ -6,21 +6,17 @@ handling prompt formatting, response parsing, and reward computation.
 
 import logging
 import re
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from verifiers import SingleTurnEnv
 
 from rubrics.sql_rubric import SQLValidationRubric
 from utils.sql_parser import SQLParser
-from .prompts import (
-    PROMPT_TEMPLATES,
-    get_prompt_template,
-    format_schema,
-    format_few_shot_examples,
-    format_prompt as format_prompt_util,
-)
-from .utils import extract_schema_info, validate_sql_against_schema, truncate_schema
 
+from .prompts import PROMPT_TEMPLATES, format_few_shot_examples
+from .prompts import format_prompt as format_prompt_util
+from .prompts import format_schema, get_prompt_template
+from .utils import extract_schema_info, truncate_schema, validate_sql_against_schema
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +57,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
         max_schema_length: int = 1024,
         dataset: Optional[Any] = None,
         eval_dataset: Optional[Any] = None,
-        **kwargs
+        **kwargs,
     ):
         """Initialize text-to-SQL environment.
 
@@ -106,7 +102,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
 
         # Check if this looks like an invalid template name
         # (single word without spaces or special characters that looks like a name)
-        if re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', template):
+        if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", template):
             raise ValueError(
                 f"Unknown template: '{template}'. Available templates: {', '.join(PROMPT_TEMPLATES.keys())}"
             )
@@ -114,17 +110,11 @@ class TextToSQLEnvironment(SingleTurnEnv):
         # Otherwise, treat as custom template
         # Validate it has required placeholders
         if "{question}" not in template:
-            raise ValueError(
-                "Custom template must contain '{question}' placeholder"
-            )
+            raise ValueError("Custom template must contain '{question}' placeholder")
 
         return template
 
-    def format_prompt(
-        self,
-        question: str,
-        context: Optional[Dict[str, Any]] = None
-    ) -> str:
+    def format_prompt(self, question: str, context: Optional[Dict[str, Any]] = None) -> str:
         """Format input prompt with question and optional schema context.
 
         Args:
@@ -155,9 +145,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
             # Truncate if too long
             if len(schema) > self.max_schema_length:
                 schema = truncate_schema(schema, self.max_schema_length)
-                self.logger.debug(
-                    f"Truncated schema from {len(raw_schema)} to {len(schema)} chars"
-                )
+                self.logger.debug(f"Truncated schema from {len(raw_schema)} to {len(schema)} chars")
 
         # Prepare few-shot examples if requested
         examples_str = ""
@@ -190,21 +178,13 @@ class TextToSQLEnvironment(SingleTurnEnv):
             SELECT * FROM users
         """
         if not response:
-            return {
-                "sql": None,
-                "valid": False,
-                "metadata": {"error": "Empty response"}
-            }
+            return {"sql": None, "valid": False, "metadata": {"error": "Empty response"}}
 
         # Extract SQL using parser
         sql = self.parser.extract_sql(response)
 
         if sql is None:
-            return {
-                "sql": None,
-                "valid": False,
-                "metadata": {"error": "Failed to extract SQL"}
-            }
+            return {"sql": None, "valid": False, "metadata": {"error": "Failed to extract SQL"}}
 
         # Validate basic format
         is_valid = self.parser.is_valid_format(response)
@@ -215,14 +195,14 @@ class TextToSQLEnvironment(SingleTurnEnv):
             "metadata": {
                 "original_response": response,
                 "extracted_length": len(sql),
-            }
+            },
         }
 
     def compute_reward(
         self,
         response: str,
         reference: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> float:
         """Compute reward score for generated SQL.
 
@@ -265,7 +245,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
         self,
         responses: List[str],
         references: Optional[List[str]] = None,
-        contexts: Optional[List[Dict[str, Any]]] = None
+        contexts: Optional[List[Dict[str, Any]]] = None,
     ) -> List[float]:
         """Efficiently compute rewards for batch of responses.
 
@@ -342,8 +322,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
 
         # Format prompt
         prompt = self.format_prompt(
-            question=question,
-            context={"schema": context} if context else None
+            question=question, context={"schema": context} if context else None
         )
 
         return {
@@ -358,7 +337,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
         self,
         responses: List[str],
         references: Optional[List[str]] = None,
-        contexts: Optional[List[Dict[str, Any]]] = None
+        contexts: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, float]:
         """Compute aggregate metrics for evaluation.
 

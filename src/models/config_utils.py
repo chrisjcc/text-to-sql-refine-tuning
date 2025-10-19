@@ -4,11 +4,12 @@ This module provides utility functions for creating model loading configurations
 from Hydra configs and estimating memory requirements.
 """
 
-from omegaconf import DictConfig
-from transformers import BitsAndBytesConfig
-from peft import LoraConfig
-import torch
 from typing import Dict, Optional
+
+import torch
+from omegaconf import DictConfig
+from peft import LoraConfig
+from transformers import BitsAndBytesConfig
 
 
 def create_model_config_from_hydra(cfg: DictConfig) -> Dict:
@@ -29,7 +30,7 @@ def create_model_config_from_hydra(cfg: DictConfig) -> Dict:
     }
 
     # Add attention implementation if specified in config
-    if hasattr(cfg.hf.model, 'attn_implementation'):
+    if hasattr(cfg.hf.model, "attn_implementation"):
         model_config["attn_implementation"] = cfg.hf.model.attn_implementation
 
     return model_config
@@ -46,7 +47,7 @@ def create_bnb_config_from_hydra(cfg: DictConfig) -> Optional[BitsAndBytesConfig
         load_in_4bit=True,
         bnb_4bit_compute_dtype=compute_dtype,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True
+        bnb_4bit_use_double_quant=True,
     )
 
 
@@ -58,7 +59,7 @@ def create_lora_config_from_hydra(cfg: DictConfig) -> LoraConfig:
         lora_dropout=cfg.training.peft.lora_dropout,
         target_modules=cfg.training.peft.target_modules,
         bias="none",
-        task_type="CAUSAL_LM"
+        task_type="CAUSAL_LM",
     )
 
 
@@ -67,7 +68,7 @@ def estimate_memory_requirements(
     use_quantization: bool = True,
     use_peft: bool = True,
     batch_size: int = 1,
-    sequence_length: int = 512
+    sequence_length: int = 512,
 ) -> Dict[str, float]:
     """
     Estimate GPU memory requirements.
@@ -111,11 +112,7 @@ def estimate_memory_requirements(
     gradient_memory = lora_memory if use_peft else model_memory
 
     total_memory = (
-        model_memory +
-        lora_memory +
-        activation_memory +
-        optimizer_memory +
-        gradient_memory
+        model_memory + lora_memory + activation_memory + optimizer_memory + gradient_memory
     )
 
     return {
@@ -125,5 +122,5 @@ def estimate_memory_requirements(
         "optimizer": optimizer_memory,
         "gradients": gradient_memory,
         "total": total_memory,
-        "recommended_gpu": total_memory * 1.2  # 20% buffer
+        "recommended_gpu": total_memory * 1.2,  # 20% buffer
     }

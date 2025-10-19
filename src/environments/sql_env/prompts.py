@@ -6,7 +6,6 @@ utilities for formatting schema information and few-shot examples.
 
 from typing import Dict, List, Optional
 
-
 PROMPT_TEMPLATES = {
     "default": """Given the following database schema:
 
@@ -16,7 +15,6 @@ Generate a SQL query to answer this question:
 Question: {question}
 
 SQL Query:""",
-
     "instructional": """You are a SQL expert. Convert the natural language question into a valid SQL query.
 
 Database Schema:
@@ -31,7 +29,6 @@ Instructions:
 - Do not include explanations
 
 SQL:""",
-
     "few_shot": """Generate SQL queries based on the database schema and examples below.
 
 Schema:
@@ -42,7 +39,6 @@ Schema:
 Now generate SQL for:
 Question: {question}
 SQL:""",
-
     "chat": """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 
 You are a helpful assistant that converts natural language questions into SQL queries. Given a database schema, generate accurate and efficient SQL queries.
@@ -57,7 +53,6 @@ Question: {question}
 <|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 SQL Query:""",
-
     "concise": """Schema: {schema}
 
 Question: {question}
@@ -80,9 +75,7 @@ def get_prompt_template(name: str) -> str:
     """
     if name not in PROMPT_TEMPLATES:
         available = ", ".join(PROMPT_TEMPLATES.keys())
-        raise ValueError(
-            f"Unknown template '{name}'. Available templates: {available}"
-        )
+        raise ValueError(f"Unknown template '{name}'. Available templates: {available}")
     return PROMPT_TEMPLATES[name]
 
 
@@ -139,11 +132,7 @@ def format_few_shot_examples(examples: List[Dict], n: int = 3) -> str:
 
 
 def format_prompt(
-    template: str,
-    question: str,
-    schema: str = "",
-    examples: Optional[str] = None,
-    **kwargs
+    template: str, question: str, schema: str = "", examples: Optional[str] = None, **kwargs
 ) -> str:
     """Format a prompt using a template.
 
@@ -174,6 +163,4 @@ def format_prompt(
     try:
         return template.format(**template_vars)
     except KeyError as e:
-        raise ValueError(
-            f"Template requires variable {e} which was not provided"
-        )
+        raise ValueError(f"Template requires variable {e} which was not provided")

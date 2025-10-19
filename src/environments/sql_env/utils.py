@@ -5,7 +5,8 @@ truncation, and dataset preparation for GRPO training.
 """
 
 import re
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from datasets import Dataset
 
 
@@ -42,7 +43,7 @@ def extract_schema_info(context: str) -> Dict[str, List[str]]:
 
         # Extract column names using a more robust pattern
         # Split on commas first, then extract column name and type from each part
-        column_defs = columns_text.split(',')
+        column_defs = columns_text.split(",")
         columns = []
 
         for col_def in column_defs:
@@ -51,9 +52,9 @@ def extract_schema_info(context: str) -> Dict[str, List[str]]:
             # Pattern captures just the column name
             # The .* at the end handles any trailing characters (like closing parentheses, constraints, etc.)
             match = re.match(
-                r'[`\"]?(\w+)[`\"]?\s+(?:VARCHAR(?:\s*\(\d+\))?|DATETIME|TIMESTAMP|INTEGER|DECIMAL|NUMERIC|BOOLEAN|DOUBLE|FLOAT|REAL|CHAR|TEXT|TIME|DATE|INT|BOOL|BLOB|CLOB).*',
+                r"[`\"]?(\w+)[`\"]?\s+(?:VARCHAR(?:\s*\(\d+\))?|DATETIME|TIMESTAMP|INTEGER|DECIMAL|NUMERIC|BOOLEAN|DOUBLE|FLOAT|REAL|CHAR|TEXT|TIME|DATE|INT|BOOL|BLOB|CLOB).*",
                 col_def,
-                re.IGNORECASE
+                re.IGNORECASE,
             )
             if match:
                 columns.append(match.group(1))
@@ -185,12 +186,12 @@ def prepare_for_grpo(
         >>> dataset = Dataset.from_dict(data)
         >>> # prepared = prepare_for_grpo(dataset, env)
     """
+
     def format_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
         """Format a single sample for GRPO."""
         # Format prompt using environment
         prompt = environment.format_prompt(
-            question=sample["question"],
-            context={"schema": sample.get("context", "")}
+            question=sample["question"], context={"schema": sample.get("context", "")}
         )
 
         return {
@@ -201,10 +202,7 @@ def prepare_for_grpo(
         }
 
     # Apply formatting to all samples
-    prepared = dataset.map(
-        format_sample,
-        desc="Preparing dataset for GRPO"
-    )
+    prepared = dataset.map(format_sample, desc="Preparing dataset for GRPO")
 
     return prepared
 

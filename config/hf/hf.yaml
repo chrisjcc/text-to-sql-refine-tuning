@@ -20,6 +20,6 @@ tokenizer:
 
 hub:
   push_to_hub: false
-  repo_name: null
-  private: true
+  repo_name: chrisjcc
+  private: false
   token: null  # Will use HF_TOKEN from env

@@ -22,42 +22,49 @@ def analyze_errors(results_path: str, output_path: str, n_samples: int = 20):
     df = pd.read_csv(results_path)
 
     # Identify errors
-    errors = df[df['exact_match'] is False]
+    errors = df[df["exact_match"] is False]
 
     print(f"Total samples: {len(df)}")
     print(f"Errors: {len(errors)} ({len(errors)/len(df)*100:.1f}%)")
 
     # Analyze error patterns
     analysis = {
-        'total_errors': len(errors),
-        'error_rate': len(errors) / len(df) * 100,
+        "total_errors": len(errors),
+        "error_rate": len(errors) / len(df) * 100,
     }
 
     # By complexity
     print("\nErrors by complexity:")
-    complexity_errors = errors.groupby('reference_complexity').size()
+    complexity_errors = errors.groupby("reference_complexity").size()
     for complexity, count in complexity_errors.items():
-        total = len(df[df['reference_complexity'] == complexity])
+        total = len(df[df["reference_complexity"] == complexity])
         rate = count / total * 100 if total > 0 else 0
         print(f"  {complexity}: {count}/{total} ({rate:.1f}%)")
-        analysis[f'{complexity}_error_rate'] = rate
+        analysis[f"{complexity}_error_rate"] = rate
 
     # Common error patterns
     print("\nCommon issues:")
-    invalid_sql = errors[errors['valid'] is False]
+    invalid_sql = errors[errors["valid"] is False]
     print(f"  Invalid SQL: {len(invalid_sql)} ({len(invalid_sql)/len(errors)*100:.1f}% of errors)")
 
     # Save analysis
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path / "error_analysis.json", 'w') as f:
+    with open(output_path / "error_analysis.json", "w") as f:
         json.dump(analysis, f, indent=2)
 
     # Save error samples
     error_samples = errors.head(n_samples)[
-        ['question', 'reference_sql', 'predicted_sql', 'valid',
-         'token_accuracy', 'structural_similarity', 'reference_complexity']
+        [
+            "question",
+            "reference_sql",
+            "predicted_sql",
+            "valid",
+            "token_accuracy",
+            "structural_similarity",
+            "reference_complexity",
+        ]
     ]
     error_samples.to_csv(output_path / "error_samples.csv", index=False)
 

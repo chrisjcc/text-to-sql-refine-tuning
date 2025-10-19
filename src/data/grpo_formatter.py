@@ -4,13 +4,13 @@ This module formats preprocessed datasets for use with TRL's GRPOTrainer,
 creating prompts and structuring data for reinforcement learning.
 """
 
-from typing import Dict, Any, Optional, List
 import logging
-from datasets import Dataset
+from typing import Any, Dict, List, Optional
+
 import numpy as np
+from datasets import Dataset
 
 from environments.sql_env.environment import TextToSQLEnvironment
-
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +22,7 @@ class GRPODatasetFormatter:
     """
 
     def __init__(
-        self,
-        environment: TextToSQLEnvironment,
-        tokenizer: Any,
-        include_reference: bool = True
+        self, environment: TextToSQLEnvironment, tokenizer: Any, include_reference: bool = True
     ):
         """
         Initialize GRPO formatter.
@@ -59,9 +56,9 @@ class GRPODatasetFormatter:
             'context': Dict,  # Additional context for environment
         }
         """
-        question = sample.get('question', '')
-        schema = sample.get('schema', '')
-        sql = sample.get('sql', '')
+        question = sample.get("question", "")
+        schema = sample.get("schema", "")
+        sql = sample.get("sql", "")
 
         if not question:
             raise ValueError("Sample must contain 'question' field")
@@ -72,21 +69,21 @@ class GRPODatasetFormatter:
 
         # Build output
         output = {
-            'prompt': prompt,
-            'question': question,
-            'schema': schema,
+            "prompt": prompt,
+            "question": question,
+            "schema": schema,
         }
 
         # Add reference SQL if requested
         if self.include_reference and sql:
-            output['reference'] = sql
+            output["reference"] = sql
 
         # Add context for environment (used during reward computation)
         if context:
-            output['context'] = context
+            output["context"] = context
 
         # Preserve other fields that might be useful
-        for key in ['complexity', 'sql_keywords', 'is_valid']:
+        for key in ["complexity", "sql_keywords", "is_valid"]:
             if key in sample:
                 output[key] = sample[key]
 
@@ -104,24 +101,24 @@ class GRPODatasetFormatter:
         def format_fn(examples):
             """Batch formatting function."""
             results = {
-                'prompt': [],
-                'question': [],
-                'schema': [],
+                "prompt": [],
+                "question": [],
+                "schema": [],
             }
 
             if self.include_reference:
-                results['reference'] = []
+                results["reference"] = []
 
-            results['context'] = []
+            results["context"] = []
 
             # Preserve additional fields
-            for key in ['complexity', 'sql_keywords', 'is_valid']:
+            for key in ["complexity", "sql_keywords", "is_valid"]:
                 if key in examples:
                     results[key] = []
 
             # Handle both batched and single examples
-            if isinstance(examples['question'], list):
-                num_examples = len(examples['question'])
+            if isinstance(examples["question"], list):
+                num_examples = len(examples["question"])
             else:
                 num_examples = 1
                 examples = {k: [v] for k, v in examples.items()}
@@ -132,17 +129,17 @@ class GRPODatasetFormatter:
                 try:
                     formatted = self.format_for_grpo(sample)
 
-                    results['prompt'].append(formatted['prompt'])
-                    results['question'].append(formatted['question'])
-                    results['schema'].append(formatted['schema'])
+                    results["prompt"].append(formatted["prompt"])
+                    results["question"].append(formatted["question"])
+                    results["schema"].append(formatted["schema"])
 
                     if self.include_reference:
-                        results['reference'].append(formatted.get('reference', ''))
+                        results["reference"].append(formatted.get("reference", ""))
 
-                    results['context'].append(formatted.get('context', {}))
+                    results["context"].append(formatted.get("context", {}))
 
                     # Preserve additional fields
-                    for key in ['complexity', 'sql_keywords', 'is_valid']:
+                    for key in ["complexity", "sql_keywords", "is_valid"]:
                         if key in results and key in formatted:
                             results[key].append(formatted[key])
 
@@ -154,10 +151,7 @@ class GRPODatasetFormatter:
             return results
 
         formatted_dataset = dataset.map(
-            format_fn,
-            batched=True,
-            remove_columns=dataset.column_names,
-            desc="Formatting for GRPO"
+            format_fn, batched=True, remove_columns=dataset.column_names, desc="Formatting for GRPO"
         )
 
         self.logger.info(f"Formatted {len(formatted_dataset)} samples for GRPO")
@@ -186,7 +180,7 @@ class GRPODatasetFormatter:
 
         for idx in indices:
             sample = dataset[int(idx)]
-            prompt = sample['prompt']
+            prompt = sample["prompt"]
 
             # Tokenize
             tokens = self.tokenizer.encode(prompt, add_special_tokens=True)
@@ -197,14 +191,14 @@ class GRPODatasetFormatter:
                 too_long_count += 1
 
         stats = {
-            'num_samples_checked': sample_size,
-            'avg_token_length': np.mean(token_lengths),
-            'median_token_length': np.median(token_lengths),
-            'max_token_length': max(token_lengths),
-            'min_token_length': min(token_lengths),
-            'too_long_count': too_long_count,
-            'too_long_pct': (too_long_count / sample_size) * 100 if sample_size > 0 else 0,
-            'max_length_threshold': max_length,
+            "num_samples_checked": sample_size,
+            "avg_token_length": np.mean(token_lengths),
+            "median_token_length": np.median(token_lengths),
+            "max_token_length": max(token_lengths),
+            "min_token_length": min(token_lengths),
+            "too_long_count": too_long_count,
+            "too_long_pct": (too_long_count / sample_size) * 100 if sample_size > 0 else 0,
+            "max_length_threshold": max_length,
         }
 
         self.logger.info(
@@ -221,11 +215,7 @@ class GRPODatasetFormatter:
 
         return stats
 
-    def create_evaluation_set(
-        self,
-        dataset: Dataset,
-        n_samples: int = 100
-    ) -> Dataset:
+    def create_evaluation_set(self, dataset: Dataset, n_samples: int = 100) -> Dataset:
         """
         Create a small evaluation set for during-training eval.
         Samples diverse examples across complexity levels.
@@ -240,7 +230,7 @@ class GRPODatasetFormatter:
         self.logger.info(f"Creating evaluation set with {n_samples} samples")
 
         # If dataset doesn't have complexity field, do random sampling
-        if 'complexity' not in dataset.column_names:
+        if "complexity" not in dataset.column_names:
             self.logger.warning(
                 "Dataset doesn't have 'complexity' field. "
                 "Using random sampling instead of stratified."
@@ -251,9 +241,9 @@ class GRPODatasetFormatter:
         # Stratified sampling by complexity
         try:
             # Get complexity distribution
-            complexities = dataset['complexity']
+            complexities = dataset["complexity"]
             complexity_counts = {}
-            complexity_indices = {'simple': [], 'medium': [], 'complex': []}
+            complexity_indices = {"simple": [], "medium": [], "complex": []}
 
             for idx, complexity in enumerate(complexities):
                 if complexity in complexity_indices:
@@ -273,18 +263,14 @@ class GRPODatasetFormatter:
             if total_allocated < n_samples:
                 # Add remaining to the largest group
                 largest_level = max(complexity_counts, key=complexity_counts.get)
-                samples_per_level[largest_level] += (n_samples - total_allocated)
+                samples_per_level[largest_level] += n_samples - total_allocated
 
             # Sample from each complexity level
             selected_indices = []
             for level, n in samples_per_level.items():
                 indices = complexity_indices[level]
                 if len(indices) > 0:
-                    sample_indices = np.random.choice(
-                        indices,
-                        min(n, len(indices)),
-                        replace=False
-                    )
+                    sample_indices = np.random.choice(indices, min(n, len(indices)), replace=False)
                     selected_indices.extend(sample_indices.tolist())
 
             eval_dataset = dataset.select(selected_indices)

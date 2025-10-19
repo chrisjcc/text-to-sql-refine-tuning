@@ -5,14 +5,14 @@ SQL dataset samples, including question cleaning, schema formatting,
 and SQL normalization.
 """
 
-from typing import Dict, List, Optional, Callable, Tuple, Any
-import sqlparse
-import re
 import logging
+import re
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import sqlparse
 from datasets import Dataset
 
 from utils.sql_parser import SQLParser
-
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class SQLDataPreprocessor:
         max_schema_length: int = 1024,
         max_sql_length: int = 512,
         normalize_sql: bool = True,
-        filter_invalid: bool = True
+        filter_invalid: bool = True,
     ):
         """
         Initialize preprocessor.
@@ -61,20 +61,20 @@ class SQLDataPreprocessor:
             return ""
 
         # Remove extra whitespace
-        question = re.sub(r'\s+', ' ', question)
+        question = re.sub(r"\s+", " ", question)
 
         # Strip leading/trailing whitespace
         question = question.strip()
 
         # Fix common encoding issues
-        question = question.replace('\u00a0', ' ')  # Non-breaking space
-        question = question.replace('\u2019', "'")  # Right single quotation mark
-        question = question.replace('\u201c', '"')  # Left double quotation mark
-        question = question.replace('\u201d', '"')  # Right double quotation mark
+        question = question.replace("\u00a0", " ")  # Non-breaking space
+        question = question.replace("\u2019", "'")  # Right single quotation mark
+        question = question.replace("\u201c", '"')  # Left double quotation mark
+        question = question.replace("\u201d", '"')  # Right double quotation mark
 
         # Ensure question ends with proper punctuation
-        if question and question[-1] not in '.?!':
-            question = question + '?'
+        if question and question[-1] not in ".?!":
+            question = question + "?"
 
         return question
 
@@ -91,12 +91,12 @@ class SQLDataPreprocessor:
 
         # Remove SQL comments
         # Remove single-line comments (-- ...)
-        context = re.sub(r'--[^\n]*', '', context)
+        context = re.sub(r"--[^\n]*", "", context)
         # Remove multi-line comments (/* ... */)
-        context = re.sub(r'/\*.*?\*/', '', context, flags=re.DOTALL)
+        context = re.sub(r"/\*.*?\*/", "", context, flags=re.DOTALL)
 
         # Normalize whitespace
-        context = re.sub(r'\s+', ' ', context)
+        context = re.sub(r"\s+", " ", context)
         context = context.strip()
 
         # Truncate if too long (by character count)
@@ -106,7 +106,7 @@ class SQLDataPreprocessor:
             self.logger.debug(f"Truncating schema from {len(context)} to {max_chars} chars")
             context = context[:max_chars]
             # Try to truncate at a table boundary
-            last_create = context.rfind('CREATE TABLE')
+            last_create = context.rfind("CREATE TABLE")
             if last_create > max_chars * 0.8:  # If we're close to the end, truncate there
                 context = context[:last_create]
 
@@ -125,11 +125,11 @@ class SQLDataPreprocessor:
             return ""
 
         # Remove SQL comments
-        sql = re.sub(r'--[^\n]*', '', sql)
-        sql = re.sub(r'/\*.*?\*/', '', sql, flags=re.DOTALL)
+        sql = re.sub(r"--[^\n]*", "", sql)
+        sql = re.sub(r"/\*.*?\*/", "", sql, flags=re.DOTALL)
 
         # Normalize whitespace
-        sql = re.sub(r'\s+', ' ', sql)
+        sql = re.sub(r"\s+", " ", sql)
         sql = sql.strip()
 
         # Use sqlparse for normalization if enabled
@@ -138,14 +138,14 @@ class SQLDataPreprocessor:
                 # Format SQL with sqlparse
                 sql = sqlparse.format(
                     sql,
-                    keyword_case='upper',
-                    identifier_case='lower',
+                    keyword_case="upper",
+                    identifier_case="lower",
                     strip_comments=True,
                     reindent=False,
-                    use_space_around_operators=True
+                    use_space_around_operators=True,
                 )
                 # Remove extra newlines that sqlparse might add
-                sql = ' '.join(sql.split())
+                sql = " ".join(sql.split())
             except Exception as e:
                 self.logger.debug(f"Failed to parse SQL with sqlparse: {e}")
                 # Fall back to basic normalization
@@ -161,25 +161,25 @@ class SQLDataPreprocessor:
             (is_valid, error_message)
         """
         # Check required fields
-        required_fields = ['question', 'context', 'answer']
+        required_fields = ["question", "context", "answer"]
         for field in required_fields:
             if field not in sample:
                 return False, f"Missing required field: {field}"
 
         # Check non-empty
-        if not sample['question'] or not sample['question'].strip():
+        if not sample["question"] or not sample["question"].strip():
             return False, "Empty question"
 
-        if not sample['answer'] or not sample['answer'].strip():
+        if not sample["answer"] or not sample["answer"].strip():
             return False, "Empty answer (SQL)"
 
         # Context can be empty for some datasets, but warn if it is
-        if not sample['context'] or not sample['context'].strip():
+        if not sample["context"] or not sample["context"].strip():
             self.logger.debug("Warning: Empty context (schema)")
 
         # Validate SQL syntax using sqlparse
         try:
-            parsed = sqlparse.parse(sample['answer'])
+            parsed = sqlparse.parse(sample["answer"])
             if not parsed:
                 return False, "Failed to parse SQL"
 
@@ -217,16 +217,14 @@ class SQLDataPreprocessor:
         }
         """
         # Clean fields
-        question = self.clean_question(sample.get('question', ''))
-        schema = self.clean_schema(sample.get('context', ''))
-        sql = self.clean_sql(sample.get('answer', ''))
+        question = self.clean_question(sample.get("question", ""))
+        schema = self.clean_schema(sample.get("context", ""))
+        sql = self.clean_sql(sample.get("answer", ""))
 
         # Validate
-        is_valid, error_msg = self.validate_sample({
-            'question': question,
-            'context': schema,
-            'answer': sql
-        })
+        is_valid, error_msg = self.validate_sample(
+            {"question": question, "context": schema, "answer": sql}
+        )
 
         # Compute lengths (word count as proxy for tokens)
         question_length = len(question.split())
@@ -240,25 +238,48 @@ class SQLDataPreprocessor:
         complexity = self.classify_complexity(sql)
 
         return {
-            'question': question,
-            'schema': schema,
-            'sql': sql,
-            'question_length': question_length,
-            'schema_length': schema_length,
-            'sql_length': sql_length,
-            'is_valid': is_valid,
-            'validation_error': error_msg if not is_valid else None,
-            'sql_keywords': sql_keywords,
-            'complexity': complexity,
+            "question": question,
+            "schema": schema,
+            "sql": sql,
+            "question_length": question_length,
+            "schema_length": schema_length,
+            "sql_length": sql_length,
+            "is_valid": is_valid,
+            "validation_error": error_msg if not is_valid else None,
+            "sql_keywords": sql_keywords,
+            "complexity": complexity,
         }
 
     def _extract_sql_keywords(self, sql: str) -> List[str]:
         """Extract SQL keywords from query."""
         keywords = [
-            'SELECT', 'FROM', 'WHERE', 'JOIN', 'INNER JOIN', 'LEFT JOIN',
-            'RIGHT JOIN', 'OUTER JOIN', 'GROUP BY', 'ORDER BY', 'HAVING',
-            'LIMIT', 'OFFSET', 'UNION', 'DISTINCT', 'COUNT', 'SUM', 'AVG',
-            'MAX', 'MIN', 'AS', 'IN', 'BETWEEN', 'LIKE', 'AND', 'OR', 'NOT'
+            "SELECT",
+            "FROM",
+            "WHERE",
+            "JOIN",
+            "INNER JOIN",
+            "LEFT JOIN",
+            "RIGHT JOIN",
+            "OUTER JOIN",
+            "GROUP BY",
+            "ORDER BY",
+            "HAVING",
+            "LIMIT",
+            "OFFSET",
+            "UNION",
+            "DISTINCT",
+            "COUNT",
+            "SUM",
+            "AVG",
+            "MAX",
+            "MIN",
+            "AS",
+            "IN",
+            "BETWEEN",
+            "LIKE",
+            "AND",
+            "OR",
+            "NOT",
         ]
 
         sql_upper = sql.upper()
@@ -270,11 +291,7 @@ class SQLDataPreprocessor:
 
         return found_keywords
 
-    def preprocess_dataset(
-        self,
-        dataset: Dataset,
-        num_proc: int = 4
-    ) -> Dataset:
+    def preprocess_dataset(self, dataset: Dataset, num_proc: int = 4) -> Dataset:
         """
         Preprocess the entire dataset in parallel.
 
@@ -290,30 +307,30 @@ class SQLDataPreprocessor:
         def preprocess_fn(examples):
             """Batch preprocessing function."""
             results = {
-                'question': [],
-                'schema': [],
-                'sql': [],
-                'question_length': [],
-                'schema_length': [],
-                'sql_length': [],
-                'is_valid': [],
-                'validation_error': [],
-                'sql_keywords': [],
-                'complexity': [],
+                "question": [],
+                "schema": [],
+                "sql": [],
+                "question_length": [],
+                "schema_length": [],
+                "sql_length": [],
+                "is_valid": [],
+                "validation_error": [],
+                "sql_keywords": [],
+                "complexity": [],
             }
 
             # Handle both batched and single examples
-            if isinstance(examples['question'], list):
-                num_examples = len(examples['question'])
+            if isinstance(examples["question"], list):
+                num_examples = len(examples["question"])
             else:
                 num_examples = 1
                 examples = {k: [v] for k, v in examples.items()}
 
             for i in range(num_examples):
                 sample = {
-                    'question': examples['question'][i],
-                    'context': examples['context'][i],
-                    'answer': examples['answer'][i],
+                    "question": examples["question"][i],
+                    "context": examples["context"][i],
+                    "answer": examples["answer"][i],
                 }
 
                 processed = self.preprocess_sample(sample)
@@ -324,10 +341,7 @@ class SQLDataPreprocessor:
             return results
 
         processed_dataset = dataset.map(
-            preprocess_fn,
-            batched=True,
-            num_proc=num_proc,
-            desc="Preprocessing samples"
+            preprocess_fn, batched=True, num_proc=num_proc, desc="Preprocessing samples"
         )
 
         self.logger.info(f"Preprocessing complete: {len(processed_dataset)} samples")
@@ -349,20 +363,17 @@ class SQLDataPreprocessor:
         initial_size = len(dataset)
 
         # Filter by validity
-        filtered = dataset.filter(
-            lambda x: x['is_valid'],
-            desc="Filtering invalid samples"
-        )
+        filtered = dataset.filter(lambda x: x["is_valid"], desc="Filtering invalid samples")
 
         # Filter by length constraints
         filtered = filtered.filter(
             lambda x: (
-                x['question_length'] <= self.max_question_length and
-                x['sql_length'] <= self.max_sql_length and
-                x['question_length'] > 0 and
-                x['sql_length'] > 0
+                x["question_length"] <= self.max_question_length
+                and x["sql_length"] <= self.max_sql_length
+                and x["question_length"] > 0
+                and x["sql_length"] > 0
             ),
-            desc="Filtering by length"
+            desc="Filtering by length",
         )
 
         final_size = len(filtered)
@@ -386,20 +397,20 @@ class SQLDataPreprocessor:
         sql_upper = sql.upper()
 
         # Count complexity indicators
-        join_count = sql_upper.count('JOIN')
-        subquery_count = sql_upper.count('SELECT') - 1  # Subtract main query
-        has_group_by = 'GROUP BY' in sql_upper
-        has_having = 'HAVING' in sql_upper
-        has_union = 'UNION' in sql_upper
-        has_cte = 'WITH' in sql_upper and 'AS' in sql_upper
+        join_count = sql_upper.count("JOIN")
+        subquery_count = sql_upper.count("SELECT") - 1  # Subtract main query
+        has_group_by = "GROUP BY" in sql_upper
+        has_having = "HAVING" in sql_upper
+        has_union = "UNION" in sql_upper
+        has_cte = "WITH" in sql_upper and "AS" in sql_upper
 
         # Complex: CTEs, multiple JOINs, or nested subqueries
         if has_cte or join_count >= 2 or subquery_count >= 2:
-            return 'complex'
+            return "complex"
 
         # Medium: Single JOIN, GROUP BY, HAVING, UNION, or single subquery
         if join_count >= 1 or has_group_by or has_having or has_union or subquery_count >= 1:
-            return 'medium'
+            return "medium"
 
         # Simple: Basic SELECT
-        return 'simple'
+        return "simple"

@@ -31,15 +31,15 @@ def analyze_complexity_distribution(dataset):
     print("SQL COMPLEXITY DISTRIBUTION")
     print("=" * 80)
 
-    if 'complexity' not in dataset.column_names:
+    if "complexity" not in dataset.column_names:
         print("No complexity information available")
         return
 
-    complexities = dataset['complexity']
+    complexities = dataset["complexity"]
     complexity_counts = Counter(complexities)
 
     total = len(complexities)
-    for complexity in ['simple', 'medium', 'complex']:
+    for complexity in ["simple", "medium", "complex"]:
         count = complexity_counts.get(complexity, 0)
         pct = (count / total) * 100 if total > 0 else 0
         print(f"{complexity.capitalize():10s}: {count:6d} ({pct:5.1f}%)")
@@ -51,12 +51,12 @@ def analyze_sql_patterns(dataset):
     print("COMMON SQL PATTERNS")
     print("=" * 80)
 
-    if 'sql_keywords' not in dataset.column_names:
+    if "sql_keywords" not in dataset.column_names:
         print("No SQL keyword information available")
         return
 
     all_keywords = []
-    for keywords in dataset['sql_keywords']:
+    for keywords in dataset["sql_keywords"]:
         all_keywords.extend(keywords)
 
     keyword_counts = Counter(all_keywords)
@@ -73,8 +73,8 @@ def analyze_length_distribution(dataset):
     print("LENGTH DISTRIBUTION")
     print("=" * 80)
 
-    if 'question_length' in dataset.column_names:
-        question_lengths = dataset['question_length']
+    if "question_length" in dataset.column_names:
+        question_lengths = dataset["question_length"]
         print("\nQuestion length (words):")
         print(f"  Mean:   {np.mean(question_lengths):6.1f}")
         print(f"  Median: {np.median(question_lengths):6.1f}")
@@ -88,8 +88,8 @@ def analyze_length_distribution(dataset):
             val = np.percentile(question_lengths, p)
             print(f"    {p:2d}th: {val:6.1f}")
 
-    if 'sql_length' in dataset.column_names:
-        sql_lengths = dataset['sql_length']
+    if "sql_length" in dataset.column_names:
+        sql_lengths = dataset["sql_length"]
         print("\nSQL length (words):")
         print(f"  Mean:   {np.mean(sql_lengths):6.1f}")
         print(f"  Median: {np.median(sql_lengths):6.1f}")
@@ -103,8 +103,8 @@ def analyze_length_distribution(dataset):
             val = np.percentile(sql_lengths, p)
             print(f"    {p:2d}th: {val:6.1f}")
 
-    if 'schema_length' in dataset.column_names:
-        schema_lengths = dataset['schema_length']
+    if "schema_length" in dataset.column_names:
+        schema_lengths = dataset["schema_length"]
         print("\nSchema length (words):")
         print(f"  Mean:   {np.mean(schema_lengths):6.1f}")
         print(f"  Median: {np.median(schema_lengths):6.1f}")
@@ -119,7 +119,7 @@ def analyze_schema_statistics(dataset):
     print("SCHEMA STATISTICS")
     print("=" * 80)
 
-    if 'schema' not in dataset.column_names:
+    if "schema" not in dataset.column_names:
         print("No schema information available")
         return
 
@@ -127,15 +127,15 @@ def analyze_schema_statistics(dataset):
     column_counts = []
     all_tables = set()
 
-    for schema in dataset['schema']:
+    for schema in dataset["schema"]:
         # Count tables
-        table_pattern = r'CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(\w+)'
+        table_pattern = r"CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(\w+)"
         tables = re.findall(table_pattern, schema, re.IGNORECASE)
         table_counts.append(len(tables))
         all_tables.update(tables)
 
         # Count columns (rough estimate)
-        column_pattern = r'(\w+)\s+(?:INT|VARCHAR|TEXT|FLOAT|DOUBLE|DATE|BOOLEAN)'
+        column_pattern = r"(\w+)\s+(?:INT|VARCHAR|TEXT|FLOAT|DOUBLE|DATE|BOOLEAN)"
         columns = re.findall(column_pattern, schema, re.IGNORECASE)
         column_counts.append(len(columns))
 
@@ -165,15 +165,15 @@ def find_quality_issues(dataset):
     issues_found = False
 
     # Check for invalid samples
-    if 'is_valid' in dataset.column_names:
-        invalid_count = sum(1 for v in dataset['is_valid'] if not v)
+    if "is_valid" in dataset.column_names:
+        invalid_count = sum(1 for v in dataset["is_valid"] if not v)
         if invalid_count > 0:
             pct = (invalid_count / len(dataset)) * 100
             print(f"\n⚠ Invalid samples: {invalid_count} ({pct:.1f}%)")
             issues_found = True
 
     # Check for empty fields
-    for field in ['question', 'sql', 'schema']:
+    for field in ["question", "sql", "schema"]:
         if field in dataset.column_names:
             empty_count = sum(1 for v in dataset[field] if not v or not v.strip())
             if empty_count > 0:
@@ -182,16 +182,16 @@ def find_quality_issues(dataset):
                 issues_found = True
 
     # Check for very short questions
-    if 'question_length' in dataset.column_names:
-        very_short = sum(1 for v in dataset['question_length'] if v < 3)
+    if "question_length" in dataset.column_names:
+        very_short = sum(1 for v in dataset["question_length"] if v < 3)
         if very_short > 0:
             pct = (very_short / len(dataset)) * 100
             print(f"\n⚠ Very short questions (<3 words): {very_short} ({pct:.1f}%)")
             issues_found = True
 
     # Check for very long SQL
-    if 'sql_length' in dataset.column_names:
-        very_long = sum(1 for v in dataset['sql_length'] if v > 100)
+    if "sql_length" in dataset.column_names:
+        very_long = sum(1 for v in dataset["sql_length"] if v > 100)
         if very_long > 0:
             pct = (very_long / len(dataset)) * 100
             print(f"\n⚠ Very long SQL queries (>100 words): {very_long} ({pct:.1f}%)")
@@ -207,22 +207,22 @@ def show_examples(dataset, n_per_complexity=2):
     print("EXAMPLE QUERIES BY COMPLEXITY")
     print("=" * 80)
 
-    if 'complexity' not in dataset.column_names:
+    if "complexity" not in dataset.column_names:
         print("No complexity information available")
         return
 
-    required_fields = ['question', 'sql', 'complexity']
+    required_fields = ["question", "sql", "complexity"]
     if not all(field in dataset.column_names for field in required_fields):
         print("Missing required fields for examples")
         return
 
-    for complexity in ['simple', 'medium', 'complex']:
+    for complexity in ["simple", "medium", "complex"]:
         print(f"\n{'-' * 80}")
         print(f"{complexity.upper()} QUERIES")
         print(f"{'-' * 80}")
 
         # Find examples of this complexity
-        indices = [i for i, c in enumerate(dataset['complexity']) if c == complexity]
+        indices = [i for i, c in enumerate(dataset["complexity"]) if c == complexity]
 
         if not indices:
             print(f"No {complexity} examples found")
@@ -230,9 +230,7 @@ def show_examples(dataset, n_per_complexity=2):
 
         # Sample randomly
         sample_indices = np.random.choice(
-            indices,
-            min(n_per_complexity, len(indices)),
-            replace=False
+            indices, min(n_per_complexity, len(indices)), replace=False
         )
 
         for idx, sample_idx in enumerate(sample_indices, 1):
@@ -241,11 +239,13 @@ def show_examples(dataset, n_per_complexity=2):
             print(f"Question: {sample['question']}")
             print(f"SQL: {sample['sql']}")
 
-            if 'schema' in sample and sample['schema']:
+            if "schema" in sample and sample["schema"]:
                 # Show first table definition only
-                schema = sample['schema']
-                first_table = schema.split('CREATE TABLE')[1] if 'CREATE TABLE' in schema else schema
-                first_table = 'CREATE TABLE' + first_table.split(';')[0]
+                schema = sample["schema"]
+                first_table = (
+                    schema.split("CREATE TABLE")[1] if "CREATE TABLE" in schema else schema
+                )
+                first_table = "CREATE TABLE" + first_table.split(";")[0]
                 if len(first_table) > 200:
                     first_table = first_table[:200] + "..."
                 print(f"Schema: {first_table}")

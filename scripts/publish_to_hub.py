@@ -12,10 +12,9 @@ from huggingface_hub import HfApi, create_repo, upload_folder
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def create_model_card(
-    model_path: str,
-    repo_name: str,
-    base_model: str = "meta-llama/Llama-3.1-8B-Instruct"
+    model_path: str, repo_name: str, base_model: str = "meta-llama/Llama-3.1-8B-Instruct"
 ) -> str:
     """Create model card markdown."""
 
@@ -26,8 +25,8 @@ def create_model_card(
     if metrics_path.exists():
         with open(metrics_path) as f:
             state = json.load(f)
-            if 'log_history' in state:
-                last_metrics = state['log_history'][-1]
+            if "log_history" in state:
+                last_metrics = state["log_history"][-1]
                 metrics_info = f"""
 ## Training Metrics
 
@@ -139,12 +138,8 @@ Apache 2.0
 """
     return model_card
 
-def publish_model(
-    model_path: str,
-    repo_name: str,
-    private: bool = True,
-    token: str = None
-):
+
+def publish_model(model_path: str, repo_name: str, private: bool = True, token: str = None):
     """
     Publish model to HuggingFace Hub.
 
@@ -168,12 +163,7 @@ def publish_model(
     # Create repository
     logger.info(f"Creating repository: {repo_name}")
     try:
-        create_repo(
-            repo_id=repo_name,
-            token=token,
-            private=private,
-            exist_ok=True
-        )
+        create_repo(repo_id=repo_name, token=token, private=private, exist_ok=True)
     except Exception as e:
         logger.warning(f"Repository creation warning: {e}")
 
@@ -182,7 +172,7 @@ def publish_model(
     model_card = create_model_card(model_path, repo_name)
 
     model_card_path = Path(model_path) / "README.md"
-    with open(model_card_path, 'w') as f:
+    with open(model_card_path, "w") as f:
         f.write(model_card)
 
     # Upload model
@@ -191,47 +181,36 @@ def publish_model(
         folder_path=model_path,
         repo_id=repo_name,
         token=token,
-        commit_message="Upload fine-tuned model"
+        commit_message="Upload fine-tuned model",
     )
 
     logger.info("✅ Model published successfully!")
     logger.info(f"View at: https://huggingface.co/{repo_name}")
 
+
 def main():
     parser = argparse.ArgumentParser(description="Publish model to HuggingFace Hub")
-    parser.add_argument(
-        "--model-path",
-        type=str,
-        required=True,
-        help="Path to model checkpoint"
-    )
+    parser.add_argument("--model-path", type=str, required=True, help="Path to model checkpoint")
     parser.add_argument(
         "--repo-name",
         type=str,
         required=True,
-        help="HuggingFace repository name (username/model-name)"
+        help="HuggingFace repository name (username/model-name)",
     )
     parser.add_argument(
         "--private",
-        type=lambda x: x.lower() == 'true',
+        type=lambda x: x.lower() == "true",
         default=True,
-        help="Make repository private"
+        help="Make repository private",
     )
-    parser.add_argument(
-        "--token",
-        type=str,
-        default=None,
-        help="HuggingFace API token"
-    )
+    parser.add_argument("--token", type=str, default=None, help="HuggingFace API token")
 
     args = parser.parse_args()
 
     publish_model(
-        model_path=args.model_path,
-        repo_name=args.repo_name,
-        private=args.private,
-        token=args.token
+        model_path=args.model_path, repo_name=args.repo_name, private=args.private, token=args.token
     )
+
 
 if __name__ == "__main__":
     main()

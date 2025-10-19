@@ -39,7 +39,7 @@ def test_model(cfg: DictConfig):
         use_quantization=cfg.training.peft.use_qlora,
         use_peft=cfg.training.use_peft,
         batch_size=cfg.training.per_device_train_batch_size,
-        sequence_length=cfg.dataset.preprocessing.max_length
+        sequence_length=cfg.dataset.preprocessing.max_length,
     )
 
     logger.info("\nMemory Estimates:")
@@ -49,23 +49,20 @@ def test_model(cfg: DictConfig):
     # Load model
     logger.info(f"\nLoading model: {cfg.hf.model.name}")
 
-    loader = ModelLoader(
-        model_name=cfg.hf.model.name,
-        cache_dir=cfg.hf.model.cache_dir
-    )
+    loader = ModelLoader(model_name=cfg.hf.model.name, cache_dir=cfg.hf.model.cache_dir)
 
     bnb_config = create_bnb_config_from_hydra(cfg)
     lora_config = create_lora_config_from_hydra(cfg)
 
     # Get attention implementation from config if available
-    attn_impl = cfg.hf.model.get('attn_implementation', 'auto')
+    attn_impl = cfg.hf.model.get("attn_implementation", "auto")
 
     model, tokenizer = loader.load_model_and_tokenizer(
         use_quantization=cfg.training.peft.use_qlora,
         use_peft=cfg.training.use_peft,
         bnb_config=bnb_config,
         lora_config=lora_config,
-        attn_implementation=attn_impl
+        attn_implementation=attn_impl,
     )
 
     # Print model info
@@ -78,10 +75,7 @@ def test_model(cfg: DictConfig):
 
     with torch.no_grad():
         outputs = model.generate(
-            **inputs,
-            max_new_tokens=50,
-            do_sample=False,
-            pad_token_id=tokenizer.pad_token_id
+            **inputs, max_new_tokens=50, do_sample=False, pad_token_id=tokenizer.pad_token_id
         )
 
     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
