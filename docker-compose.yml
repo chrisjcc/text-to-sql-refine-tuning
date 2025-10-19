@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # Training service
+  training:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: text-to-sql-grpo:latest
+    container_name: sql-training
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - HF_TOKEN=${HF_TOKEN}
+      - WANDB_API_KEY=${WANDB_API_KEY}
+    volumes:
+      - ./config:/app/config
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+      - ./data_cache:/app/data_cache
+    command: python3 scripts/train.py
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Inference API service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: text-to-sql-grpo:latest
+    container_name: sql-api
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - ./outputs:/app/outputs:ro
+      - ./cache:/app/cache:ro
+    ports:
+      - "8000:8000"
+    command: >
+      python3 -m src.inference.api
+      --model-path /app/outputs/final_model
+      --host 0.0.0.0
+      --port 8000
+      --load-in-4bit
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Interactive CLI service
+  cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: text-to-sql-grpo:latest
+    container_name: sql-cli
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - ./outputs:/app/outputs:ro
+      - ./cache:/app/cache:ro
+    stdin_open: true
+    tty: true
+    command: >
+      python3 -m src.inference.cli
+      --model-path /app/outputs/final_model
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
