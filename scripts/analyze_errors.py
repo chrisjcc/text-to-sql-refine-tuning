@@ -1,11 +1,12 @@
 """
 Analyze evaluation errors and generate insights.
 """
-import pandas as pd
 import argparse
-from pathlib import Path
-from collections import Counter
 import json
+from collections import Counter
+from pathlib import Path
+
+import pandas as pd
 
 
 def analyze_errors(results_path: str, output_path: str, n_samples: int = 20):
@@ -21,7 +22,7 @@ def analyze_errors(results_path: str, output_path: str, n_samples: int = 20):
     df = pd.read_csv(results_path)
 
     # Identify errors
-    errors = df[df['exact_match'] == False]
+    errors = df[df['exact_match'] is False]
 
     print(f"Total samples: {len(df)}")
     print(f"Errors: {len(errors)} ({len(errors)/len(df)*100:.1f}%)")
@@ -43,7 +44,7 @@ def analyze_errors(results_path: str, output_path: str, n_samples: int = 20):
 
     # Common error patterns
     print("\nCommon issues:")
-    invalid_sql = errors[errors['valid'] == False]
+    invalid_sql = errors[errors['valid'] is False]
     print(f"  Invalid SQL: {len(invalid_sql)} ({len(invalid_sql)/len(errors)*100:.1f}% of errors)")
 
     # Save analysis

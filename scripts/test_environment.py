@@ -8,19 +8,19 @@ Usage:
     python scripts/test_environment.py training.environment.prompt_template=chat
 """
 
-import sys
 import os
+import sys
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import hydra
-from omegaconf import DictConfig
-from datasets import load_dataset
+import hydra  # noqa: E402
+from datasets import load_dataset  # noqa: E402
+from omegaconf import DictConfig  # noqa: E402
 
-from environments.sql_env import TextToSQLEnvironment
-from rubrics.sql_rubric import SQLValidationRubric
-from utils.sql_parser import SQLParser
+from environments.sql_env import TextToSQLEnvironment  # noqa: E402
+from rubrics.sql_rubric import SQLValidationRubric  # noqa: E402
+from utils.sql_parser import SQLParser  # noqa: E402
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -122,7 +122,7 @@ def test_environment(cfg: DictConfig):
 
             # Parse response
             parsed = env.parse_response(reference_sql)
-            print(f"\n🔍 Parsed Result:")
+            print("\n🔍 Parsed Result:")
             print(f"  - Valid: {parsed['valid']}")
             print(f"  - Extracted SQL: {parsed['sql']}")
 

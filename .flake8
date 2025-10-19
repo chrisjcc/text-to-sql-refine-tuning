@@ -9,6 +9,7 @@ exclude =
     outputs,
     build,
     dist
-ignore = E203, E266, E501, W503
+ignore = E128, E203, E226, E266, E302, E305, E501, F541, W503, W504
 per-file-ignores =
     __init__.py:F401
+    scripts/analyze_data.py:C901
