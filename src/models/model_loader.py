@@ -212,6 +212,14 @@ class ModelLoader:
             self.logger.info("Preparing model for k-bit training")
             model = prepare_model_for_kbit_training(model)
 
+            # Fix dtype mismatch: Cast lm_head to match compute dtype when using quantization
+            # This prevents "expected scalar type Float but found BFloat16" errors
+            if use_quantization and bnb_config is not None:
+                compute_dtype = bnb_config.bnb_4bit_compute_dtype
+                if hasattr(model, 'lm_head') and model.lm_head is not None:
+                    model.lm_head = model.lm_head.to(compute_dtype)
+                    self.logger.info(f"Cast lm_head to {compute_dtype} to match compute dtype")
+
             if lora_config is None:
                 lora_config = self.create_lora_config()
 
