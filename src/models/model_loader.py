@@ -151,6 +151,12 @@ class ModelLoader:
             if bnb_config is None:
                 bnb_config = self.create_bnb_config()
             quantization_config = bnb_config
+            # CRITICAL: Set torch_dtype even when using quantization
+            # This ensures non-quantized layers (like lm_head) use the same dtype as quantized layers' compute dtype
+            # Without this, lm_head defaults to float32 while quantized layers compute in bfloat16, causing dtype mismatch
+            if torch_dtype is None:
+                torch_dtype = bnb_config.bnb_4bit_compute_dtype
+                self.logger.info(f"Setting torch_dtype to {torch_dtype} to match quantization compute dtype")
         else:
             quantization_config = None
             if torch_dtype is None:
@@ -182,7 +188,7 @@ class ModelLoader:
                 device_map=self.device_map,
                 trust_remote_code=self.trust_remote_code,
                 cache_dir=self.cache_dir,
-                torch_dtype=torch_dtype if not use_quantization else None,
+                torch_dtype=torch_dtype,  # Always set torch_dtype, even with quantization
                 attn_implementation=attn_impl
             )
         except Exception as e:
@@ -198,7 +204,7 @@ class ModelLoader:
                     device_map=self.device_map,
                     trust_remote_code=self.trust_remote_code,
                     cache_dir=self.cache_dir,
-                    torch_dtype=torch_dtype if not use_quantization else None,
+                    torch_dtype=torch_dtype,  # Always set torch_dtype, even with quantization
                     attn_implementation=None
                 )
             else:
@@ -217,47 +223,6 @@ class ModelLoader:
 
             self.logger.info("Applying LoRA adapters")
             model = get_peft_model(model, lora_config)
-
-            # Fix dtype mismatch: Cast lm_head weight to match compute dtype AFTER PEFT wrapping
-            # This prevents "expected scalar type Float but found BFloat16" errors during generation
-            # IMPORTANT: Must be done after get_peft_model() to persist through PEFT wrapping
-            if use_quantization and bnb_config is not None:
-                compute_dtype = bnb_config.bnb_4bit_compute_dtype
-
-                # CRITICAL: Access the actual underlying model through PEFT's nested structure
-                # PEFT model structure: PeftModel -> base_model (wrapper) -> model (actual LlamaForCausalLM)
-                # The lm_head is in the innermost 'model', not in the base_model wrapper
-                underlying_model = model
-
-                # Navigate through PEFT layers to find the actual model with lm_head
-                # Try multiple common PEFT attribute patterns
-                if hasattr(model, 'base_model'):
-                    if hasattr(model.base_model, 'model'):
-                        # Standard PEFT structure: model.base_model.model
-                        underlying_model = model.base_model.model
-                        self.logger.info("Accessing underlying model via model.base_model.model")
-                    else:
-                        # Some PEFT versions: model.base_model
-                        underlying_model = model.base_model
-                        self.logger.info("Accessing underlying model via model.base_model")
-
-                # Now cast lm_head on the actual underlying model
-                if hasattr(underlying_model, 'lm_head') and underlying_model.lm_head is not None:
-                    if hasattr(underlying_model.lm_head, 'weight') and underlying_model.lm_head.weight is not None:
-                        # Cast the weight tensor directly
-                        underlying_model.lm_head.weight.data = underlying_model.lm_head.weight.data.to(compute_dtype)
-                        self.logger.info(f"✓ Cast lm_head.weight to {compute_dtype} to match compute dtype")
-
-                        # Verify the cast succeeded
-                        actual_dtype = underlying_model.lm_head.weight.dtype
-                        if actual_dtype != compute_dtype:
-                            self.logger.warning(f"⚠ lm_head.weight dtype verification failed: expected {compute_dtype}, got {actual_dtype}")
-                        else:
-                            self.logger.info(f"✓ Verified lm_head.weight is now {actual_dtype}")
-                    else:
-                        self.logger.warning("Could not access lm_head.weight for dtype casting")
-                else:
-                    self.logger.warning("Could not find lm_head in underlying model for dtype casting")
 
             # Print trainable parameters
             trainable_params, all_param = model.get_nb_trainable_parameters()
