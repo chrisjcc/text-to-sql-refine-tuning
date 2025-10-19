@@ -76,6 +76,9 @@ class SQLInferenceEngine:
         """Load model and tokenizer."""
         self.logger.info(f"Loading model from {self.model_path}")
 
+        # Check if this is a local path
+        is_local_path = Path(self.model_path).exists()
+
         # Check if this is a PEFT model
         peft_config_path = Path(self.model_path) / "adapter_config.json"
         is_peft_model = peft_config_path.exists()
@@ -116,7 +119,11 @@ class SQLInferenceEngine:
 
             # Load PEFT adapters
             self.logger.info(f"Loading PEFT adapters from {self.model_path}")
-            model = PeftModel.from_pretrained(base_model, self.model_path)
+            model = PeftModel.from_pretrained(
+                base_model,
+                self.model_path,
+                local_files_only=is_local_path
+            )
             model = model.merge_and_unload()  # Merge adapters for faster inference
 
         else:
@@ -126,13 +133,18 @@ class SQLInferenceEngine:
                 self.model_path,
                 device_map=self.device,
                 torch_dtype=torch.bfloat16,
-                trust_remote_code=True
+                trust_remote_code=True,
+                local_files_only=is_local_path
             )
 
-        # Load tokenizer
+        # Load tokenizer - determine source path
+        tokenizer_path = self.model_path if not is_peft_model else self.base_model_name
+        is_tokenizer_local = Path(tokenizer_path).exists()
+
         tokenizer = AutoTokenizer.from_pretrained(
-            self.model_path if not is_peft_model else self.base_model_name,
-            trust_remote_code=True
+            tokenizer_path,
+            trust_remote_code=True,
+            local_files_only=is_tokenizer_local
         )
 
         if tokenizer.pad_token is None:
