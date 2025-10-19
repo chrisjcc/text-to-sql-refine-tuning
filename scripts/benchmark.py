@@ -51,8 +51,10 @@ def benchmark(cfg: DictConfig):
     checkpoint_paths = cfg.evaluation.checkpoint_paths
 
     if not checkpoint_paths:
-        # Use default output directory
+        # Use default output directory (resolve to absolute path)
         output_dir = Path(cfg.training.output_dir)
+        if not output_dir.is_absolute():
+            output_dir = Path.cwd() / output_dir
         checkpoint_paths = [str(output_dir / "final_model")]
 
     # Evaluate each checkpoint
