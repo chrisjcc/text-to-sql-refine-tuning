@@ -10,18 +10,19 @@ a comprehensive quality report including:
 - Examples of each complexity level
 """
 
-import sys
-from pathlib import Path
-import logging
-import numpy as np
-from collections import Counter
 import re
+import sys
+from collections import Counter
+from pathlib import Path
+
+import numpy as np
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from datasets import load_from_disk
-from utils.logging_utils import setup_logging
+from datasets import load_from_disk  # noqa: E402
+
+from utils.logging_utils import setup_logging  # noqa: E402
 
 
 def analyze_complexity_distribution(dataset):
@@ -253,7 +254,7 @@ def show_examples(dataset, n_per_complexity=2):
 def main():
     """Main analysis function."""
     # Setup logging
-    logger = setup_logging(log_level="INFO", log_dir="logs", log_file="data_analysis.log")
+    setup_logging(log_level="INFO", log_dir="logs", log_file="data_analysis.log")
 
     # Check for processed dataset
     processed_path = Path("./data_cache/processed")

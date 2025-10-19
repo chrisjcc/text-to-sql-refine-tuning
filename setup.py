@@ -17,7 +17,7 @@ setup(
     url="https://github.com/chrisjcc/text-to-sql-fine-tuning",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     install_requires=[
         "torch>=2.1.0",
         "transformers>=4.36.0",
@@ -42,7 +42,6 @@ setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",

@@ -1,9 +1,15 @@
 """
 Benchmark multiple model checkpoints on test dataset.
 """
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
+
 import hydra
 from omegaconf import DictConfig
-from pathlib import Path
 from datasets import load_from_disk
 import pandas as pd
 from src.inference.inference_engine import SQLInferenceEngine

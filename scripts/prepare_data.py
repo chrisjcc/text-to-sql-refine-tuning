@@ -3,18 +3,18 @@
 Loads, preprocesses, and formats the SQL dataset.
 """
 
+import sys
+from pathlib import Path
+
 import hydra
 from omegaconf import DictConfig
-from pathlib import Path
-import logging
-import sys
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from data.dataset_loader import SQLDatasetLoader
-from data.preprocessor import SQLDataPreprocessor
-from utils.logging_utils import setup_logging
+from data.dataset_loader import SQLDatasetLoader  # noqa: E402
+from data.preprocessor import SQLDataPreprocessor  # noqa: E402
+from utils.logging_utils import setup_logging  # noqa: E402
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
