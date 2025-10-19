@@ -114,7 +114,9 @@ def train(cfg: DictConfig):
         parser=parser,
         prompt_template=cfg.training.environment.prompt_template,
         include_schema=cfg.training.environment.include_schema,
-        max_examples=cfg.training.environment.few_shot_examples
+        max_examples=cfg.training.environment.few_shot_examples,
+        dataset=dataset['train'],
+        eval_dataset=dataset.get('validation')
     )
 
     # Format dataset for GRPO
