@@ -16,7 +16,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.inference.inference_engine import SQLInferenceEngine
-from src.utils.logging_utils import setup_logging
+from src.utils.logging_utils import setup_logging_from_config
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -24,7 +24,7 @@ def run_inference(cfg: DictConfig):
     """
     Run inference on dataset.
     """
-    logger = setup_logging(cfg)
+    logger = setup_logging_from_config(cfg)
     logger.info("Starting inference")
 
     # Load model

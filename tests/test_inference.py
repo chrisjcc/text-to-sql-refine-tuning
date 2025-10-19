@@ -114,10 +114,11 @@ class TestInferenceEngine:
         mock_tokenizer = mock_torch_and_transformers['tokenizer_instance']
         mock_model = mock_torch_and_transformers['model_instance']
 
-        mock_tokenizer.return_value = {
-            'input_ids': [[1, 2, 3]],
-            'attention_mask': [[1, 1, 1]]
-        }
+        # Create a mock object that has .to() method
+        mock_inputs = MagicMock()
+        mock_inputs.to.return_value = mock_inputs
+        mock_tokenizer.return_value = mock_inputs
+
         mock_tokenizer.decode.return_value = "Test prompt SELECT * FROM users"
 
         mock_model.generate.return_value = [[1, 2, 3, 4, 5]]
@@ -147,10 +148,11 @@ class TestInferenceEngine:
         mock_tokenizer = mock_torch_and_transformers['tokenizer_instance']
         mock_model = mock_torch_and_transformers['model_instance']
 
-        mock_tokenizer.return_value = {
-            'input_ids': [[1, 2, 3], [1, 2, 3]],
-            'attention_mask': [[1, 1, 1], [1, 1, 1]]
-        }
+        # Create a mock object that has .to() method
+        mock_inputs = MagicMock()
+        mock_inputs.to.return_value = mock_inputs
+        mock_tokenizer.return_value = mock_inputs
+
         mock_tokenizer.decode.side_effect = [
             "Test prompt SELECT * FROM users",
             "Test prompt SELECT * FROM products"
@@ -176,9 +178,9 @@ class TestInferenceEngine:
         """Test loading PEFT model."""
         from src.inference.inference_engine import SQLInferenceEngine
 
-        # Mock environment and parser imports
-        with patch('src.inference.inference_engine.SQLValidationRubric'), \
-             patch('src.inference.inference_engine.TextToSQLEnvironment'):
+        # Mock environment and parser imports - they're imported inside __init__
+        with patch('src.rubrics.sql_rubric.SQLValidationRubric'), \
+             patch('src.environments.sql_env.TextToSQLEnvironment'):
 
             engine = SQLInferenceEngine(
                 model_path=temp_model_dir,
@@ -194,8 +196,8 @@ class TestInferenceEngine:
 
         # Create temp dir without adapter config (full model)
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('src.inference.inference_engine.SQLValidationRubric'), \
-                 patch('src.inference.inference_engine.TextToSQLEnvironment'):
+            with patch('src.rubrics.sql_rubric.SQLValidationRubric'), \
+                 patch('src.environments.sql_env.TextToSQLEnvironment'):
 
                 engine = SQLInferenceEngine(
                     model_path=tmpdir,
@@ -222,7 +224,11 @@ class TestInferenceEngine:
         mock_tokenizer = mock_torch_and_transformers['tokenizer_instance']
         mock_model = mock_torch_and_transformers['model_instance']
 
-        mock_tokenizer.return_value = {'input_ids': [[1, 2, 3]], 'attention_mask': [[1, 1, 1]]}
+        # Create a mock object that has .to() method
+        mock_inputs = MagicMock()
+        mock_inputs.to.return_value = mock_inputs
+        mock_tokenizer.return_value = mock_inputs
+
         mock_tokenizer.decode.return_value = "Test prompt SELECT id, name FROM users WHERE active = 1"
         mock_model.generate.return_value = [[1, 2, 3, 4, 5]]
 
@@ -247,7 +253,11 @@ class TestInferenceEngine:
         mock_tokenizer = mock_torch_and_transformers['tokenizer_instance']
         mock_model = mock_torch_and_transformers['model_instance']
 
-        mock_tokenizer.return_value = {'input_ids': [[1, 2, 3]], 'attention_mask': [[1, 1, 1]]}
+        # Create a mock object that has .to() method
+        mock_inputs = MagicMock()
+        mock_inputs.to.return_value = mock_inputs
+        mock_tokenizer.return_value = mock_inputs
+
         mock_tokenizer.decode.return_value = "Test prompt SELECT * FROM users"
         mock_model.generate.return_value = [[1, 2, 3, 4, 5]]
 
