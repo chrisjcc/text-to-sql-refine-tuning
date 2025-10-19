@@ -2,11 +2,12 @@
 Publish trained model to HuggingFace Hub.
 """
 import argparse
-from pathlib import Path
-from huggingface_hub import HfApi, create_repo, upload_folder
-import os
-import logging
 import json
+import logging
+import os
+from pathlib import Path
+
+from huggingface_hub import HfApi, create_repo, upload_folder
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -193,7 +194,7 @@ def publish_model(
         commit_message="Upload fine-tuned model"
     )
 
-    logger.info(f"✅ Model published successfully!")
+    logger.info("✅ Model published successfully!")
     logger.info(f"View at: https://huggingface.co/{repo_name}")
 
 def main():

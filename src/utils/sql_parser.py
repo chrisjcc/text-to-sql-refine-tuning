@@ -5,7 +5,7 @@ formats including markdown code blocks, inline queries, and raw SQL.
 """
 
 import re
-from typing import Optional, List, Tuple
+from typing import List, Optional
 
 
 class SQLParser:

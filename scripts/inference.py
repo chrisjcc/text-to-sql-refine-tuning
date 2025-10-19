@@ -4,19 +4,20 @@ This script runs inference on a dataset using the fine-tuned model,
 computes evaluation metrics, and saves results.
 """
 
-import hydra
-from omegaconf import DictConfig
 import json
-from pathlib import Path
-from datasets import load_from_disk
-import sys
 import os
+import sys
+from pathlib import Path
+
+import hydra
+from datasets import load_from_disk
+from omegaconf import DictConfig
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.inference.inference_engine import SQLInferenceEngine
-from src.utils.logging_utils import setup_logging_from_config
+from src.inference.inference_engine import SQLInferenceEngine  # noqa: E402
+from src.utils.logging_utils import setup_logging_from_config  # noqa: E402
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
