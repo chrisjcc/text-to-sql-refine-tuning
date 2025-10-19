@@ -213,6 +213,24 @@ class ModelLoader:
         self.logger.info(f"Model loaded. Memory footprint: "
                         f"{model.get_memory_footprint() / 1e9:.2f} GB")
 
+        # CRITICAL FIX: Explicitly cast lm_head to match compute dtype when using quantization
+        # Even though we set torch_dtype during loading, transformers may not apply it to lm_head
+        # when quantization_config is set, causing Float32 lm_head with BFloat16 hidden states
+        if use_quantization and bnb_config is not None:
+            compute_dtype = bnb_config.bnb_4bit_compute_dtype
+            if hasattr(model, 'lm_head') and model.lm_head is not None:
+                # Cast the lm_head module and its parameters to compute dtype
+                model.lm_head = model.lm_head.to(compute_dtype)
+                self.logger.info(f"✓ Explicitly cast lm_head to {compute_dtype} to prevent dtype mismatch")
+
+                # Verify the cast succeeded
+                if hasattr(model.lm_head, 'weight'):
+                    actual_dtype = model.lm_head.weight.dtype
+                    if actual_dtype == compute_dtype:
+                        self.logger.info(f"✓ Verified: lm_head.weight is {actual_dtype}")
+                    else:
+                        self.logger.warning(f"⚠ Warning: lm_head.weight is {actual_dtype}, expected {compute_dtype}")
+
         # Apply PEFT if requested
         if use_peft:
             self.logger.info("Preparing model for k-bit training")
@@ -223,6 +241,24 @@ class ModelLoader:
 
             self.logger.info("Applying LoRA adapters")
             model = get_peft_model(model, lora_config)
+
+            # CRITICAL FIX PART 2: Re-cast lm_head after PEFT wrapping
+            # PEFT wrapping may reset the dtype, so we need to cast again
+            if use_quantization and bnb_config is not None:
+                compute_dtype = bnb_config.bnb_4bit_compute_dtype
+                # Access the base model through PEFT's structure
+                base_model = model.get_base_model() if hasattr(model, 'get_base_model') else model
+                if hasattr(base_model, 'lm_head') and base_model.lm_head is not None:
+                    base_model.lm_head = base_model.lm_head.to(compute_dtype)
+                    self.logger.info(f"✓ Re-cast lm_head to {compute_dtype} after PEFT wrapping")
+
+                    # Verify
+                    if hasattr(base_model.lm_head, 'weight'):
+                        actual_dtype = base_model.lm_head.weight.dtype
+                        if actual_dtype == compute_dtype:
+                            self.logger.info(f"✓ Final verification: lm_head.weight is {actual_dtype}")
+                        else:
+                            self.logger.warning(f"⚠ Final verification failed: lm_head.weight is {actual_dtype}, expected {compute_dtype}")
 
             # Print trainable parameters
             trainable_params, all_param = model.get_nb_trainable_parameters()
