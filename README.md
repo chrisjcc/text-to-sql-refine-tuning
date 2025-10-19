@@ -1,8 +1,11 @@
 # Text-to-SQL Fine-Tuning with GRPO
 
+[![Tests](https://github.com/chrisjcc/text-to-sql-refine-tuning/workflows/Tests/badge.svg)](https://github.com/chrisjcc/text-to-sql-refine-tuning/actions)
+[![Docker Build and Push](https://github.com/chrisjcc/text-to-sql-refine-tuning/workflows/Docker%20Build%20and%20Push/badge.svg)](https://github.com/chrisjcc/text-to-sql-refine-tuning/actions)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
 ![CUDA](https://img.shields.io/badge/CUDA-12.0+-green.svg)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 A comprehensive framework for fine-tuning large language models to convert natural language queries into SQL using **Group Relative Policy Optimization (GRPO)**. This project leverages the TRL library's GRPO Trainer and a verifier-based reward system to achieve robust, accurate text-to-SQL generation.
 

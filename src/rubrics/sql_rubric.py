@@ -71,7 +71,12 @@ class SQLValidationRubric:
                 "LIMIT", "OFFSET", "UNION", "DISTINCT", "AS", "ON"
             ]
 
-        self.sql_keywords = [kw.upper() for kw in sql_keywords]
+        # Filter out non-string values (e.g., boolean true/false from config parsing)
+        # and convert to uppercase
+        self.sql_keywords = [
+            kw.upper() for kw in sql_keywords
+            if isinstance(kw, str)
+        ]
 
         # Validate weights sum to 1.0
         total_weight = syntax_weight + keyword_weight + format_weight

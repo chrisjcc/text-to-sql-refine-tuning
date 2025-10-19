@@ -53,7 +53,10 @@ kl_coef: 0.05
 gamma: 1.0
 
 # Optimization
-bf16: true
+# Note: bf16 should be FALSE when using quantization
+# The bnb_4bit_compute_dtype=bfloat16 in quantization config already handles precision
+# Setting bf16=true enables PyTorch AMP which conflicts with quantized model dtypes
+bf16: false
 gradient_checkpointing: true
 optim: adamw_torch
 

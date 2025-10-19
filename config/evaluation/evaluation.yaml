@@ -1,8 +1,31 @@
-metrics:
-  - valid_sql_percentage
-  - execution_accuracy
-  - exact_match
+# Evaluation settings
+split: validation  # or test
+batch_size: 8
+load_in_4bit: false
 
+# Checkpoints to evaluate (list of paths)
+checkpoint_paths: []  # Empty means use final_model
+
+# Metrics to compute
+metrics:
+  exact_match: true
+  token_accuracy: true
+  structural_similarity: true
+  keyword_f1: true
+  complexity_analysis: true
+  execution_accuracy: false  # Requires DB connection
+
+# Output
+output_dir: ./evaluation_results
+save_per_sample: true
+save_report: true
+
+# Analysis
+analyze_errors: true
+error_analysis_samples: 20
+stratify_by_complexity: true
+
+# Legacy rubric settings (kept for backwards compatibility)
 rubric:
   type: sql_validation
 
@@ -50,5 +73,3 @@ rubric:
     check_syntax: true
     strict_mode: false  # If true, syntax errors return 0.0
     normalize_sql: true
-
-batch_size: 8
