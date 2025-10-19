@@ -23,7 +23,7 @@ setup(
         "transformers>=4.36.0",
         "datasets>=2.14.0",
         "accelerate>=0.25.0",
-        "trl>=0.7.0",
+        "trl>=0.24.0",
         "peft>=0.7.0",
         "bitsandbytes>=0.41.0",
         "verifiers>=0.1.0",
