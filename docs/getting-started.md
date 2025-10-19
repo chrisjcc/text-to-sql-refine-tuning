@@ -26,12 +26,26 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Install Flash Attention (Optional but Recommended)
+### 4. Install Development Dependencies (Optional but Recommended for Contributors)
+```bash
+pip install -r requirements-dev.txt
+```
+
+This installs:
+- Testing tools: `pytest`, `pytest-cov`, `pytest-mock`
+- Code quality tools: `black`, `flake8`, `isort`, `mypy`
+- Pre-commit hooks: `pre-commit`
+- Documentation tools: `mkdocs`, `mkdocs-material`
+- Demo app: `gradio`
+
+**Note:** If you plan to run `make lint`, `make format`, or use pre-commit hooks, you must install these dependencies.
+
+### 5. Install Flash Attention (Optional but Recommended)
 ```bash
 pip install flash-attn --no-build-isolation
 ```
 
-### 5. Setup Environment Variables
+### 6. Setup Environment Variables
 
 Create a `.env` file:
 ```bash
@@ -42,6 +56,23 @@ Edit `.env` and add your tokens:
 ```
 HF_TOKEN=your_huggingface_token
 WANDB_API_KEY=your_wandb_key
+```
+
+### 7. (Optional) Setup Pre-commit Hooks
+
+If you installed development dependencies, you can enable automatic code quality checks:
+```bash
+pre-commit install
+```
+
+This will run linting, formatting, and type checking before each commit. You can also run checks manually:
+```bash
+# Run on all files
+pre-commit run --all-files
+
+# Or use make commands
+make lint    # Check code quality
+make format  # Auto-format code
 ```
 
 ## Quick Start
