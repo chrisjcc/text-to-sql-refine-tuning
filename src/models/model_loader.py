@@ -212,25 +212,28 @@ class ModelLoader:
             self.logger.info("Preparing model for k-bit training")
             model = prepare_model_for_kbit_training(model)
 
-            # Fix dtype mismatch: Cast lm_head weight to match compute dtype when using quantization
-            # This prevents "expected scalar type Float but found BFloat16" errors
-            if use_quantization and bnb_config is not None:
-                compute_dtype = bnb_config.bnb_4bit_compute_dtype
-                if hasattr(model, 'lm_head') and model.lm_head is not None:
-                    # Convert the weight parameter directly (not just the module)
-                    if hasattr(model.lm_head, 'weight') and model.lm_head.weight is not None:
-                        model.lm_head.weight.data = model.lm_head.weight.data.to(compute_dtype)
-                        self.logger.info(f"Cast lm_head.weight to {compute_dtype} to match compute dtype")
-                    else:
-                        # Fallback to module-level casting if weight is not accessible
-                        model.lm_head = model.lm_head.to(compute_dtype)
-                        self.logger.info(f"Cast lm_head module to {compute_dtype} to match compute dtype")
-
             if lora_config is None:
                 lora_config = self.create_lora_config()
 
             self.logger.info("Applying LoRA adapters")
             model = get_peft_model(model, lora_config)
+
+            # Fix dtype mismatch: Cast lm_head weight to match compute dtype AFTER PEFT wrapping
+            # This prevents "expected scalar type Float but found BFloat16" errors
+            # IMPORTANT: Must be done after get_peft_model() to persist through PEFT wrapping
+            if use_quantization and bnb_config is not None:
+                compute_dtype = bnb_config.bnb_4bit_compute_dtype
+                # Access base model through PEFT wrapper
+                base_model = model.get_base_model() if hasattr(model, 'get_base_model') else model
+                if hasattr(base_model, 'lm_head') and base_model.lm_head is not None:
+                    # Convert the weight parameter directly
+                    if hasattr(base_model.lm_head, 'weight') and base_model.lm_head.weight is not None:
+                        base_model.lm_head.weight.data = base_model.lm_head.weight.data.to(compute_dtype)
+                        self.logger.info(f"Cast lm_head.weight to {compute_dtype} to match compute dtype (after PEFT)")
+                    else:
+                        # Fallback to module-level casting if weight is not accessible
+                        base_model.lm_head = base_model.lm_head.to(compute_dtype)
+                        self.logger.info(f"Cast lm_head module to {compute_dtype} to match compute dtype (after PEFT)")
 
             # Print trainable parameters
             trainable_params, all_param = model.get_nb_trainable_parameters()
