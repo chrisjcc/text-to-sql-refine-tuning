@@ -77,10 +77,19 @@ class SQLInferenceEngine:
         self.logger.info(f"Loading model from {self.model_path}")
 
         # Check if this is a local path
-        is_local_path = Path(self.model_path).exists()
+        # Convert to absolute path if it's a relative path
+        model_path_obj = Path(self.model_path)
+        if not model_path_obj.is_absolute():
+            # Resolve relative to current working directory
+            model_path_obj = Path.cwd() / model_path_obj
+
+        is_local_path = model_path_obj.exists()
+
+        # Use the absolute path string for loading
+        resolved_model_path = str(model_path_obj) if is_local_path else self.model_path
 
         # Check if this is a PEFT model
-        peft_config_path = Path(self.model_path) / "adapter_config.json"
+        peft_config_path = model_path_obj / "adapter_config.json"
         is_peft_model = peft_config_path.exists()
 
         if is_peft_model:
@@ -118,10 +127,10 @@ class SQLInferenceEngine:
                 )
 
             # Load PEFT adapters
-            self.logger.info(f"Loading PEFT adapters from {self.model_path}")
+            self.logger.info(f"Loading PEFT adapters from {resolved_model_path}")
             model = PeftModel.from_pretrained(
                 base_model,
-                self.model_path,
+                resolved_model_path,
                 local_files_only=is_local_path
             )
             model = model.merge_and_unload()  # Merge adapters for faster inference
@@ -130,7 +139,7 @@ class SQLInferenceEngine:
             # Load full fine-tuned model
             self.logger.info("Loading full fine-tuned model")
             model = AutoModelForCausalLM.from_pretrained(
-                self.model_path,
+                resolved_model_path,
                 device_map=self.device,
                 torch_dtype=torch.bfloat16,
                 trust_remote_code=True,
@@ -138,7 +147,7 @@ class SQLInferenceEngine:
             )
 
         # Load tokenizer - determine source path
-        tokenizer_path = self.model_path if not is_peft_model else self.base_model_name
+        tokenizer_path = resolved_model_path if not is_peft_model else self.base_model_name
         is_tokenizer_local = Path(tokenizer_path).exists()
 
         tokenizer = AutoTokenizer.from_pretrained(
