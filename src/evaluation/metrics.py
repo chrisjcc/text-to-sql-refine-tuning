@@ -4,7 +4,7 @@ Comprehensive SQL evaluation metrics.
 import logging
 from collections import Counter
 from difflib import SequenceMatcher
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import numpy as np
 import sqlparse
@@ -129,7 +129,7 @@ class SQLMetrics:
 
         return {"precision": precision, "recall": recall, "f1": f1}
 
-    def complexity_score(self, sql: str) -> Dict[str, any]:
+    def complexity_score(self, sql: str) -> Dict[str, Any]:
         """
         Analyze SQL query complexity.
 
@@ -180,10 +180,11 @@ class SQLMetrics:
         else:
             complexity_level = "complex"
 
-        complexity["complexity_level"] = complexity_level
-        complexity["complexity_score"] = score
+        result: Dict[str, Any] = dict(complexity)
+        result["complexity_level"] = complexity_level
+        result["complexity_score"] = score
 
-        return complexity
+        return result
 
     def edit_distance(self, predicted: str, reference: str) -> int:
         """
@@ -250,7 +251,7 @@ class SQLMetrics:
         """Extract structural components of SQL query."""
         sql_upper = sql.upper()
 
-        structure = {
+        structure: Dict[str, set] = {
             "select_columns": set(),
             "from_tables": set(),
             "join_tables": set(),
@@ -339,7 +340,7 @@ class ExecutionMetrics:
 
     def execution_accuracy(
         self, predicted: str, reference: str, timeout: int = 5
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Check if predicted SQL produces same results as reference.
 

@@ -4,7 +4,7 @@ Custom callbacks for SQL evaluation and enhanced WandB logging during training.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import torch
 from transformers import TrainerCallback, TrainerControl, TrainerState
@@ -14,11 +14,11 @@ from rubrics.sql_rubric import SQLValidationRubric
 
 try:
     import wandb
-
+    from types import ModuleType
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
-    wandb = None
+    wandb: Optional[ModuleType] = None
 
 
 logger = logging.getLogger(__name__)
@@ -208,7 +208,7 @@ class WandbLoggingCallback(TrainerCallback):
         args: Any,
         state: TrainerState,
         control: TrainerControl,
-        logs: Dict[str, float] = None,
+        logs: Optional[Dict[str, float]] = None,
         **kwargs,
     ):
         """Log metrics to WandB."""

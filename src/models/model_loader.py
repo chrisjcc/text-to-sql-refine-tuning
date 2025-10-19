@@ -6,11 +6,11 @@ memory-efficient fine-tuning on A100 GPUs.
 """
 
 import logging
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple, Union
 
 import torch
-from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from peft import LoraConfig, PeftModel, PeftMixedModel, TaskType, get_peft_model, prepare_model_for_kbit_training
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, PreTrainedModel
 
 
 class ModelLoader:
@@ -89,7 +89,7 @@ class ModelLoader:
             lora_alpha: LoRA alpha parameter
             lora_dropout: Dropout probability
             target_modules: Modules to apply LoRA to
-            bias: Bias training strategy
+            bias: Bias training strategy ("none", "all", or "lora_only")
             task_type: Type of task
 
         Returns:
@@ -99,12 +99,18 @@ class ModelLoader:
             # Default for Llama models
             target_modules = ["q_proj", "v_proj", "k_proj", "o_proj"]
 
+        # Ensure bias is a valid literal
+        valid_bias_values = ["none", "all", "lora_only"]
+        if bias not in valid_bias_values:
+            self.logger.warning(f"Invalid bias value '{bias}', defaulting to 'none'")
+            bias = "none"
+
         lora_config = LoraConfig(
             r=r,
             lora_alpha=lora_alpha,
             lora_dropout=lora_dropout,
             target_modules=target_modules,
-            bias=bias,
+            bias=bias,  # type: ignore[arg-type]
             task_type=task_type,
         )
 
@@ -121,7 +127,7 @@ class ModelLoader:
         lora_config: Optional[LoraConfig] = None,
         torch_dtype: Optional[torch.dtype] = None,
         attn_implementation: Optional[str] = "auto",
-    ) -> AutoModelForCausalLM:
+    ) -> Union[AutoModelForCausalLM, PeftModel, PreTrainedModel]:
         """
         Load model with optional quantization and LoRA adapters.
 
@@ -344,7 +350,7 @@ class ModelLoader:
 
     def load_model_and_tokenizer(
         self, use_quantization: bool = True, use_peft: bool = True, **kwargs
-    ) -> Tuple[AutoModelForCausalLM, AutoTokenizer]:
+    ) -> Tuple[Union[AutoModelForCausalLM, PeftModel, PreTrainedModel], AutoTokenizer]:
         """
         Convenience method to load both model and tokenizer.
 
@@ -356,13 +362,19 @@ class ModelLoader:
 
         return model, tokenizer
 
-    def print_model_info(self, model: AutoModelForCausalLM):
+    def print_model_info(self, model: Union[AutoModelForCausalLM, PeftModel, PreTrainedModel]):
         """Print detailed model information for debugging."""
         self.logger.info("\n" + "=" * 80)
         self.logger.info("Model Information:")
         self.logger.info(f"Model type: {type(model).__name__}")
-        self.logger.info(f"Device: {model.device}")
-        self.logger.info(f"Dtype: {model.dtype}")
+
+        # Handle device attribute which may not exist on all model types
+        device = getattr(model, 'device', 'unknown')
+        self.logger.info(f"Device: {device}")
+
+        # Handle dtype attribute which may not exist on all model types
+        dtype = getattr(model, 'dtype', 'unknown')
+        self.logger.info(f"Dtype: {dtype}")
 
         # Count parameters
         total_params = sum(p.numel() for p in model.parameters())

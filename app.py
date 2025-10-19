@@ -2,10 +2,11 @@
 Gradio interface for text-to-SQL demo.
 Deploy on HuggingFace Spaces.
 """
-import gradio as gr
-import torch
-from src.inference.inference_engine import SQLInferenceEngine
 import os
+
+import gradio as gr
+
+from src.inference.inference_engine import SQLInferenceEngine
 
 # Initialize model (loads on startup)
 MODEL_PATH = os.getenv("MODEL_PATH", "./outputs/final_model")

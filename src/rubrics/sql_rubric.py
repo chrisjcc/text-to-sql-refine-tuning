@@ -6,7 +6,7 @@ presence, and format quality.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import sqlparse
 from sqlparse.exceptions import SQLParseError
@@ -330,7 +330,7 @@ class SQLValidationRubric:
 
         return min(1.0, score)
 
-    def get_detailed_scores(self, output: str) -> Dict[str, float]:
+    def get_detailed_scores(self, output: str) -> Dict[str, Any]:
         """Return breakdown of scoring components.
 
         Args:

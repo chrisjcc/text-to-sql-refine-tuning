@@ -4,7 +4,7 @@ Comprehensive SQL evaluation engine.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from tqdm import tqdm
@@ -43,7 +43,7 @@ class SQLEvaluator:
         batch_size: int = 8,
         compute_execution: bool = False,
         **generation_kwargs,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Evaluate model on dataset with comprehensive metrics.
 
@@ -60,12 +60,12 @@ class SQLEvaluator:
 
         # Generate predictions
         questions = [item["question"] for item in dataset]
-        schemas = [item.get("schema") for item in dataset]
+        schemas: List[Optional[str]] = [item.get("schema") for item in dataset]
         references = [item["sql"] for item in dataset]
 
         self.logger.info("Generating predictions...")
         predictions = self.engine.batch_generate_sql(
-            questions=questions, schemas=schemas, batch_size=batch_size, **generation_kwargs
+            questions=questions, schemas=schemas, batch_size=batch_size, **generation_kwargs  # type: ignore[arg-type]
         )
 
         # Compute metrics for each sample
@@ -109,24 +109,25 @@ class SQLEvaluator:
 
     def _compute_sample_metrics(
         self, predicted: str, reference: str, compute_execution: bool = False
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """Compute all metrics for a single sample."""
-        metrics_dict = {}
+        metrics_dict: Dict[str, Any] = {}
 
         # Basic metrics
-        metrics_dict["exact_match"] = self.metrics.exact_match(predicted, reference)
-        metrics_dict["token_accuracy"] = self.metrics.token_level_accuracy(predicted, reference)
-        metrics_dict["structural_similarity"] = self.metrics.structural_similarity(
+        exact_match_result = self.metrics.exact_match(predicted, reference)
+        metrics_dict["exact_match"] = float(exact_match_result)
+        metrics_dict["token_accuracy"] = float(self.metrics.token_level_accuracy(predicted, reference))
+        metrics_dict["structural_similarity"] = float(self.metrics.structural_similarity(
             predicted, reference
-        )
+        ))
 
         # Keyword F1
         keyword_scores = self.metrics.keyword_f1(predicted, reference)
         metrics_dict.update(
             {
-                "keyword_precision": keyword_scores["precision"],
-                "keyword_recall": keyword_scores["recall"],
-                "keyword_f1": keyword_scores["f1"],
+                "keyword_precision": float(keyword_scores["precision"]),
+                "keyword_recall": float(keyword_scores["recall"]),
+                "keyword_f1": float(keyword_scores["f1"]),
             }
         )
 
@@ -134,14 +135,15 @@ class SQLEvaluator:
         pred_complexity = self.metrics.complexity_score(predicted)
         ref_complexity = self.metrics.complexity_score(reference)
 
-        metrics_dict["predicted_complexity"] = pred_complexity["complexity_level"]
-        metrics_dict["reference_complexity"] = ref_complexity["complexity_level"]
-        metrics_dict["complexity_match"] = (
-            pred_complexity["complexity_level"] == ref_complexity["complexity_level"]
+        metrics_dict["predicted_complexity"] = pred_complexity.get("complexity_level", "unknown")
+        metrics_dict["reference_complexity"] = ref_complexity.get("complexity_level", "unknown")
+        complexity_match = (
+            pred_complexity.get("complexity_level") == ref_complexity.get("complexity_level")
         )
+        metrics_dict["complexity_match"] = int(complexity_match)
 
         # Edit distance
-        metrics_dict["edit_distance"] = self.metrics.edit_distance(predicted, reference)
+        metrics_dict["edit_distance"] = int(self.metrics.edit_distance(predicted, reference))
 
         # Execution metrics (if enabled)
         if compute_execution and self.execution_metrics:
@@ -203,11 +205,11 @@ class SQLEvaluator:
             evaluation_results: Results from evaluate_dataset
             output_path: Path to save report
         """
-        output_path = Path(output_path)
-        output_path.mkdir(parents=True, exist_ok=True)
+        output_dir = Path(output_path)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         # Save JSON results
-        json_path = output_path / "evaluation_results.json"
+        json_path = output_dir / "evaluation_results.json"
         with open(json_path, "w") as f:
             # Remove per-sample results for cleaner summary
             summary = {
@@ -219,13 +221,13 @@ class SQLEvaluator:
 
         # Save per-sample results as CSV
         df = pd.DataFrame(evaluation_results["per_sample"])
-        csv_path = output_path / "per_sample_results.csv"
+        csv_path = output_dir / "per_sample_results.csv"
         df.to_csv(csv_path, index=False)
 
         # Generate markdown report
-        self._generate_markdown_report(evaluation_results, output_path)
+        self._generate_markdown_report(evaluation_results, output_dir)
 
-        self.logger.info(f"Report saved to {output_path}")
+        self.logger.info(f"Report saved to {output_dir}")
 
     def _generate_markdown_report(self, results: Dict, output_path: Path):
         """Generate markdown evaluation report."""

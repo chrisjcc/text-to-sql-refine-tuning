@@ -242,8 +242,8 @@ class GRPODatasetFormatter:
         try:
             # Get complexity distribution
             complexities = dataset["complexity"]
-            complexity_counts = {}
-            complexity_indices = {"simple": [], "medium": [], "complex": []}
+            complexity_counts: Dict[str, int] = {}
+            complexity_indices: Dict[str, List[int]] = {"simple": [], "medium": [], "complex": []}
 
             for idx, complexity in enumerate(complexities):
                 if complexity in complexity_indices:
@@ -266,12 +266,12 @@ class GRPODatasetFormatter:
                 samples_per_level[largest_level] += n_samples - total_allocated
 
             # Sample from each complexity level
-            selected_indices = []
+            selected_indices: List[int] = []
             for level, n in samples_per_level.items():
                 indices = complexity_indices[level]
                 if len(indices) > 0:
                     sample_indices = np.random.choice(indices, min(n, len(indices)), replace=False)
-                    selected_indices.extend(sample_indices.tolist())
+                    selected_indices.extend([int(idx) for idx in sample_indices])
 
             eval_dataset = dataset.select(selected_indices)
 
