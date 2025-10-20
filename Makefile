@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test lint format clean docker-build docker-run train inference
+.PHONY: help install install-dev test lint format clean docker-build docker-run prepare-data train inference benchmark publish
 
 help:
 	@echo "Available commands:"
@@ -10,8 +10,11 @@ help:
 	@echo "  clean         - Clean generated files"
 	@echo "  docker-build  - Build Docker image"
 	@echo "  docker-run    - Run Docker container"
-	@echo "  train         - Run training"
+	@echo "  prepare-data  - Download and prepare training data"
+	@echo "  train         - Run training (automatically prepares data if needed)"
 	@echo "  inference     - Run inference"
+	@echo "  benchmark     - Run benchmark tests"
+	@echo "  publish       - Publish model to HuggingFace Hub"
 
 install:
 	pip install -r requirements.txt
@@ -48,7 +51,7 @@ docker-build:
 docker-run:
 	docker-compose up -d api
 
-train:
+train: prepare-data
 	python scripts/train.py
 
 inference:
