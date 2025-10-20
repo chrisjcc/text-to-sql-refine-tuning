@@ -344,7 +344,7 @@ class SQLInferenceEngine:
         # Compute exact match if references available
         if all(r is not None for r in references):  # type: ignore[arg-type]
             exact_matches = sum(
-                int(self._normalize_sql(p["sql"]) == self._normalize_sql(r))  # type: ignore[arg-type]
+                1 if self._normalize_sql(p["sql"]) == self._normalize_sql(r) else 0  # type: ignore[arg-type, misc]
                 for p, r in zip(predictions, references)
             )
             metrics["exact_match_pct"] = exact_matches / len(dataset) * 100

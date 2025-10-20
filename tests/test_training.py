@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from datasets import Dataset
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 
 from src.environments.sql_env.environment import TextToSQLEnvironment
 from src.rubrics.sql_rubric import SQLValidationRubric

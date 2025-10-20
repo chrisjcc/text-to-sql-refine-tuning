@@ -212,13 +212,13 @@ class SQLMetrics:
         import re
 
         # First use sqlparse for basic normalization
-        normalized = sqlparse.format(
+        normalized = str(sqlparse.format(
             sql,
             keyword_case="upper",
             identifier_case="lower",
             strip_whitespace=True,
             reindent=False,
-        ).strip()
+        )).strip()
 
         # Additional normalization: standardize spacing around operators
         # Add spaces around = , < , > , != , <= , >= operators
@@ -239,7 +239,7 @@ class SQLMetrics:
         """Tokenize SQL query."""
         parsed = sqlparse.parse(sql)
         if not parsed:
-            return []
+            return []  # type: ignore[no-any-return]
 
         tokens = []
         for statement in parsed:
