@@ -4,7 +4,7 @@ Comprehensive SQL evaluation metrics.
 import logging
 from collections import Counter
 from difflib import SequenceMatcher
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import numpy as np
 import sqlparse
@@ -92,7 +92,7 @@ class SQLMetrics:
             if union > 0:
                 scores.append(intersection / union)
 
-        return np.mean(scores) if scores else 0.0
+        return float(np.mean(scores)) if scores else 0.0
 
     def keyword_f1(self, predicted: str, reference: str) -> Dict[str, float]:
         """

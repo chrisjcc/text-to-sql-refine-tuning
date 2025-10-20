@@ -74,7 +74,7 @@ def run_inference(cfg: DictConfig):
 
     results = engine.batch_generate_sql(
         questions=[item["question"] for item in eval_data],
-        schemas=[item.get("schema") for item in eval_data],
+        schemas=[item.get("schema") for item in eval_data],  # type: ignore[misc]
         batch_size=cfg.inference.get("batch_size", 4),
         max_new_tokens=cfg.inference.get("max_new_tokens", 256),
         temperature=cfg.inference.get("temperature", 0.1),

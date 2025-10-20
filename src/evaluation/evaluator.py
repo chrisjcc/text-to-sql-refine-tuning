@@ -4,7 +4,7 @@ Comprehensive SQL evaluation engine.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from tqdm import tqdm
@@ -60,12 +60,12 @@ class SQLEvaluator:
 
         # Generate predictions
         questions = [item["question"] for item in dataset]
-        schemas = [item.get("schema") for item in dataset]
+        schemas = [item.get("schema") for item in dataset]  # type: ignore[misc]
         references = [item["sql"] for item in dataset]
 
         self.logger.info("Generating predictions...")
         predictions = self.engine.batch_generate_sql(
-            questions=questions, schemas=schemas, batch_size=batch_size, **generation_kwargs
+            questions=questions, schemas=schemas, batch_size=batch_size, **generation_kwargs  # type: ignore[arg-type]
         )
 
         # Compute metrics for each sample

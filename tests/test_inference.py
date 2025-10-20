@@ -183,7 +183,7 @@ class TestInferenceEngine:
         with patch('src.rubrics.sql_rubric.SQLValidationRubric'), \
              patch('src.environments.sql_env.TextToSQLEnvironment'):
 
-            _engine = SQLInferenceEngine(
+            _engine = SQLInferenceEngine(  # noqa: F841
                 model_path=temp_model_dir,
                 base_model_name="test-model"
             )
@@ -200,7 +200,7 @@ class TestInferenceEngine:
             with patch('src.rubrics.sql_rubric.SQLValidationRubric'), \
                  patch('src.environments.sql_env.TextToSQLEnvironment'):
 
-                _engine = SQLInferenceEngine(
+                _engine = SQLInferenceEngine(  # noqa: F841
                     model_path=tmpdir,
                     base_model_name="test-model"
                 )

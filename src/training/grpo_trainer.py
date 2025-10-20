@@ -121,7 +121,7 @@ class SQLGRPOTrainer:
                 f"Min: {min_reward:.3f}, Max: {max_reward:.3f}"
             )
 
-        return rewards
+        return rewards  # type: ignore[no-any-return]
 
     def train(self):
         """Run GRPO training."""
@@ -157,7 +157,7 @@ class SQLGRPOTrainer:
         # Run evaluation
         metrics = self.trainer.evaluate(eval_dataset=dataset)
 
-        return metrics
+        return metrics  # type: ignore[no-any-return]
 
     def save_model(self, output_dir: str):
         """Save trained model and adapters."""

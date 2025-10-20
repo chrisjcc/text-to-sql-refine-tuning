@@ -5,7 +5,7 @@ creating prompts and structuring data for reinforcement learning.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 from datasets import Dataset

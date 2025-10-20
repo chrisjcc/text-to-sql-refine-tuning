@@ -6,6 +6,7 @@ with schema loading, syntax highlighting, and result visualization.
 
 import argparse
 import logging
+from typing import Optional
 
 from rich.console import Console
 from rich.panel import Panel
@@ -29,7 +30,7 @@ class SQLInteractiveCLI:
         """
         self.engine = engine
         self.console = Console()
-        self.schema = None
+        self.schema: Optional[str] = None
         self.logger = logging.getLogger(__name__)
 
     def set_schema(self, schema: str):
