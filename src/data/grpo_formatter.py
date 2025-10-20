@@ -239,7 +239,7 @@ class GRPODatasetFormatter:
                 "Using random sampling instead of stratified."
             )
             indices = np.random.choice(len(dataset), min(n_samples, len(dataset)), replace=False)
-            return dataset.select(indices.tolist())
+            return dataset.select(list(indices))
 
         # Stratified sampling by complexity
         try:

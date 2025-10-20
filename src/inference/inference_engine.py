@@ -7,10 +7,10 @@ from natural language questions using fine-tuned models.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import torch
-from peft import PeftModel
+from peft import PeftModel, PreTrainedModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 logger = logging.getLogger(__name__)
@@ -90,6 +90,8 @@ class SQLInferenceEngine:
         # Check if this is a PEFT model
         peft_config_path = model_path_obj / "adapter_config.json"
         is_peft_model = peft_config_path.exists()
+
+        model: Union[PeftModel, PreTrainedModel]
 
         if is_peft_model:
             self.logger.info("Detected PEFT model, loading with adapters")

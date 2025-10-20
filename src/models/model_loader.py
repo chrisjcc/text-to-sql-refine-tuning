@@ -9,7 +9,14 @@ import logging
 from typing import Any, List, Literal, Optional, Tuple, Union
 
 import torch
-from peft import LoraConfig, PeftModel, TaskType, get_peft_model, prepare_model_for_kbit_training
+from peft import (
+    LoraConfig,
+    PeftMixedModel,
+    PeftModel,
+    TaskType,
+    get_peft_model,
+    prepare_model_for_kbit_training,
+)
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, PreTrainedModel
 
 
@@ -210,7 +217,7 @@ class ModelLoader:
         self, model: Union[PeftModel, PreTrainedModel]
     ) -> List[Tuple[str, Any]]:
         """Get all model variants in the PEFT structure that may have lm_head."""
-        models_to_check = []
+        models_to_check: List[Tuple[str, Any]] = []
         if hasattr(model, "lm_head"):
             models_to_check.append(("peft_wrapper", model))
         if hasattr(model, "get_base_model"):
@@ -223,7 +230,7 @@ class ModelLoader:
                 models_to_check.append(("underlying_model", underlying_model))
         return models_to_check
 
-    def _cast_peft_lm_heads(self, model: Union[PeftModel, PreTrainedModel], compute_dtype: torch.dtype) -> None:  # type: ignore[misc]
+    def _cast_peft_lm_heads(self, model: Union[PeftMixedModel, PeftModel, PreTrainedModel], compute_dtype: torch.dtype) -> None:  # type: ignore[misc]
         """Cast lm_head at all levels in the PEFT structure."""
         models_to_check = self._get_peft_model_variants(model)
         for model_name, model_obj in models_to_check:
