@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import torch
-from peft import PeftModel, PreTrainedModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
 
 logger = logging.getLogger(__name__)
 
