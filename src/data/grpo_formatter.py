@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 from datasets import Dataset
 
-from environments.sql_env.environment import TextToSQLEnvironment
+from src.environments.sql_env.environment import TextToSQLEnvironment
 
 logger = logging.getLogger(__name__)
 

@@ -7,16 +7,16 @@ import hydra
 from datasets import load_from_disk
 from omegaconf import DictConfig, OmegaConf
 
-from data.grpo_formatter import GRPODatasetFormatter
-from environments.sql_env.environment import TextToSQLEnvironment
-from models.config_utils import create_bnb_config_from_hydra, create_lora_config_from_hydra
-from models.model_loader import ModelLoader
-from rubrics.sql_rubric import SQLValidationRubric
-from training.callbacks import SQLEvaluationCallback
-from training.config_builder import GRPOConfigBuilder
-from training.grpo_trainer import SQLGRPOTrainer
-from utils.logging_utils import setup_logging_from_config
-from utils.sql_parser import SQLParser
+from src.data.grpo_formatter import GRPODatasetFormatter
+from src.environments.sql_env.environment import TextToSQLEnvironment
+from src.models.config_utils import create_bnb_config_from_hydra, create_lora_config_from_hydra
+from src.models.model_loader import ModelLoader
+from src.rubrics.sql_rubric import SQLValidationRubric
+from src.training.callbacks import SQLEvaluationCallback
+from src.training.config_builder import GRPOConfigBuilder
+from src.training.grpo_trainer import SQLGRPOTrainer
+from src.utils.logging_utils import setup_logging_from_config
+from src.utils.sql_parser import SQLParser
 
 try:
     import wandb  # type: ignore
