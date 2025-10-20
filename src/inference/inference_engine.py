@@ -146,7 +146,7 @@ class SQLInferenceEngine:
 
         # Load tokenizer - determine source path
         tokenizer_path = resolved_model_path if not is_peft_model else self.base_model_name
-        is_tokenizer_local = Path(tokenizer_path).exists() if tokenizer_path else False
+        is_tokenizer_local = Path(tokenizer_path).exists() if tokenizer_path is not None else False
 
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_path, trust_remote_code=True, local_files_only=is_tokenizer_local
@@ -342,7 +342,7 @@ class SQLInferenceEngine:
         }
 
         # Compute exact match if references available
-        if all(r is not None for r in references):  # type: ignore[misc]
+        if all(r is not None for r in references):  # type: ignore[arg-type]
             exact_matches = sum(
                 1
                 for p, r in zip(predictions, references)

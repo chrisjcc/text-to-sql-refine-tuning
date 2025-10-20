@@ -218,11 +218,11 @@ class BatchSQLScorer:
 
                 # Add extracted SQL if requested
                 if include_extracted_sql:
-                    metadata["extracted_sql"] = detailed.get("extracted_sql")  # type: ignore[dict-item]
+                    metadata["extracted_sql"] = detailed.get("extracted_sql")  # type: ignore[assignment]
 
                 # Add reference if provided
                 if references and i < len(references):
-                    metadata["reference"] = references[i]  # type: ignore[dict-item]
+                    metadata["reference"] = references[i]  # type: ignore[assignment]
 
                 results.append(metadata)
 

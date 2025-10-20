@@ -91,7 +91,7 @@ class GRPODatasetFormatter:
 
     def _initialize_results_dict(self, examples: Dict) -> Dict:
         """Initialize the results dictionary for formatting."""
-        results = {
+        results: Dict[str, List] = {
             "prompt": [],
             "question": [],
             "schema": [],
@@ -274,7 +274,8 @@ class GRPODatasetFormatter:
                 indices = complexity_indices[level]
                 if len(indices) > 0:
                     sample_indices = np.random.choice(indices, min(n, len(indices)), replace=False)
-                    selected_indices.extend(sample_indices.tolist())
+                    # Convert numpy array to list of ints
+                    selected_indices.extend([int(idx) for idx in sample_indices])
 
             eval_dataset = dataset.select(selected_indices)
 
