@@ -214,7 +214,7 @@ class ModelLoader:
                     )
 
     def _get_peft_model_variants(
-        self, model: Union[PeftModel, PreTrainedModel]
+        self, model: Union[PeftMixedModel, PeftModel, PreTrainedModel]
     ) -> List[Tuple[str, Any]]:
         """Get all model variants in the PEFT structure that may have lm_head."""
         models_to_check: List[Tuple[str, Any]] = []
