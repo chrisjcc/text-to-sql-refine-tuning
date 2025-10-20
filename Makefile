@@ -51,16 +51,16 @@ docker-build:
 docker-run:
 	docker-compose up -d api
 
-train: prepare-data
+train: install prepare-data
 	python scripts/train.py
 
-inference:
+inference: install
 	python scripts/inference.py
 
 prepare-data:
 	python scripts/prepare_data.py
 
-benchmark:
+benchmark: install
 	python scripts/benchmark.py
 
 publish:
