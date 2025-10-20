@@ -1,6 +1,7 @@
 """
 Benchmark multiple model checkpoints on test dataset.
 """
+
 import sys
 from pathlib import Path
 

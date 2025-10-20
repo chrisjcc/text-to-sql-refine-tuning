@@ -1,6 +1,7 @@
 """
 Publish trained model to HuggingFace Hub.
 """
+
 import argparse
 import json
 import logging

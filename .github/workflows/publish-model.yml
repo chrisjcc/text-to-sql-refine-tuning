@@ -19,13 +19,13 @@ on:
         description: 'Make repo private'
         required: false
         default: 'true'
-        
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Print Release Information
       if: github.event_name == 'release' || github.event_name == 'push'
       run: |
@@ -33,16 +33,16 @@ jobs:
         echo "Release Name: ${{ github.event.release.name }}"
         echo "Release Description: ${{ github.event.release.body }}"
         echo "Ref Name: ${{ github.ref_name }}"
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-        
+
     - name: Install dependencies
       run: |
         pip install huggingface_hub
-        
+
     - name: Publish to Hub
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}

@@ -71,7 +71,7 @@ def save_config(cfg: DictConfig, output_path: str) -> None:
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path_obj, 'w') as f:
+    with open(output_path_obj, "w") as f:
         OmegaConf.save(cfg, f)
 
 

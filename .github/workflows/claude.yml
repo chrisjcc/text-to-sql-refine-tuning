@@ -33,7 +33,7 @@ jobs:
       pull-requests: write
       issues: write
       id-token: write
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -50,36 +50,36 @@ jobs:
           echo "::notice::Event: ${{ github.event_name }}"
           echo "::notice::Repository: ${{ github.repository }}"
           echo "::endgroup::"
-      
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          
+
           # Specify model explicitly for clarity and consistency
           claude_args: |
             --model ${{ env.CLAUDE_MODEL }}
-          
+
           # Customize trigger phrase if needed
           trigger_phrase: ${{ env.CLAUDE_TRIGGER_PHRASE }}
-          
+
           # Enable assignee-based triggering
           assignee_trigger: ${{ env.CLAUDE_ASSIGNEE_TRIGGER }}
-          
+
           # Optional: Allow Claude to run specific commands
           # Uncomment and customize as needed for your project
           # claude_args: |
           #   --model ${{ env.CLAUDE_MODEL }}
           #   --allowedTools "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
           #   --max-turns 10
-          
+
           # Optional: Add custom system prompt for project-specific behavior
           # claude_args: |
           #   --model ${{ env.CLAUDE_MODEL }}
           #   --system-prompt "Follow our coding standards. Ensure all new code has tests. Use TypeScript for new files."
-          
+
       - name: Log completion
         if: always()
         run: |

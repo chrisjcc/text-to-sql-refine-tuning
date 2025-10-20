@@ -1,7 +1,8 @@
 """Setup configuration for text-to-sql-fine-tuning package."""
 
-from setuptools import setup, find_packages
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 # Read the contents of README file
 this_directory = Path(__file__).parent
