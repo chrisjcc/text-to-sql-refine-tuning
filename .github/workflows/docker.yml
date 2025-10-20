@@ -29,7 +29,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract metadata for Docker
+    - name: Extract Docker metadata
       id: meta
       uses: docker/metadata-action@v4
       with:
@@ -39,12 +39,29 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
 
+    # Add `latest` tag only for main branch releases
+    - name: Add latest tag if on main
+      if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+      run: |
+        DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | awk '{print $NF}')
+        CURRENT_BRANCH=$(git branch -r --contains ${{ github.ref }} | sed -n 's|.*/\(.*\)|\1|p' | grep -v HEAD | head -n1)
+        echo "Default branch: $DEFAULT_BRANCH"
+        echo "Tag branch: $CURRENT_BRANCH"
+        if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
+          echo "Tag is from default branch ($DEFAULT_BRANCH). Adding :latest tag."
+          echo "LATEST_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_ENV
+        else
+          echo "Skipping :latest tag (tag not from $DEFAULT_BRANCH)."
+        fi
+
     - name: Build and Push Docker image
       uses: docker/build-push-action@v4
       with:
         context: .
-        push: true  # Always push on tag/release events
-        tags: ${{ steps.meta.outputs.tags }}
+        push: true
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+          ${{ env.LATEST_TAG }}
         labels: ${{ steps.meta.outputs.labels }}
 
     - name: Print Release Info
