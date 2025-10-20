@@ -1,10 +1,10 @@
 """Unit tests for training module."""
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from datasets import Dataset
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 
 from src.environments.sql_env.environment import TextToSQLEnvironment
 from src.rubrics.sql_rubric import SQLValidationRubric

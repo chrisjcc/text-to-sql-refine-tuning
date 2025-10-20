@@ -7,7 +7,7 @@ from natural language questions using fine-tuned models.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import torch
 from peft import PeftModel
@@ -146,7 +146,7 @@ class SQLInferenceEngine:
 
         # Load tokenizer - determine source path
         tokenizer_path = resolved_model_path if not is_peft_model else self.base_model_name
-        is_tokenizer_local = Path(tokenizer_path).exists()
+        is_tokenizer_local = Path(tokenizer_path).exists() if tokenizer_path else False
 
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_path, trust_remote_code=True, local_files_only=is_tokenizer_local
@@ -254,7 +254,7 @@ class SQLInferenceEngine:
             List of result dictionaries
         """
         if schemas is None:
-            schemas = [None] * len(questions)
+            schemas = [None] * len(questions)  # type: ignore[list-item]
 
         if len(questions) != len(schemas):
             raise ValueError("Number of questions and schemas must match")
@@ -319,11 +319,11 @@ class SQLInferenceEngine:
         self.logger.info(f"Evaluating on {len(dataset)} samples")
 
         questions = [item["question"] for item in dataset]
-        schemas = [item.get("schema") for item in dataset]
+        schemas = [item.get("schema") for item in dataset]  # type: ignore[misc]
         references = [item.get("sql") for item in dataset]
 
         # Generate predictions
-        predictions = self.batch_generate_sql(questions, schemas, **generation_kwargs)
+        predictions = self.batch_generate_sql(questions, schemas, **generation_kwargs)  # type: ignore[arg-type]
 
         # Compute metrics
         from ..rubrics.sql_rubric import SQLValidationRubric
@@ -342,11 +342,11 @@ class SQLInferenceEngine:
         }
 
         # Compute exact match if references available
-        if all(r is not None for r in references):
+        if all(r is not None for r in references):  # type: ignore[misc]
             exact_matches = sum(
                 1
                 for p, r in zip(predictions, references)
-                if self._normalize_sql(p["sql"]) == self._normalize_sql(r)
+                if self._normalize_sql(p["sql"]) == self._normalize_sql(r)  # type: ignore[arg-type]
             )
             metrics["exact_match_pct"] = exact_matches / len(dataset) * 100
 
@@ -360,4 +360,4 @@ class SQLInferenceEngine:
         """Normalize SQL for comparison."""
         import sqlparse
 
-        return sqlparse.format(sql, keyword_case="upper", strip_whitespace=True).strip()
+        return str(sqlparse.format(sql, keyword_case="upper", strip_whitespace=True).strip())

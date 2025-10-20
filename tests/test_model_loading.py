@@ -101,7 +101,7 @@ class TestModelLoader:
         mock_get_peft.return_value = mock_model
 
         loader = ModelLoader(model_name="test-model")
-        _model = loader.load_model(
+        _model = loader.load_model(  # noqa: F841
             use_quantization=True,
             use_peft=True
         )
@@ -119,7 +119,7 @@ class TestModelLoader:
         mock_auto_model.from_pretrained.return_value = mock_model
 
         loader = ModelLoader(model_name="test-model")
-        _model = loader.load_model(
+        _model = loader.load_model(  # noqa: F841
             use_quantization=False,
             use_peft=False
         )
@@ -141,7 +141,7 @@ class TestModelLoader:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        _tokenizer = loader.load_tokenizer(
+        _tokenizer = loader.load_tokenizer(  # noqa: F841
             padding_side="left",
             add_eos_token=True,
             add_bos_token=False
@@ -171,14 +171,14 @@ class TestModelLoader:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        _model, _tokenizer = loader.load_model_and_tokenizer(
+        model, tokenizer = loader.load_model_and_tokenizer(
             use_quantization=False,
             use_peft=False
         )
 
         # These are not None assertions
-        assert _model is not None
-        assert _tokenizer is not None
+        assert model is not None
+        assert tokenizer is not None
 
     @patch('src.models.model_loader.AutoModelForCausalLM')
     @patch('src.models.model_loader.prepare_model_for_kbit_training')

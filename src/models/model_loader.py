@@ -113,6 +113,147 @@ class ModelLoader:
         )
         return lora_config
 
+    def _prepare_quantization_config(
+        self, use_quantization: bool, bnb_config: Optional[BitsAndBytesConfig], torch_dtype: Optional[torch.dtype]
+    ) -> Tuple[Optional[BitsAndBytesConfig], torch.dtype]:
+        """Prepare quantization configuration and torch dtype."""
+        if use_quantization:
+            if bnb_config is None:
+                bnb_config = self.create_bnb_config()
+            quantization_config = bnb_config
+            if torch_dtype is None:
+                torch_dtype = bnb_config.bnb_4bit_compute_dtype
+                self.logger.info(
+                    f"Setting torch_dtype to {torch_dtype} to match quantization compute dtype"
+                )
+        else:
+            quantization_config = None
+            if torch_dtype is None:
+                torch_dtype = torch.bfloat16
+        return quantization_config, torch_dtype
+
+    def _determine_attention_implementation(self, attn_implementation: Optional[str]) -> Optional[str]:
+        """Determine which attention implementation to use."""
+        if attn_implementation == "auto":
+            if torch.cuda.is_available():
+                try:
+                    import flash_attn  # noqa: F401
+                    self.logger.info("Using Flash Attention 2 for improved performance")
+                    return "flash_attention_2"
+                except (ImportError, ModuleNotFoundError):
+                    self.logger.warning(
+                        "Flash Attention 2 not available. Install with: pip install flash-attn --no-build-isolation"
+                    )
+                    return None
+        elif attn_implementation is not None:
+            return attn_implementation
+        return None
+
+    def _load_base_model(
+        self, quantization_config: Optional[BitsAndBytesConfig], torch_dtype: torch.dtype, attn_impl: Optional[str]
+    ) -> AutoModelForCausalLM:
+        """Load the base model with retry logic for attention implementation."""
+        try:
+            return AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                quantization_config=quantization_config,
+                device_map=self.device_map,
+                trust_remote_code=self.trust_remote_code,
+                cache_dir=self.cache_dir,
+                torch_dtype=torch_dtype,
+                attn_implementation=attn_impl,
+            )
+        except Exception as e:
+            if attn_impl == "flash_attention_2" and "flash_attn" in str(e):
+                self.logger.warning(f"Failed to load model with Flash Attention 2: {str(e)}")
+                self.logger.info("Retrying with default attention implementation...")
+                return AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    quantization_config=quantization_config,
+                    device_map=self.device_map,
+                    trust_remote_code=self.trust_remote_code,
+                    cache_dir=self.cache_dir,
+                    torch_dtype=torch_dtype,
+                    attn_implementation=None,
+                )
+            else:
+                raise
+
+    def _cast_lm_head_dtype(self, model: AutoModelForCausalLM, compute_dtype: torch.dtype) -> None:
+        """Cast lm_head weight to the specified compute dtype."""
+        if hasattr(model, "lm_head") and model.lm_head is not None:
+            if hasattr(model.lm_head, "weight") and model.lm_head.weight is not None:
+                original_dtype = model.lm_head.weight.dtype
+                model.lm_head.weight.data = model.lm_head.weight.data.to(compute_dtype)
+                self.logger.info(f"✓ Cast lm_head.weight.data from {original_dtype} to {compute_dtype}")
+
+                actual_dtype = model.lm_head.weight.dtype
+                if actual_dtype == compute_dtype:
+                    self.logger.info(f"✓ Verified: lm_head.weight is {actual_dtype}")
+                else:
+                    self.logger.warning(
+                        f"⚠ Verification failed: lm_head.weight is {actual_dtype}, expected {compute_dtype}"
+                    )
+
+    def _get_peft_model_variants(self, model: AutoModelForCausalLM) -> list:
+        """Get all model variants in the PEFT structure that may have lm_head."""
+        models_to_check = []
+        if hasattr(model, "lm_head"):
+            models_to_check.append(("peft_wrapper", model))
+        if hasattr(model, "get_base_model"):
+            base_model = model.get_base_model()
+            if hasattr(base_model, "lm_head"):
+                models_to_check.append(("base_model", base_model))
+        if hasattr(model, "base_model") and hasattr(model.base_model, "model"):
+            underlying_model = model.base_model.model
+            if hasattr(underlying_model, "lm_head"):
+                models_to_check.append(("underlying_model", underlying_model))
+        return models_to_check
+
+    def _cast_peft_lm_heads(self, model: AutoModelForCausalLM, compute_dtype: torch.dtype) -> None:
+        """Cast lm_head at all levels in the PEFT structure."""
+        models_to_check = self._get_peft_model_variants(model)
+        for model_name, model_obj in models_to_check:
+            if hasattr(model_obj.lm_head, "weight") and model_obj.lm_head.weight is not None:
+                original_dtype = model_obj.lm_head.weight.dtype
+                if original_dtype != compute_dtype:
+                    model_obj.lm_head.weight.data = model_obj.lm_head.weight.data.to(compute_dtype)
+                    self.logger.info(
+                        f"✓ Cast {model_name}.lm_head.weight.data from {original_dtype} to {compute_dtype}"
+                    )
+                actual_dtype = model_obj.lm_head.weight.dtype
+                if actual_dtype == compute_dtype:
+                    self.logger.info(f"✓ Verified {model_name}.lm_head.weight is {actual_dtype}")
+                else:
+                    self.logger.warning(
+                        f"⚠ {model_name}.lm_head.weight is {actual_dtype}, expected {compute_dtype}"
+                    )
+
+    def _apply_peft(
+        self, model: AutoModelForCausalLM, lora_config: Optional[LoraConfig],
+        use_quantization: bool, bnb_config: Optional[BitsAndBytesConfig]
+    ) -> AutoModelForCausalLM:
+        """Apply PEFT (LoRA) to the model."""
+        self.logger.info("Preparing model for k-bit training")
+        model = prepare_model_for_kbit_training(model)
+
+        if lora_config is None:
+            lora_config = self.create_lora_config()
+
+        self.logger.info("Applying LoRA adapters")
+        model = get_peft_model(model, lora_config)
+
+        if use_quantization and bnb_config is not None:
+            self._cast_peft_lm_heads(model, bnb_config.bnb_4bit_compute_dtype)
+
+        trainable_params, all_param = model.get_nb_trainable_parameters()
+        self.logger.info(
+            f"Trainable params: {trainable_params:,} || "
+            f"All params: {all_param:,} || "
+            f"Trainable %: {100 * trainable_params / all_param:.2f}"
+        )
+        return model
+
     def load_model(
         self,
         use_quantization: bool = True,
@@ -139,166 +280,19 @@ class ModelLoader:
         """
         self.logger.info(f"Loading model: {self.model_name}")
 
-        # Prepare quantization config
-        if use_quantization:
-            if bnb_config is None:
-                bnb_config = self.create_bnb_config()
-            quantization_config = bnb_config
-            # CRITICAL: Set torch_dtype even when using quantization
-            # This ensures non-quantized layers (like lm_head) use the same dtype as quantized layers' compute dtype
-            # Without this, lm_head defaults to float32 while quantized layers compute in bfloat16, causing dtype mismatch
-            if torch_dtype is None:
-                torch_dtype = bnb_config.bnb_4bit_compute_dtype
-                self.logger.info(
-                    f"Setting torch_dtype to {torch_dtype} to match quantization compute dtype"
-                )
-        else:
-            quantization_config = None
-            if torch_dtype is None:
-                torch_dtype = torch.bfloat16
-
-        # Determine attention implementation
-        attn_impl = None
-        if attn_implementation == "auto":
-            # Try flash_attention_2 if CUDA is available
-            if torch.cuda.is_available():
-                try:
-                    # Test if flash_attn can be imported
-                    import flash_attn  # noqa: F401
-
-                    attn_impl = "flash_attention_2"
-                    self.logger.info("Using Flash Attention 2 for improved performance")
-                except (ImportError, ModuleNotFoundError):
-                    self.logger.warning(
-                        "Flash Attention 2 not available. Install with: pip install flash-attn --no-build-isolation"
-                    )
-                    attn_impl = None  # Use default attention
-        elif attn_implementation is not None:
-            attn_impl = attn_implementation
-
-        # Load base model
-        try:
-            model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                quantization_config=quantization_config,
-                device_map=self.device_map,
-                trust_remote_code=self.trust_remote_code,
-                cache_dir=self.cache_dir,
-                torch_dtype=torch_dtype,  # Always set torch_dtype, even with quantization
-                attn_implementation=attn_impl,
-            )
-        except Exception as e:
-            # If flash attention fails during model loading, retry without it
-            if attn_impl == "flash_attention_2" and "flash_attn" in str(e):
-                self.logger.warning(f"Failed to load model with Flash Attention 2: {str(e)}")
-                self.logger.info("Retrying with default attention implementation...")
-                model = AutoModelForCausalLM.from_pretrained(
-                    self.model_name,
-                    quantization_config=quantization_config,
-                    device_map=self.device_map,
-                    trust_remote_code=self.trust_remote_code,
-                    cache_dir=self.cache_dir,
-                    torch_dtype=torch_dtype,  # Always set torch_dtype, even with quantization
-                    attn_implementation=None,
-                )
-            else:
-                raise
-
-        self.logger.info(
-            f"Model loaded. Memory footprint: " f"{model.get_memory_footprint() / 1e9:.2f} GB"
+        quantization_config, torch_dtype = self._prepare_quantization_config(
+            use_quantization, bnb_config, torch_dtype
         )
+        attn_impl = self._determine_attention_implementation(attn_implementation)
+        model = self._load_base_model(quantization_config, torch_dtype, attn_impl)
 
-        # CRITICAL FIX: Explicitly cast lm_head weight DATA (not just the module) when using quantization
-        # The issue: .to(dtype) on modules doesn't always persist with quantized models
-        # Solution: Directly cast the weight.data tensor in-place
+        self.logger.info(f"Model loaded. Memory footprint: {model.get_memory_footprint() / 1e9:.2f} GB")
+
         if use_quantization and bnb_config is not None:
-            compute_dtype = bnb_config.bnb_4bit_compute_dtype
-            if hasattr(model, "lm_head") and model.lm_head is not None:
-                if hasattr(model.lm_head, "weight") and model.lm_head.weight is not None:
-                    # Cast the weight data directly (in-place)
-                    original_dtype = model.lm_head.weight.dtype
-                    model.lm_head.weight.data = model.lm_head.weight.data.to(compute_dtype)
-                    self.logger.info(
-                        f"✓ Cast lm_head.weight.data from {original_dtype} to {compute_dtype}"
-                    )
+            self._cast_lm_head_dtype(model, bnb_config.bnb_4bit_compute_dtype)
 
-                    # Verify the cast succeeded
-                    actual_dtype = model.lm_head.weight.dtype
-                    if actual_dtype == compute_dtype:
-                        self.logger.info(f"✓ Verified: lm_head.weight is {actual_dtype}")
-                    else:
-                        self.logger.warning(
-                            f"⚠ Verification failed: lm_head.weight is {actual_dtype}, expected {compute_dtype}"
-                        )
-
-        # Apply PEFT if requested
         if use_peft:
-            self.logger.info("Preparing model for k-bit training")
-            model = prepare_model_for_kbit_training(model)
-
-            if lora_config is None:
-                lora_config = self.create_lora_config()
-
-            self.logger.info("Applying LoRA adapters")
-            model = get_peft_model(model, lora_config)
-
-            # CRITICAL FIX PART 2: Re-cast lm_head weight DATA after PEFT wrapping
-            # PEFT wrapping may create new model wrappers, need to cast at all levels
-            if use_quantization and bnb_config is not None:
-                compute_dtype = bnb_config.bnb_4bit_compute_dtype
-
-                # Try multiple access paths through PEFT's nested structure
-                models_to_check = []
-
-                # Path 1: Direct access (top-level PEFT wrapper)
-                if hasattr(model, "lm_head"):
-                    models_to_check.append(("peft_wrapper", model))
-
-                # Path 2: get_base_model() method
-                if hasattr(model, "get_base_model"):
-                    base_model = model.get_base_model()
-                    if hasattr(base_model, "lm_head"):
-                        models_to_check.append(("base_model", base_model))
-
-                # Path 3: base_model.model (nested PEFT structure)
-                if hasattr(model, "base_model") and hasattr(model.base_model, "model"):
-                    underlying_model = model.base_model.model
-                    if hasattr(underlying_model, "lm_head"):
-                        models_to_check.append(("underlying_model", underlying_model))
-
-                # Cast lm_head at ALL levels found
-                for model_name, model_obj in models_to_check:
-                    if (
-                        hasattr(model_obj.lm_head, "weight")
-                        and model_obj.lm_head.weight is not None
-                    ):
-                        original_dtype = model_obj.lm_head.weight.dtype
-                        if original_dtype != compute_dtype:
-                            model_obj.lm_head.weight.data = model_obj.lm_head.weight.data.to(
-                                compute_dtype
-                            )
-                            self.logger.info(
-                                f"✓ Cast {model_name}.lm_head.weight.data from {original_dtype} to {compute_dtype}"
-                            )
-
-                        # Verify
-                        actual_dtype = model_obj.lm_head.weight.dtype
-                        if actual_dtype == compute_dtype:
-                            self.logger.info(
-                                f"✓ Verified {model_name}.lm_head.weight is {actual_dtype}"
-                            )
-                        else:
-                            self.logger.warning(
-                                f"⚠ {model_name}.lm_head.weight is {actual_dtype}, expected {compute_dtype}"
-                            )
-
-            # Print trainable parameters
-            trainable_params, all_param = model.get_nb_trainable_parameters()
-            self.logger.info(
-                f"Trainable params: {trainable_params:,} || "
-                f"All params: {all_param:,} || "
-                f"Trainable %: {100 * trainable_params / all_param:.2f}"
-            )
+            model = self._apply_peft(model, lora_config, use_quantization, bnb_config)
 
         return model
 

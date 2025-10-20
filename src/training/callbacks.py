@@ -4,7 +4,7 @@ Custom callbacks for SQL evaluation and enhanced WandB logging during training.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import torch
 from transformers import TrainerCallback, TrainerControl, TrainerState
@@ -98,10 +98,10 @@ class SQLEvaluationCallback(TrainerCallback):
                 question=sample["question"], context={"schema": sample["schema"]}
             )
 
-            inputs = self.tokenizer(prompt, return_tensors="pt").to(model.device)
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(model.device)  # type: ignore[union-attr]
 
             with torch.no_grad():
-                outputs = model.generate(
+                outputs = model.generate(  # type: ignore[union-attr]
                     **inputs,
                     max_new_tokens=256,
                     temperature=0.1,
@@ -208,7 +208,7 @@ class WandbLoggingCallback(TrainerCallback):
         args: Any,
         state: TrainerState,
         control: TrainerControl,
-        logs: Dict[str, float] = None,
+        logs: Optional[Dict[str, float]] = None,
         **kwargs,
     ):
         """Log metrics to WandB."""
