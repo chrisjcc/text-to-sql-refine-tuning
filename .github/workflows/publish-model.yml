@@ -1,4 +1,11 @@
 # .github/workflows/publish-model.yml
+# Workflow Summary:
+# ✅ Publishes model to Hugging Face Hub (only if the release/tag originated from the main branch)
+# ✅ Attaches selected artifacts (e.g., model card, config, tokenizer files) to the GitHub Release page
+# ✅ Supports manual dispatch for ad-hoc or re-run publishing
+# ✅ Safely skips publishing for tags created on non-main branches
+# ✅ Uses Hugging Face token (HF_TOKEN) for authenticated model uploads
+# ✅ Automatically runs on semver tag pushes (vX.Y.Z) and GitHub release publications
 name: Publish Model to Hub
 
 on:
