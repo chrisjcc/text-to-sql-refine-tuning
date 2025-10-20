@@ -231,7 +231,7 @@ class TestSQLEvaluator:
         assert 'token_accuracy' in metrics
         assert 'structural_similarity' in metrics
         assert 'keyword_f1' in metrics
-        assert metrics['exact_match'] is True
+        assert metrics['exact_match'] == 1.0
 
     def test_compute_aggregate_metrics(self):
         """Test computing aggregate metrics."""
