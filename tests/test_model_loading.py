@@ -171,14 +171,14 @@ class TestModelLoader:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        model, tokenizer = loader.load_model_and_tokenizer(
+        _model, _tokenizer = loader.load_model_and_tokenizer(
             use_quantization=False,
             use_peft=False
-        )
+        )  # noqa: F841
 
         # These are not None assertions
-        assert model is not None
-        assert tokenizer is not None
+        assert _model is not None
+        assert _tokenizer is not None
 
     @patch('src.models.model_loader.AutoModelForCausalLM')
     @patch('src.models.model_loader.prepare_model_for_kbit_training')

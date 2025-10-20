@@ -362,14 +362,14 @@ class SQLValidationRubric:
             + self.format_weight * format_score
         )
 
-        return {
+        return {  # type: ignore[dict-item]
             "total": max(0.0, min(1.0, total_score)),
             "syntax": syntax_score,
             "syntax_valid": is_valid,
             "keywords": keyword_score,
             "format": format_score,
             "extracted_sql": sql,
-            "weights": {  # type: ignore[dict-item]
+            "weights": {
                 "syntax": self.syntax_weight,
                 "keywords": self.keyword_weight,
                 "format": self.format_weight,

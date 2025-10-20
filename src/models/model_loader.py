@@ -188,7 +188,7 @@ class ModelLoader:
             else:
                 raise
 
-    def _cast_lm_head_dtype(self, model: AutoModelForCausalLM, compute_dtype: torch.dtype) -> None:
+    def _cast_lm_head_dtype(self, model: Union[PeftModel, PreTrainedModel], compute_dtype: torch.dtype) -> None:  # type: ignore[misc]
         """Cast lm_head weight to the specified compute dtype."""
         if hasattr(model, "lm_head") and model.lm_head is not None:
             if hasattr(model.lm_head, "weight") and model.lm_head.weight is not None:
@@ -206,7 +206,7 @@ class ModelLoader:
                         f"⚠ Verification failed: lm_head.weight is {actual_dtype}, expected {compute_dtype}"
                     )
 
-    def _get_peft_model_variants(self, model: AutoModelForCausalLM) -> list:
+    def _get_peft_model_variants(self, model: Union[PeftModel, PreTrainedModel]) -> list:  # type: ignore[misc]
         """Get all model variants in the PEFT structure that may have lm_head."""
         models_to_check = []
         if hasattr(model, "lm_head"):
@@ -221,7 +221,7 @@ class ModelLoader:
                 models_to_check.append(("underlying_model", underlying_model))
         return models_to_check
 
-    def _cast_peft_lm_heads(self, model: AutoModelForCausalLM, compute_dtype: torch.dtype) -> None:
+    def _cast_peft_lm_heads(self, model: Union[PeftModel, PreTrainedModel], compute_dtype: torch.dtype) -> None:  # type: ignore[misc]
         """Cast lm_head at all levels in the PEFT structure."""
         models_to_check = self._get_peft_model_variants(model)
         for model_name, model_obj in models_to_check:
@@ -308,7 +308,7 @@ class ModelLoader:
             self._cast_lm_head_dtype(model, bnb_config.bnb_4bit_compute_dtype)
 
         if use_peft:
-            model = self._apply_peft(model, lora_config, use_quantization, bnb_config)
+            model = self._apply_peft(model, lora_config, use_quantization, bnb_config)  # type: ignore[assignment]
 
         return model
 
@@ -350,7 +350,7 @@ class ModelLoader:
             f"EOS={tokenizer.eos_token}, BOS={tokenizer.bos_token}"
         )
 
-        return tokenizer  # type: ignore[return-value]
+        return tokenizer  # type: ignore[no-any-return]
 
     def load_model_and_tokenizer(
         self, use_quantization: bool = True, use_peft: bool = True, **kwargs
