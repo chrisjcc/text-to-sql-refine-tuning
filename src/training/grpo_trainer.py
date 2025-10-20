@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional
 from datasets import Dataset
 from trl import GRPOConfig, GRPOTrainer
 
-from environments.sql_env.environment import TextToSQLEnvironment
-from rubrics.sql_rubric import SQLValidationRubric
+from src.environments.sql_env.environment import TextToSQLEnvironment
+from src.rubrics.sql_rubric import SQLValidationRubric
 
 logger = logging.getLogger(__name__)
 
