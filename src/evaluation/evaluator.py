@@ -114,19 +114,17 @@ class SQLEvaluator:
         metrics_dict = {}
 
         # Basic metrics
-        metrics_dict["exact_match"] = self.metrics.exact_match(predicted, reference)  # type: ignore[dict-item]
-        metrics_dict["token_accuracy"] = self.metrics.token_level_accuracy(predicted, reference)  # type: ignore[dict-item]
-        metrics_dict["structural_similarity"] = self.metrics.structural_similarity(  # type: ignore[dict-item]
-            predicted, reference
-        )
+        metrics_dict["exact_match"] = float(self.metrics.exact_match(predicted, reference))  # type: ignore[assignment]
+        metrics_dict["token_accuracy"] = float(self.metrics.token_level_accuracy(predicted, reference))  # type: ignore[assignment]
+        metrics_dict["structural_similarity"] = float(self.metrics.structural_similarity(predicted, reference))  # type: ignore[assignment]
 
         # Keyword F1
         keyword_scores = self.metrics.keyword_f1(predicted, reference)
         metrics_dict.update(
             {
-                "keyword_precision": keyword_scores["precision"],
-                "keyword_recall": keyword_scores["recall"],
-                "keyword_f1": keyword_scores["f1"],
+                "keyword_precision": float(keyword_scores["precision"]),
+                "keyword_recall": float(keyword_scores["recall"]),
+                "keyword_f1": float(keyword_scores["f1"]),
             }
         )
 
@@ -136,12 +134,12 @@ class SQLEvaluator:
 
         metrics_dict["predicted_complexity"] = pred_complexity["complexity_level"]
         metrics_dict["reference_complexity"] = ref_complexity["complexity_level"]
-        metrics_dict["complexity_match"] = (  # type: ignore[dict-item]
-            pred_complexity["complexity_level"] == ref_complexity["complexity_level"]  # type: ignore[operator]
-        )
+        metrics_dict["complexity_match"] = int(
+            pred_complexity["complexity_level"] == ref_complexity["complexity_level"]
+        )  # type: ignore[assignment]
 
         # Edit distance
-        metrics_dict["edit_distance"] = self.metrics.edit_distance(predicted, reference)
+        metrics_dict["edit_distance"] = int(self.metrics.edit_distance(predicted, reference))
 
         # Execution metrics (if enabled)
         if compute_execution and self.execution_metrics:

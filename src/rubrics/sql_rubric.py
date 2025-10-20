@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Tuple
 import sqlparse
 from sqlparse.exceptions import SQLParseError
 
-from utils.sql_parser import SQLParser
+from src.utils.sql_parser import SQLParser
 
 logger = logging.getLogger(__name__)
 

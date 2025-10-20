@@ -144,33 +144,25 @@ class SQLMetrics:
         if not parsed:
             return {"complexity": "invalid", "score": 0}
 
-        complexity = {
-            "num_tokens": len(self._tokenize_sql(sql)),
-            "num_tables": self._count_tables(sql),
-            "num_joins": sql.upper().count("JOIN"),
-            "has_subquery": "SELECT" in sql.upper()[sql.upper().find("FROM") :]
-            if "FROM" in sql.upper()
-            else False,
-            "has_aggregation": any(
-                agg in sql.upper() for agg in ["SUM", "COUNT", "AVG", "MAX", "MIN"]
-            ),
-            "has_group_by": "GROUP BY" in sql.upper(),
-            "has_order_by": "ORDER BY" in sql.upper(),
-            "has_having": "HAVING" in sql.upper(),
-            "num_conditions": sql.upper().count("WHERE")
-            + sql.upper().count("AND")
-            + sql.upper().count("OR"),
-        }
+        num_tokens = len(self._tokenize_sql(sql))
+        num_tables = self._count_tables(sql)
+        num_joins = sql.upper().count("JOIN")
+        has_subquery = "SELECT" in sql.upper()[sql.upper().find("FROM") :] if "FROM" in sql.upper() else False
+        has_aggregation = any(agg in sql.upper() for agg in ["SUM", "COUNT", "AVG", "MAX", "MIN"])
+        has_group_by = "GROUP BY" in sql.upper()
+        has_order_by = "ORDER BY" in sql.upper()
+        has_having = "HAVING" in sql.upper()
+        num_conditions = sql.upper().count("WHERE") + sql.upper().count("AND") + sql.upper().count("OR")
 
         # Compute overall complexity score
         score = (
-            complexity["num_tokens"] * 0.1
-            + complexity["num_tables"] * 5
-            + complexity["num_joins"] * 10
-            + (20 if complexity["has_subquery"] else 0)
-            + (10 if complexity["has_aggregation"] else 0)
-            + (10 if complexity["has_group_by"] else 0)
-            + complexity["num_conditions"] * 3
+            num_tokens * 0.1
+            + num_tables * 5
+            + num_joins * 10
+            + (20 if has_subquery else 0)
+            + (10 if has_aggregation else 0)
+            + (10 if has_group_by else 0)
+            + num_conditions * 3
         )
 
         if score < 20:
@@ -180,8 +172,19 @@ class SQLMetrics:
         else:
             complexity_level = "complex"
 
-        complexity["complexity_level"] = str(complexity_level)
-        complexity["complexity_score"] = float(score)
+        complexity = {
+            "num_tokens": num_tokens,
+            "num_tables": num_tables,
+            "num_joins": num_joins,
+            "has_subquery": has_subquery,
+            "has_aggregation": has_aggregation,
+            "has_group_by": has_group_by,
+            "has_order_by": has_order_by,
+            "has_having": has_having,
+            "num_conditions": num_conditions,
+            "complexity_level": str(complexity_level),
+            "complexity_score": float(score),
+        }
 
         return complexity
 

@@ -6,11 +6,11 @@ memory-efficient fine-tuning on A100 GPUs.
 """
 
 import logging
-from typing import Optional, Tuple
+from typing import Literal, Optional, Tuple, Union
 
 import torch
-from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from peft import LoraConfig, PeftModel, TaskType, get_peft_model, prepare_model_for_kbit_training
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, PreTrainedModel
 
 
 class ModelLoader:
@@ -78,7 +78,7 @@ class ModelLoader:
         lora_alpha: int = 32,
         lora_dropout: float = 0.05,
         target_modules: Optional[list] = None,
-        bias: str = "none",
+        bias: Literal["none", "all", "lora_only"] = "none",
         task_type: TaskType = TaskType.CAUSAL_LM,
     ) -> LoraConfig:
         """
@@ -160,7 +160,7 @@ class ModelLoader:
         quantization_config: Optional[BitsAndBytesConfig],
         torch_dtype: torch.dtype,
         attn_impl: Optional[str],
-    ) -> AutoModelForCausalLM:
+    ) -> PreTrainedModel:
         """Load the base model with retry logic for attention implementation."""
         try:
             return AutoModelForCausalLM.from_pretrained(
@@ -242,31 +242,31 @@ class ModelLoader:
 
     def _apply_peft(
         self,
-        model: AutoModelForCausalLM,
+        model: PreTrainedModel,
         lora_config: Optional[LoraConfig],
         use_quantization: bool,
         bnb_config: Optional[BitsAndBytesConfig],
-    ) -> AutoModelForCausalLM:
+    ) -> PeftModel:
         """Apply PEFT (LoRA) to the model."""
         self.logger.info("Preparing model for k-bit training")
-        model = prepare_model_for_kbit_training(model)
+        prepared_model = prepare_model_for_kbit_training(model)
 
         if lora_config is None:
             lora_config = self.create_lora_config()
 
         self.logger.info("Applying LoRA adapters")
-        model = get_peft_model(model, lora_config)
+        peft_model = get_peft_model(prepared_model, lora_config)
 
         if use_quantization and bnb_config is not None:
-            self._cast_peft_lm_heads(model, bnb_config.bnb_4bit_compute_dtype)
+            self._cast_peft_lm_heads(peft_model, bnb_config.bnb_4bit_compute_dtype)
 
-        trainable_params, all_param = model.get_nb_trainable_parameters()
+        trainable_params, all_param = peft_model.get_nb_trainable_parameters()
         self.logger.info(
             f"Trainable params: {trainable_params:,} || "
             f"All params: {all_param:,} || "
             f"Trainable %: {100 * trainable_params / all_param:.2f}"
         )
-        return model
+        return peft_model  # type: ignore[return-value]
 
     def load_model(
         self,
@@ -276,7 +276,7 @@ class ModelLoader:
         lora_config: Optional[LoraConfig] = None,
         torch_dtype: Optional[torch.dtype] = None,
         attn_implementation: Optional[str] = "auto",
-    ) -> AutoModelForCausalLM:
+    ) -> Union[PreTrainedModel, PeftModel]:
         """
         Load model with optional quantization and LoRA adapters.
 
@@ -350,11 +350,11 @@ class ModelLoader:
             f"EOS={tokenizer.eos_token}, BOS={tokenizer.bos_token}"
         )
 
-        return tokenizer
+        return tokenizer  # type: ignore[return-value]
 
     def load_model_and_tokenizer(
         self, use_quantization: bool = True, use_peft: bool = True, **kwargs
-    ) -> Tuple[AutoModelForCausalLM, AutoTokenizer]:
+    ) -> Tuple[Union[PreTrainedModel, PeftModel], AutoTokenizer]:
         """
         Convenience method to load both model and tokenizer.
 
@@ -366,17 +366,17 @@ class ModelLoader:
 
         return model, tokenizer
 
-    def print_model_info(self, model: AutoModelForCausalLM):
+    def print_model_info(self, model: Union[PreTrainedModel, PeftModel]):
         """Print detailed model information for debugging."""
         self.logger.info("\n" + "=" * 80)
         self.logger.info("Model Information:")
         self.logger.info(f"Model type: {type(model).__name__}")
-        self.logger.info(f"Device: {model.device}")
-        self.logger.info(f"Dtype: {model.dtype}")
+        self.logger.info(f"Device: {model.device}")  # type: ignore[attr-defined]
+        self.logger.info(f"Dtype: {model.dtype}")  # type: ignore[attr-defined]
 
         # Count parameters
-        total_params = sum(p.numel() for p in model.parameters())
-        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        total_params = sum(p.numel() for p in model.parameters())  # type: ignore[attr-defined]
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)  # type: ignore[attr-defined]
 
         self.logger.info(f"Total parameters: {total_params:,}")
         self.logger.info(f"Trainable parameters: {trainable_params:,}")

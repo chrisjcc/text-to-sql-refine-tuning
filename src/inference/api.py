@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Request models
 class SQLGenerationRequest(BaseModel):
     question: str = Field(..., description="Natural language question")
-    schema: Optional[str] = Field(None, description="Database schema")
+    schema: Optional[str] = Field(default=None, description="Database schema")
     max_new_tokens: int = Field(256, ge=1, le=1024)
     temperature: float = Field(0.1, ge=0.0, le=2.0)
     top_p: float = Field(0.95, ge=0.0, le=1.0)
