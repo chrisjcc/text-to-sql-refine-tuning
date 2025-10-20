@@ -273,7 +273,9 @@ class GRPODatasetFormatter:
             for level, n in samples_per_level.items():
                 indices = complexity_indices[level]
                 if len(indices) > 0:
-                    sample_indices_arr = np.random.choice(indices, min(n, len(indices)), replace=False)
+                    sample_indices_arr = np.random.choice(
+                        indices, min(n, len(indices)), replace=False
+                    )
                     # Convert numpy array to list of ints
                     selected_indices.extend([int(idx) for idx in sample_indices_arr])
 

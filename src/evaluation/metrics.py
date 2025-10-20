@@ -1,6 +1,7 @@
 """
 Comprehensive SQL evaluation metrics.
 """
+
 import logging
 from collections import Counter
 from difflib import SequenceMatcher
@@ -147,12 +148,16 @@ class SQLMetrics:
         num_tokens = len(self._tokenize_sql(sql))
         num_tables = self._count_tables(sql)
         num_joins = sql.upper().count("JOIN")
-        has_subquery = "SELECT" in sql.upper()[sql.upper().find("FROM") :] if "FROM" in sql.upper() else False
+        has_subquery = (
+            "SELECT" in sql.upper()[sql.upper().find("FROM") :] if "FROM" in sql.upper() else False
+        )
         has_aggregation = any(agg in sql.upper() for agg in ["SUM", "COUNT", "AVG", "MAX", "MIN"])
         has_group_by = "GROUP BY" in sql.upper()
         has_order_by = "ORDER BY" in sql.upper()
         has_having = "HAVING" in sql.upper()
-        num_conditions = sql.upper().count("WHERE") + sql.upper().count("AND") + sql.upper().count("OR")
+        num_conditions = (
+            sql.upper().count("WHERE") + sql.upper().count("AND") + sql.upper().count("OR")
+        )
 
         # Compute overall complexity score
         score = (
@@ -212,13 +217,15 @@ class SQLMetrics:
         import re
 
         # First use sqlparse for basic normalization
-        normalized = str(sqlparse.format(
-            sql,
-            keyword_case="upper",
-            identifier_case="lower",
-            strip_whitespace=True,
-            reindent=False,
-        )).strip()
+        normalized = str(
+            sqlparse.format(
+                sql,
+                keyword_case="upper",
+                identifier_case="lower",
+                strip_whitespace=True,
+                reindent=False,
+            )
+        ).strip()
 
         # Additional normalization: standardize spacing around operators
         # Add spaces around = , < , > , != , <= , >= operators
