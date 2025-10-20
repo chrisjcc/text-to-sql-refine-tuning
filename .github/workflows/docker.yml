@@ -1,3 +1,11 @@
+# .github/workflows/docker.yml
+# Workflow Summary:
+# ✅ Builds and publishes Docker images to GitHub Container Registry (ghcr.io)
+# ✅ Automatically triggered by semver tag pushes (vX.Y.Z) or published GitHub releases
+# ✅ Pushes versioned tags (vX.Y.Z, vX.Y) and adds 'latest' tag only for main branch releases
+# ✅ Embeds metadata (labels, semver info) into the Docker image
+# ✅ Skips pull_request and branch push events to prevent unnecessary builds
+# ✅ Uses GitHub’s built-in GITHUB_TOKEN for secure authentication with ghcr.io
 name: Docker Build and Push
 
 on:
