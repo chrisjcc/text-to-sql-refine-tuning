@@ -1,11 +1,12 @@
-.PHONY: help install test lint format clean docker-build docker-run train inference
+.PHONY: help install install-dev test lint format clean docker-build docker-run train inference
 
 help:
 	@echo "Available commands:"
 	@echo "  install       - Install dependencies"
+	@echo "  install-dev   - Install dependencies including dev tools"
 	@echo "  test          - Run tests"
-	@echo "  lint          - Run linting checks"
-	@echo "  format        - Format code"
+	@echo "  lint          - Run linting checks (requires install-dev)"
+	@echo "  format        - Format code (requires install-dev)"
 	@echo "  clean         - Clean generated files"
 	@echo "  docker-build  - Build Docker image"
 	@echo "  docker-run    - Run Docker container"
@@ -14,6 +15,11 @@ help:
 
 install:
 	pip install -r requirements.txt
+	pip install -e .
+
+install-dev:
+	pip install -r requirements.txt
+	pip install -r requirements-dev.txt
 	pip install -e .
 
 test:
