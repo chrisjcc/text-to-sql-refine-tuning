@@ -152,9 +152,7 @@ class SQLValidationRubric:
 
     def _has_meaningful_tokens(self, statement) -> bool:
         """Check if statement has at least one meaningful token."""
-        meaningful_tokens = [
-            t for t in statement.tokens if not t.is_whitespace and str(t).strip()
-        ]
+        meaningful_tokens = [t for t in statement.tokens if not t.is_whitespace and str(t).strip()]
         return len(meaningful_tokens) > 0
 
     def _check_syntax_error_patterns(self, sql: str) -> Tuple[bool, float]:
@@ -211,6 +209,7 @@ class SQLValidationRubric:
     def _find_keywords_in_sql(self, sql_upper: str) -> list:
         """Find all matching keywords in the SQL string."""
         import re
+
         keywords_found = []
         for keyword in self.sql_keywords:
             if keyword in sql_upper:

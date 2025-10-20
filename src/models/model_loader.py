@@ -114,7 +114,10 @@ class ModelLoader:
         return lora_config
 
     def _prepare_quantization_config(
-        self, use_quantization: bool, bnb_config: Optional[BitsAndBytesConfig], torch_dtype: Optional[torch.dtype]
+        self,
+        use_quantization: bool,
+        bnb_config: Optional[BitsAndBytesConfig],
+        torch_dtype: Optional[torch.dtype],
     ) -> Tuple[Optional[BitsAndBytesConfig], torch.dtype]:
         """Prepare quantization configuration and torch dtype."""
         if use_quantization:
@@ -132,12 +135,15 @@ class ModelLoader:
                 torch_dtype = torch.bfloat16
         return quantization_config, torch_dtype
 
-    def _determine_attention_implementation(self, attn_implementation: Optional[str]) -> Optional[str]:
+    def _determine_attention_implementation(
+        self, attn_implementation: Optional[str]
+    ) -> Optional[str]:
         """Determine which attention implementation to use."""
         if attn_implementation == "auto":
             if torch.cuda.is_available():
                 try:
                     import flash_attn  # noqa: F401
+
                     self.logger.info("Using Flash Attention 2 for improved performance")
                     return "flash_attention_2"
                 except (ImportError, ModuleNotFoundError):
@@ -150,7 +156,10 @@ class ModelLoader:
         return None
 
     def _load_base_model(
-        self, quantization_config: Optional[BitsAndBytesConfig], torch_dtype: torch.dtype, attn_impl: Optional[str]
+        self,
+        quantization_config: Optional[BitsAndBytesConfig],
+        torch_dtype: torch.dtype,
+        attn_impl: Optional[str],
     ) -> AutoModelForCausalLM:
         """Load the base model with retry logic for attention implementation."""
         try:
@@ -185,7 +194,9 @@ class ModelLoader:
             if hasattr(model.lm_head, "weight") and model.lm_head.weight is not None:
                 original_dtype = model.lm_head.weight.dtype
                 model.lm_head.weight.data = model.lm_head.weight.data.to(compute_dtype)
-                self.logger.info(f"✓ Cast lm_head.weight.data from {original_dtype} to {compute_dtype}")
+                self.logger.info(
+                    f"✓ Cast lm_head.weight.data from {original_dtype} to {compute_dtype}"
+                )
 
                 actual_dtype = model.lm_head.weight.dtype
                 if actual_dtype == compute_dtype:
@@ -230,8 +241,11 @@ class ModelLoader:
                     )
 
     def _apply_peft(
-        self, model: AutoModelForCausalLM, lora_config: Optional[LoraConfig],
-        use_quantization: bool, bnb_config: Optional[BitsAndBytesConfig]
+        self,
+        model: AutoModelForCausalLM,
+        lora_config: Optional[LoraConfig],
+        use_quantization: bool,
+        bnb_config: Optional[BitsAndBytesConfig],
     ) -> AutoModelForCausalLM:
         """Apply PEFT (LoRA) to the model."""
         self.logger.info("Preparing model for k-bit training")
@@ -286,7 +300,9 @@ class ModelLoader:
         attn_impl = self._determine_attention_implementation(attn_implementation)
         model = self._load_base_model(quantization_config, torch_dtype, attn_impl)
 
-        self.logger.info(f"Model loaded. Memory footprint: {model.get_memory_footprint() / 1e9:.2f} GB")
+        self.logger.info(
+            f"Model loaded. Memory footprint: {model.get_memory_footprint() / 1e9:.2f} GB"
+        )
 
         if use_quantization and bnb_config is not None:
             self._cast_lm_head_dtype(model, bnb_config.bnb_4bit_compute_dtype)

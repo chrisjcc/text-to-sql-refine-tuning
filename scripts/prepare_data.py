@@ -52,6 +52,7 @@ def _ensure_dataset_splits(dataset, cfg: DictConfig, loader: SQLDatasetLoader, l
         )
     else:
         from datasets import DatasetDict
+
         logger.info("Using entire dataset as training set")
         return DatasetDict({"train": dataset})
 
