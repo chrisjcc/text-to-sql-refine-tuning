@@ -6,7 +6,7 @@ memory-efficient fine-tuning on A100 GPUs.
 """
 
 import logging
-from typing import Literal, Optional, Tuple, Union
+from typing import Any, List, Literal, Optional, Tuple, Union
 
 import torch
 from peft import LoraConfig, PeftModel, TaskType, get_peft_model, prepare_model_for_kbit_training
@@ -206,7 +206,9 @@ class ModelLoader:
                         f"⚠ Verification failed: lm_head.weight is {actual_dtype}, expected {compute_dtype}"
                     )
 
-    def _get_peft_model_variants(self, model: Union[PeftModel, PreTrainedModel]) -> list:  # type: ignore[misc]
+    def _get_peft_model_variants(
+        self, model: Union[PeftModel, PreTrainedModel]
+    ) -> List[Tuple[str, Any]]:
         """Get all model variants in the PEFT structure that may have lm_head."""
         models_to_check = []
         if hasattr(model, "lm_head"):
