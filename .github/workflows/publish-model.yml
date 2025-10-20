@@ -1,6 +1,11 @@
+# .github/workflows/publish-model.yml
 name: Publish Model to Hub
-
 on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'  # Only trigger on semver tags like v1.0.0
   workflow_dispatch:
     inputs:
       model_path:
@@ -14,27 +19,35 @@ on:
         description: 'Make repo private'
         required: false
         default: 'true'
-
+        
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-
+    
+    - name: Print Release Information
+      if: github.event_name == 'release' || github.event_name == 'push'
+      run: |
+        echo "Release Tag: ${{ github.event.release.tag_name }}"
+        echo "Release Name: ${{ github.event.release.name }}"
+        echo "Release Description: ${{ github.event.release.body }}"
+        echo "Ref Name: ${{ github.ref_name }}"
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-
+        
     - name: Install dependencies
       run: |
         pip install huggingface_hub
-
+        
     - name: Publish to Hub
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python scripts/publish_to_hub.py \
-          --model-path ${{ github.event.inputs.model_path }} \
-          --repo-name ${{ github.event.inputs.repo_name }} \
-          --private ${{ github.event.inputs.private }}
+          --model-path ${{ github.event.inputs.model_path || './outputs/final_model' }} \
+          --repo-name ${{ github.event.inputs.repo_name || format('my-model-{0}', github.ref_name) }} \
+          --private ${{ github.event.inputs.private || 'true' }}
