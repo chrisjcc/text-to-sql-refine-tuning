@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Tuple
 import sqlparse
 from datasets import Dataset
 
-from utils.sql_parser import SQLParser
+from src.utils.sql_parser import SQLParser
 
 logger = logging.getLogger(__name__)
 

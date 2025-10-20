@@ -9,8 +9,8 @@ from typing import Any, Dict, Optional
 import torch
 from transformers import TrainerCallback, TrainerControl, TrainerState
 
-from environments.sql_env.environment import TextToSQLEnvironment
-from rubrics.sql_rubric import SQLValidationRubric
+from src.environments.sql_env.environment import TextToSQLEnvironment
+from src.rubrics.sql_rubric import SQLValidationRubric
 
 try:
     import wandb  # type: ignore
