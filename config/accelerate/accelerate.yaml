@@ -1,3 +1,5 @@
+# config/accelerate/accelerate.yaml
+# Training in distributed environments
 compute_environment: LOCAL_MACHINE
 debug: false
 distributed_type: MULTI_CPU
