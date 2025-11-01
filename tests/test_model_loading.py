@@ -4,18 +4,19 @@ This module contains comprehensive tests for the ModelLoader class
 and configuration utilities.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 import torch
-from unittest.mock import Mock, patch, MagicMock
 from omegaconf import OmegaConf
 
-from src.models.model_loader import ModelLoader
 from src.models.config_utils import (
-    create_model_config_from_hydra,
     create_bnb_config_from_hydra,
     create_lora_config_from_hydra,
+    create_model_config_from_hydra,
     estimate_memory_requirements,
 )
+from src.models.model_loader import ModelLoader
 
 
 class TestModelLoader:
@@ -27,7 +28,7 @@ class TestModelLoader:
             model_name="meta-llama/Llama-3.1-8B-Instruct",
             cache_dir="./cache",
             device_map="auto",
-            trust_remote_code=True
+            trust_remote_code=True,
         )
 
         assert loader.model_name == "meta-llama/Llama-3.1-8B-Instruct"
@@ -43,7 +44,7 @@ class TestModelLoader:
             load_in_4bit=True,
             bnb_4bit_compute_dtype="bfloat16",
             bnb_4bit_quant_type="nf4",
-            bnb_4bit_use_double_quant=True
+            bnb_4bit_use_double_quant=True,
         )
 
         assert config.load_in_4bit is True
@@ -56,11 +57,7 @@ class TestModelLoader:
         loader = ModelLoader(model_name="test-model")
 
         config = loader.create_lora_config(
-            r=16,
-            lora_alpha=32,
-            lora_dropout=0.05,
-            target_modules={"q_proj", "v_proj"},
-            bias="none"
+            r=16, lora_alpha=32, lora_dropout=0.05, target_modules={"q_proj", "v_proj"}, bias="none"
         )
 
         assert config.r == 16
@@ -81,14 +78,11 @@ class TestModelLoader:
         assert "k_proj" in config.target_modules
         assert "o_proj" in config.target_modules
 
-    @patch('src.models.model_loader.AutoModelForCausalLM')
-    @patch('src.models.model_loader.prepare_model_for_kbit_training')
-    @patch('src.models.model_loader.get_peft_model')
+    @patch("src.models.model_loader.AutoModelForCausalLM")
+    @patch("src.models.model_loader.prepare_model_for_kbit_training")
+    @patch("src.models.model_loader.get_peft_model")
     def test_model_loading_with_quantization(
-        self,
-        mock_get_peft,
-        mock_prepare_kbit,
-        mock_auto_model
+        self, mock_get_peft, mock_prepare_kbit, mock_auto_model
     ):
         """Test model loading with quantization enabled."""
         # Setup mocks
@@ -100,17 +94,14 @@ class TestModelLoader:
         mock_get_peft.return_value = mock_model
 
         loader = ModelLoader(model_name="test-model")
-        model = loader.load_model(
-            use_quantization=True,
-            use_peft=True
-        )
+        _model = loader.load_model(use_quantization=True, use_peft=True)  # noqa: F841
 
         # Verify model loading was called
         mock_auto_model.from_pretrained.assert_called_once()
         call_kwargs = mock_auto_model.from_pretrained.call_args[1]
-        assert call_kwargs['quantization_config'] is not None
+        assert call_kwargs["quantization_config"] is not None
 
-    @patch('src.models.model_loader.AutoModelForCausalLM')
+    @patch("src.models.model_loader.AutoModelForCausalLM")
     def test_model_loading_without_quantization(self, mock_auto_model):
         """Test model loading without quantization."""
         mock_model = MagicMock()
@@ -118,18 +109,15 @@ class TestModelLoader:
         mock_auto_model.from_pretrained.return_value = mock_model
 
         loader = ModelLoader(model_name="test-model")
-        model = loader.load_model(
-            use_quantization=False,
-            use_peft=False
-        )
+        _model = loader.load_model(use_quantization=False, use_peft=False)  # noqa: F841
 
         # Verify model loading was called
         mock_auto_model.from_pretrained.assert_called_once()
         call_kwargs = mock_auto_model.from_pretrained.call_args[1]
-        assert call_kwargs['quantization_config'] is None
-        assert call_kwargs['torch_dtype'] == torch.bfloat16
+        assert call_kwargs["quantization_config"] is None
+        assert call_kwargs["torch_dtype"] == torch.bfloat16
 
-    @patch('src.models.model_loader.AutoTokenizer')
+    @patch("src.models.model_loader.AutoTokenizer")
     def test_tokenizer_loading(self, mock_tokenizer):
         """Test tokenizer loading and configuration."""
         mock_tok = MagicMock()
@@ -140,10 +128,8 @@ class TestModelLoader:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        tokenizer = loader.load_tokenizer(
-            padding_side="left",
-            add_eos_token=True,
-            add_bos_token=False
+        _tokenizer = loader.load_tokenizer(  # noqa: F841
+            padding_side="left", add_eos_token=True, add_bos_token=False
         )
 
         # Verify tokenizer was loaded
@@ -153,13 +139,9 @@ class TestModelLoader:
         assert mock_tok.pad_token == "<eos>"
         assert mock_tok.pad_token_id == 2
 
-    @patch('src.models.model_loader.AutoModelForCausalLM')
-    @patch('src.models.model_loader.AutoTokenizer')
-    def test_model_and_tokenizer_loading(
-        self,
-        mock_tokenizer,
-        mock_auto_model
-    ):
+    @patch("src.models.model_loader.AutoModelForCausalLM")
+    @patch("src.models.model_loader.AutoTokenizer")
+    def test_model_and_tokenizer_loading(self, mock_tokenizer, mock_auto_model):
         """Test convenience method for loading both model and tokenizer."""
         mock_model = MagicMock()
         mock_model.get_memory_footprint.return_value = 4e9
@@ -170,23 +152,18 @@ class TestModelLoader:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        model, tokenizer = loader.load_model_and_tokenizer(
-            use_quantization=False,
-            use_peft=False
-        )
+        _model, _tokenizer = loader.load_model_and_tokenizer(
+            use_quantization=False, use_peft=False
+        )  # noqa: F841
 
-        assert model is not None
-        assert tokenizer is not None
+        # These are not None assertions
+        assert _model is not None
+        assert _tokenizer is not None
 
-    @patch('src.models.model_loader.AutoModelForCausalLM')
-    @patch('src.models.model_loader.prepare_model_for_kbit_training')
-    @patch('src.models.model_loader.get_peft_model')
-    def test_peft_application(
-        self,
-        mock_get_peft,
-        mock_prepare_kbit,
-        mock_auto_model
-    ):
+    @patch("src.models.model_loader.AutoModelForCausalLM")
+    @patch("src.models.model_loader.prepare_model_for_kbit_training")
+    @patch("src.models.model_loader.get_peft_model")
+    def test_peft_application(self, mock_get_peft, mock_prepare_kbit, mock_auto_model):
         """Test PEFT adapter application."""
         mock_model = MagicMock()
         mock_model.get_memory_footprint.return_value = 4e9
@@ -196,7 +173,7 @@ class TestModelLoader:
         mock_get_peft.return_value = mock_model
 
         loader = ModelLoader(model_name="test-model")
-        model = loader.load_model(use_quantization=True, use_peft=True)
+        loader.load_model(use_quantization=True, use_peft=True)
 
         # Verify PEFT functions were called
         mock_prepare_kbit.assert_called_once()
@@ -208,7 +185,7 @@ class TestModelLoader:
         # The actual parameter counting is done by the PEFT library
         pass
 
-    @patch('src.models.model_loader.torch.cuda')
+    @patch("src.models.model_loader.torch.cuda")
     def test_print_model_info(self, mock_cuda):
         """Test model info printing."""
         mock_cuda.is_available.return_value = True
@@ -233,17 +210,14 @@ class TestConfigUtils:
 
     def test_model_config_from_hydra(self):
         """Test model config creation from Hydra config."""
-        cfg = OmegaConf.create({
-            "hf": {
-                "model": {
-                    "name": "meta-llama/Llama-3.1-8B-Instruct",
-                    "cache_dir": "./cache"
-                }
-            },
-            "training": {
-                "use_peft": True
+        cfg = OmegaConf.create(
+            {
+                "hf": {
+                    "model": {"name": "meta-llama/Llama-3.1-8B-Instruct", "cache_dir": "./cache"}
+                },
+                "training": {"use_peft": True},
             }
-        })
+        )
 
         config = create_model_config_from_hydra(cfg)
 
@@ -254,14 +228,9 @@ class TestConfigUtils:
 
     def test_bnb_config_from_hydra(self):
         """Test BnB config creation from Hydra config."""
-        cfg = OmegaConf.create({
-            "training": {
-                "peft": {
-                    "use_qlora": True,
-                    "bnb_4bit_compute_dtype": "bfloat16"
-                }
-            }
-        })
+        cfg = OmegaConf.create(
+            {"training": {"peft": {"use_qlora": True, "bnb_4bit_compute_dtype": "bfloat16"}}}
+        )
 
         config = create_bnb_config_from_hydra(cfg)
 
@@ -271,30 +240,27 @@ class TestConfigUtils:
 
     def test_bnb_config_from_hydra_disabled(self):
         """Test BnB config when QLoRA is disabled."""
-        cfg = OmegaConf.create({
-            "training": {
-                "peft": {
-                    "use_qlora": False,
-                    "bnb_4bit_compute_dtype": "bfloat16"
-                }
-            }
-        })
+        cfg = OmegaConf.create(
+            {"training": {"peft": {"use_qlora": False, "bnb_4bit_compute_dtype": "bfloat16"}}}
+        )
 
         config = create_bnb_config_from_hydra(cfg)
         assert config is None
 
     def test_lora_config_from_hydra(self):
         """Test LoRA config creation from Hydra config."""
-        cfg = OmegaConf.create({
-            "training": {
-                "peft": {
-                    "lora_r": 32,
-                    "lora_alpha": 64,
-                    "lora_dropout": 0.1,
-                    "target_modules": ["q_proj", "v_proj", "k_proj"]
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "peft": {
+                        "lora_r": 32,
+                        "lora_alpha": 64,
+                        "lora_dropout": 0.1,
+                        "target_modules": ["q_proj", "v_proj", "k_proj"],
+                    }
                 }
             }
-        })
+        )
 
         config = create_lora_config_from_hydra(cfg)
 
@@ -310,7 +276,7 @@ class TestConfigUtils:
             use_quantization=True,
             use_peft=True,
             batch_size=1,
-            sequence_length=512
+            sequence_length=512,
         )
 
         # Check all expected keys are present
@@ -330,15 +296,11 @@ class TestConfigUtils:
     def test_memory_estimation_without_quantization(self):
         """Test memory estimation without quantization."""
         memory_quant = estimate_memory_requirements(
-            model_name="test",
-            use_quantization=True,
-            use_peft=True
+            model_name="test", use_quantization=True, use_peft=True
         )
 
         memory_no_quant = estimate_memory_requirements(
-            model_name="test",
-            use_quantization=False,
-            use_peft=True
+            model_name="test", use_quantization=False, use_peft=True
         )
 
         # Without quantization should use more memory
@@ -348,8 +310,8 @@ class TestConfigUtils:
 class TestModelInference:
     """Tests for model inference functionality."""
 
-    @patch('src.models.model_loader.AutoModelForCausalLM')
-    @patch('src.models.model_loader.AutoTokenizer')
+    @patch("src.models.model_loader.AutoModelForCausalLM")
+    @patch("src.models.model_loader.AutoTokenizer")
     def test_model_inference(self, mock_tokenizer, mock_auto_model):
         """Test basic model inference."""
         # Setup mocks
@@ -367,10 +329,7 @@ class TestModelInference:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        model, tokenizer = loader.load_model_and_tokenizer(
-            use_quantization=False,
-            use_peft=False
-        )
+        model, tokenizer = loader.load_model_and_tokenizer(use_quantization=False, use_peft=False)
 
         # Test inference
         test_prompt = "SELECT * FROM"
@@ -380,7 +339,7 @@ class TestModelInference:
             outputs = model.generate(
                 input_ids=inputs["input_ids"],
                 max_new_tokens=50,
-                pad_token_id=tokenizer.pad_token_id
+                pad_token_id=tokenizer.pad_token_id,
             )
 
         result = tokenizer.decode(outputs[0])

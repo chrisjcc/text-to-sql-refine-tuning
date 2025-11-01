@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import sqlparse
 from sqlparse.exceptions import SQLParseError
 
-from utils.sql_parser import SQLParser
+from src.utils.sql_parser import SQLParser
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +150,24 @@ class SQLValidationRubric:
         # Ensure score is in valid range
         return max(0.0, min(1.0, total_score))
 
+    def _has_meaningful_tokens(self, statement) -> bool:
+        """Check if statement has at least one meaningful token."""
+        meaningful_tokens = [t for t in statement.tokens if not t.is_whitespace and str(t).strip()]
+        return len(meaningful_tokens) > 0
+
+    def _check_syntax_error_patterns(self, sql: str) -> Tuple[bool, float]:
+        """Check for common syntax error patterns."""
+        sql_upper = sql.upper()
+        error_patterns = [
+            "FORM ",  # Common typo of FROM
+            "SLECT ",  # Common typo of SELECT
+            "WEHERE ",  # Common typo of WHERE
+        ]
+        for pattern in error_patterns:
+            if pattern in sql_upper:
+                return False, 0.15  # Minimal partial credit for attempt
+        return True, 1.0
+
     def check_syntax(self, sql: str) -> Tuple[bool, float]:
         """Validate SQL syntax using sqlparse.
 
@@ -165,48 +183,21 @@ class SQLValidationRubric:
             return False, 0.0
 
         try:
-            # Normalize SQL if enabled
             if self.normalize_sql:
                 sql = sql.strip()
 
-            # Parse the SQL
             parsed = sqlparse.parse(sql)
-
             if not parsed:
                 return False, 0.0
 
-            # Check if we got valid statements
             statement = parsed[0]
-
-            # Check for parse errors or empty statements
             if not statement.tokens:
                 return False, 0.0
 
-            # Basic validity checks
-            # 1. Should have at least one meaningful token
-            meaningful_tokens = [
-                t for t in statement.tokens if not t.is_whitespace and str(t).strip()
-            ]
-
-            if not meaningful_tokens:
+            if not self._has_meaningful_tokens(statement):
                 return False, 0.0
 
-            # 2. Check for common syntax error patterns
-            sql_upper = sql.upper()
-
-            # Must not have obvious syntax errors
-            error_patterns = [
-                "FORM ",  # Common typo of FROM
-                "SLECT ",  # Common typo of SELECT
-                "WEHERE ",  # Common typo of WHERE
-            ]
-
-            for pattern in error_patterns:
-                if pattern in sql_upper:
-                    return False, 0.15  # Minimal partial credit for attempt
-
-            # If we got here, SQL is syntactically valid
-            return True, 1.0
+            return self._check_syntax_error_patterns(sql)
 
         except SQLParseError as e:
             logger.debug(f"SQL parse error: {e}")
@@ -214,6 +205,41 @@ class SQLValidationRubric:
         except Exception as e:
             logger.debug(f"Unexpected error parsing SQL: {e}")
             return False, 0.0
+
+    def _find_keywords_in_sql(self, sql_upper: str) -> list:
+        """Find all matching keywords in the SQL string."""
+        import re
+
+        keywords_found = []
+        for keyword in self.sql_keywords:
+            if keyword in sql_upper:
+                if " " in keyword:
+                    # Multi-word keywords (e.g., "LEFT JOIN")
+                    if keyword in sql_upper:
+                        keywords_found.append(keyword)
+                else:
+                    # Single-word keywords with word boundary check
+                    pattern = r"\b" + re.escape(keyword) + r"\b"
+                    if re.search(pattern, sql_upper):
+                        keywords_found.append(keyword)
+        return keywords_found
+
+    def _score_keyword_diversity(self, keywords_found: list, sql_upper: str) -> float:
+        """Score based on keyword diversity."""
+        if not keywords_found:
+            if any(kw in sql_upper for kw in ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE"]):
+                return 0.3
+            return 0.0
+
+        num_keywords = len(keywords_found)
+        if num_keywords >= 5:
+            return 1.0
+        elif num_keywords >= 3:
+            return 0.75
+        elif num_keywords >= 2:
+            return 0.6
+        else:
+            return 0.5
 
     def check_keywords(self, sql: str) -> float:
         """Score based on SQL keyword presence.
@@ -228,45 +254,8 @@ class SQLValidationRubric:
             return 0.0
 
         sql_upper = sql.upper()
-
-        # Count how many expected keywords are present
-        keywords_found = []
-        for keyword in self.sql_keywords:
-            # Use word boundary matching to avoid false positives
-            # (e.g., "SELECT" in "SELECTED")
-            if keyword in sql_upper:
-                # For multi-word keywords (e.g., "LEFT JOIN")
-                if " " in keyword:
-                    if keyword in sql_upper:
-                        keywords_found.append(keyword)
-                # For single-word keywords
-                else:
-                    # Check word boundaries
-                    import re
-
-                    pattern = r"\b" + re.escape(keyword) + r"\b"
-                    if re.search(pattern, sql_upper):
-                        keywords_found.append(keyword)
-
-        # Base score on number of keywords found
-        if not keywords_found:
-            # But if it has ANY SQL keyword, give minimum credit
-            if any(kw in sql_upper for kw in ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE"]):
-                return 0.3
-            return 0.0
-
-        # Score based on keyword diversity
-        # Having 1-2 keywords: 0.5, 3-4: 0.75, 5+: 1.0
-        num_keywords = len(keywords_found)
-
-        if num_keywords >= 5:
-            return 1.0
-        elif num_keywords >= 3:
-            return 0.75
-        elif num_keywords >= 2:
-            return 0.6
-        else:
-            return 0.5
+        keywords_found = self._find_keywords_in_sql(sql_upper)
+        return self._score_keyword_diversity(keywords_found, sql_upper)
 
     def check_format(self, output: str) -> float:
         """Score output format quality.
@@ -373,7 +362,7 @@ class SQLValidationRubric:
             + self.format_weight * format_score
         )
 
-        return {
+        return {  # type: ignore[dict-item]
             "total": max(0.0, min(1.0, total_score)),
             "syntax": syntax_score,
             "syntax_valid": is_valid,

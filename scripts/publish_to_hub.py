@@ -1,6 +1,7 @@
 """
 Publish trained model to HuggingFace Hub.
 """
+
 import argparse
 import json
 import logging
@@ -139,7 +140,7 @@ Apache 2.0
     return model_card
 
 
-def publish_model(model_path: str, repo_name: str, private: bool = True, token: str = None):
+def publish_model(model_path: str, repo_name: str, private: bool = True, token: str = None):  # type: ignore[assignment]
     """
     Publish model to HuggingFace Hub.
 

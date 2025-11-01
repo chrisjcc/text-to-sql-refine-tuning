@@ -1,11 +1,19 @@
+# .github/workflows/docker.yml
+# Workflow Summary:
+# ✅ Builds and publishes Docker images to GitHub Container Registry (ghcr.io)
+# ✅ Automatically triggered by semver tag pushes (vX.Y.Z) or published GitHub releases
+# ✅ Pushes versioned tags (vX.Y.Z, vX.Y) and adds 'latest' tag only for main branch releases
+# ✅ Embeds metadata (labels, semver info) into the Docker image
+# ✅ Skips pull_request and branch push events to prevent unnecessary builds
+# ✅ Uses GitHub’s built-in GITHUB_TOKEN for secure authentication with ghcr.io
 name: Docker Build and Push
 
 on:
+  release:
+    types: [published]
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*.*.*'  # Trigger only on semver tags like v1.0.0
 
 env:
   REGISTRY: ghcr.io
@@ -22,28 +30,52 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Log in to Container Registry
+    - name: Log in to GitHub Container Registry
       uses: docker/login-action@v2
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract metadata
+    - name: Extract Docker metadata
       id: meta
       uses: docker/metadata-action@v4
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
-          type=ref,event=branch
-          type=ref,event=pr
+          type=ref,event=tag
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
 
-    - name: Build and push Docker image
+    # Add `latest` tag only for main branch releases
+    - name: Add latest tag if on main
+      if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+      run: |
+        DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | awk '{print $NF}')
+        CURRENT_BRANCH=$(git branch -r --contains ${{ github.ref }} | sed -n 's|.*/\(.*\)|\1|p' | grep -v HEAD | head -n1)
+        echo "Default branch: $DEFAULT_BRANCH"
+        echo "Tag branch: $CURRENT_BRANCH"
+        if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
+          echo "Tag is from default branch ($DEFAULT_BRANCH). Adding :latest tag."
+          echo "LATEST_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_ENV
+        else
+          echo "Skipping :latest tag (tag not from $DEFAULT_BRANCH)."
+        fi
+
+    - name: Build and Push Docker image
       uses: docker/build-push-action@v4
       with:
         context: .
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}
+        push: true
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+          ${{ env.LATEST_TAG }}
         labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Print Release Info
+      if: github.event_name == 'release'
+      run: |
+        echo "Release published!"
+        echo "Tag: ${{ github.event.release.tag_name }}"
+        echo "Name: ${{ github.event.release.name }}"
+        echo "Description: ${{ github.event.release.body }}"

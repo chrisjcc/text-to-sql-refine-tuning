@@ -1,6 +1,19 @@
+# .github/workflows/publish-model.yml
+# Workflow Summary:
+# ✅ Publishes model to Hugging Face Hub (only if the release/tag originated from the main branch)
+# ✅ Attaches selected artifacts (e.g., model card, config, tokenizer files) to the GitHub Release page
+# ✅ Supports manual dispatch for ad-hoc or re-run publishing
+# ✅ Safely skips publishing for tags created on non-main branches
+# ✅ Uses Hugging Face token (HF_TOKEN) for authenticated model uploads
+# ✅ Automatically runs on semver tag pushes (vX.Y.Z) and GitHub release publications
 name: Publish Model to Hub
 
 on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger only on semver tags like v1.0.0
   workflow_dispatch:
     inputs:
       model_path:
@@ -8,7 +21,7 @@ on:
         required: true
         default: './outputs/final_model'
       repo_name:
-        description: 'HuggingFace repo name'
+        description: 'Hugging Face repo name'
         required: true
       private:
         description: 'Make repo private'
@@ -18,8 +31,18 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Print Release Information
+      if: github.event_name == 'release' || github.event_name == 'push'
+      run: |
+        echo "Release Tag: ${{ github.event.release.tag_name || github.ref_name }}"
+        echo "Release Name: ${{ github.event.release.name }}"
+        echo "Release Description: ${{ github.event.release.body }}"
+        echo "Ref Name: ${{ github.ref_name }}"
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -30,11 +53,52 @@ jobs:
       run: |
         pip install huggingface_hub
 
-    - name: Publish to Hub
+    # Check if tag originated from main
+    - name: Check if tag originated from main
+      id: branch_check
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | awk '{print $NF}')
+        CURRENT_BRANCH=$(git branch -r --contains ${{ github.ref }} | sed -n 's|.*/\(.*\)|\1|p' | grep -v HEAD | head -n1)
+        echo "Default branch: $DEFAULT_BRANCH"
+        echo "Tag branch: $CURRENT_BRANCH"
+        if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]; then
+          echo "on_main=true" >> $GITHUB_OUTPUT
+        else
+          echo "on_main=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Publish to Hugging Face Hub
+      if: steps.branch_check.outputs.on_main == 'true' || github.event_name == 'workflow_dispatch'
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
+        echo "Publishing model to Hugging Face Hub..."
         python scripts/publish_to_hub.py \
-          --model-path ${{ github.event.inputs.model_path }} \
-          --repo-name ${{ github.event.inputs.repo_name }} \
-          --private ${{ github.event.inputs.private }}
+          --model-path ${{ github.event.inputs.model_path || './outputs/final_model' }} \
+          --repo-name ${{ github.event.inputs.repo_name || format('my-model-{0}', github.ref_name) }} \
+          --private ${{ github.event.inputs.private || 'true' }}
+
+    - name: Skip publishing for non-main branches
+      if: steps.branch_check.outputs.on_main == 'false' && github.event_name != 'workflow_dispatch'
+      run: |
+        echo "Skipping Hugging Face publish: tag not from main branch."
+
+    # Upload release artifacts (config, model card, tokenizer, etc.)
+    - name: Prepare release artifacts
+      run: |
+        mkdir -p release_artifacts
+        cp -v ./outputs/final_model/config.json release_artifacts/ 2>/dev/null || true
+        cp -v ./outputs/final_model/tokenizer_config.json release_artifacts/ 2>/dev/null || true
+        cp -v ./outputs/final_model/special_tokens_map.json release_artifacts/ 2>/dev/null || true
+        cp -v ./outputs/final_model/model_card.md release_artifacts/ 2>/dev/null || true
+        echo "Artifacts prepared for upload:"
+        ls -lh release_artifacts || echo "No artifacts found."
+
+    - name: Upload artifacts to GitHub Release
+      if: github.event_name == 'release' && steps.branch_check.outputs.on_main == 'true'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: release_artifacts/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

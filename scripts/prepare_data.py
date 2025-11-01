@@ -5,6 +5,7 @@ Loads, preprocesses, and formats the SQL dataset.
 
 import sys
 from pathlib import Path
+from typing import Dict
 
 import hydra
 from omegaconf import DictConfig
@@ -17,72 +18,47 @@ from data.preprocessor import SQLDataPreprocessor  # noqa: E402
 from utils.logging_utils import setup_logging  # noqa: E402
 
 
-@hydra.main(version_base=None, config_path="../config", config_name="config")
-def prepare_data(cfg: DictConfig):
-    """
-    Complete data preparation pipeline.
+def _load_dataset_with_split(cfg: DictConfig, loader: SQLDatasetLoader, logger):
+    """Load dataset with optional split specifications."""
+    split_arg = None
+    if cfg.dataset.split.train is not None:
+        if cfg.dataset.limit.train is not None:
+            split_arg = f"{cfg.dataset.split.train}[:{cfg.dataset.limit.train}]"
+            logger.info(f"Loading limited train split: {split_arg}")
+        else:
+            split_arg = cfg.dataset.split.train
 
-    Steps:
-    1. Load dataset from HuggingFace
-    2. Create splits if needed
-    3. Preprocess and clean samples
-    4. Filter invalid samples
-    5. Compute statistics
-    6. Save processed dataset
-    """
-    # Setup logging
-    logger = setup_logging(
-        log_level=cfg.logging.level, log_dir=cfg.logging.log_dir, log_file="data_preparation.log"
-    )
-    logger.info("=" * 80)
-    logger.info("Starting data preparation pipeline")
-    logger.info("=" * 80)
-
-    # Load dataset
-    loader = SQLDatasetLoader(
-        dataset_name=cfg.dataset.name, cache_dir=cfg.dataset.cache_dir, seed=cfg.project.seed
-    )
-
-    logger.info(f"Loading dataset: {cfg.dataset.name}")
     try:
-        # Check if we should load with split specifications
-        split_arg = None
-        if cfg.dataset.split.train is not None:
-            # Check if we need to limit the dataset size
-            if cfg.dataset.limit.train is not None:
-                split_arg = f"{cfg.dataset.split.train}[:{cfg.dataset.limit.train}]"
-                logger.info(f"Loading limited train split: {split_arg}")
-            else:
-                split_arg = cfg.dataset.split.train
-
-        dataset = loader.load(split=split_arg)
+        return loader.load(split=split_arg)
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
         raise
 
-    # Check if we need to create splits
+
+def _ensure_dataset_splits(dataset, cfg: DictConfig, loader: SQLDatasetLoader, logger):
+    """Ensure dataset has proper train/val/test splits."""
     if isinstance(dataset, dict):
-        # Dataset already has splits
         logger.info(f"Dataset has existing splits: {list(dataset.keys())}")
+        return dataset
+
+    if cfg.dataset.create_splits.enabled:
+        logger.info("Creating train/val/test splits")
+        return loader.create_splits(
+            dataset,
+            train_size=cfg.dataset.create_splits.train_size,
+            val_size=cfg.dataset.create_splits.val_size,
+            test_size=cfg.dataset.create_splits.test_size,
+            stratify=cfg.dataset.create_splits.stratify_by_complexity,
+        )
     else:
-        # Single dataset, need to create splits
-        if cfg.dataset.create_splits.enabled:
-            logger.info("Creating train/val/test splits")
-            dataset = loader.create_splits(
-                dataset,
-                train_size=cfg.dataset.create_splits.train_size,
-                val_size=cfg.dataset.create_splits.val_size,
-                test_size=cfg.dataset.create_splits.test_size,
-                stratify=cfg.dataset.create_splits.stratify_by_complexity,
-            )
-        else:
-            # Convert to DatasetDict with just train split
-            from datasets import DatasetDict
+        from datasets import DatasetDict
 
-            dataset = DatasetDict({"train": dataset})
-            logger.info("Using entire dataset as training set")
+        logger.info("Using entire dataset as training set")
+        return DatasetDict({"train": dataset})
 
-    # Log initial statistics
+
+def _log_dataset_statistics(dataset, loader: SQLDatasetLoader, logger):
+    """Log statistics for all dataset splits."""
     logger.info("\n" + "=" * 80)
     logger.info("Initial dataset statistics:")
     logger.info("=" * 80)
@@ -98,33 +74,26 @@ def prepare_data(cfg: DictConfig):
                 for keyword, count in value.items():
                     logger.info(f"    {keyword}: {count}")
 
-    # Initialize preprocessor
-    preprocessor = SQLDataPreprocessor(
-        max_question_length=cfg.dataset.preprocessing.max_question_length,
-        max_schema_length=cfg.dataset.preprocessing.max_schema_length,
-        max_sql_length=cfg.dataset.preprocessing.max_sql_length,
-        normalize_sql=cfg.dataset.preprocessing.normalize_sql,
-        filter_invalid=cfg.dataset.preprocessing.filter_invalid,
-    )
 
-    # Preprocess each split
+def _preprocess_splits(dataset, preprocessor: SQLDataPreprocessor, cfg: DictConfig, logger):
+    """Preprocess all dataset splits."""
     logger.info("\n" + "=" * 80)
     logger.info("Preprocessing dataset")
     logger.info("=" * 80)
 
     for split_name in dataset.keys():
         logger.info(f"\nProcessing {split_name} split...")
-
-        # Preprocess
         dataset[split_name] = preprocessor.preprocess_dataset(
             dataset[split_name], num_proc=cfg.dataset.num_workers
         )
-
-        # Filter invalid samples
         if cfg.dataset.preprocessing.filter_invalid:
             dataset[split_name] = preprocessor.filter_dataset(dataset[split_name])
 
-    # Compute final statistics
+
+def _compute_final_statistics(dataset, logger):
+    """Compute and log final statistics for all splits."""
+    import numpy as np
+
     logger.info("\n" + "=" * 80)
     logger.info("Final dataset statistics:")
     logger.info("=" * 80)
@@ -133,10 +102,9 @@ def prepare_data(cfg: DictConfig):
         logger.info(f"\n{split_name.upper()} split:")
         logger.info(f"  Total samples: {len(dataset[split_name])}")
 
-        # Compute complexity distribution
         if "complexity" in dataset[split_name].column_names:
             complexities = dataset[split_name]["complexity"]
-            complexity_dist = {}
+            complexity_dist: Dict[str, int] = {}
             for c in complexities:
                 complexity_dist[c] = complexity_dist.get(c, 0) + 1
 
@@ -145,19 +113,15 @@ def prepare_data(cfg: DictConfig):
                 pct = (count / len(dataset[split_name])) * 100
                 logger.info(f"    {complexity}: {count} ({pct:.1f}%)")
 
-        # Compute validation statistics
         if "is_valid" in dataset[split_name].column_names:
             valid_count = sum(dataset[split_name]["is_valid"])
             valid_pct = (valid_count / len(dataset[split_name])) * 100
             logger.info(f"  Valid samples: {valid_count} ({valid_pct:.1f}%)")
 
-        # Length statistics
         if all(
             col in dataset[split_name].column_names
             for col in ["question_length", "sql_length", "schema_length"]
         ):
-            import numpy as np
-
             logger.info(
                 f"  Avg question length: {np.mean(dataset[split_name]['question_length']):.1f} words"
             )
@@ -166,7 +130,9 @@ def prepare_data(cfg: DictConfig):
                 f"  Avg schema length: {np.mean(dataset[split_name]['schema_length']):.1f} words"
             )
 
-    # Save processed dataset
+
+def _save_processed_dataset(dataset, cfg: DictConfig, logger):
+    """Save the processed dataset to disk."""
     output_path = Path(cfg.dataset.cache_dir) / "processed"
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -180,6 +146,48 @@ def prepare_data(cfg: DictConfig):
     except Exception as e:
         logger.error(f"Failed to save dataset: {e}")
         raise
+
+
+@hydra.main(version_base=None, config_path="../config", config_name="config")
+def prepare_data(cfg: DictConfig):
+    """
+    Complete data preparation pipeline.
+
+    Steps:
+    1. Load dataset from HuggingFace
+    2. Create splits if needed
+    3. Preprocess and clean samples
+    4. Filter invalid samples
+    5. Compute statistics
+    6. Save processed dataset
+    """
+    logger = setup_logging(
+        log_level=cfg.logging.level, log_dir=cfg.logging.log_dir, log_file="data_preparation.log"
+    )
+    logger.info("=" * 80)
+    logger.info("Starting data preparation pipeline")
+    logger.info("=" * 80)
+
+    loader = SQLDatasetLoader(
+        dataset_name=cfg.dataset.name, cache_dir=cfg.dataset.cache_dir, seed=cfg.project.seed
+    )
+
+    logger.info(f"Loading dataset: {cfg.dataset.name}")
+    dataset = _load_dataset_with_split(cfg, loader, logger)
+    dataset = _ensure_dataset_splits(dataset, cfg, loader, logger)
+    _log_dataset_statistics(dataset, loader, logger)
+
+    preprocessor = SQLDataPreprocessor(
+        max_question_length=cfg.dataset.preprocessing.max_question_length,
+        max_schema_length=cfg.dataset.preprocessing.max_schema_length,
+        max_sql_length=cfg.dataset.preprocessing.max_sql_length,
+        normalize_sql=cfg.dataset.preprocessing.normalize_sql,
+        filter_invalid=cfg.dataset.preprocessing.filter_invalid,
+    )
+
+    _preprocess_splits(dataset, preprocessor, cfg, logger)
+    _compute_final_statistics(dataset, logger)
+    _save_processed_dataset(dataset, cfg, logger)
 
     logger.info("\n" + "=" * 80)
     logger.info("Data preparation complete!")

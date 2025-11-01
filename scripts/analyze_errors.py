@@ -1,6 +1,7 @@
 """
 Analyze evaluation errors and generate insights.
 """
+
 import argparse
 import json
 from pathlib import Path
@@ -47,10 +48,10 @@ def analyze_errors(results_path: str, output_path: str, n_samples: int = 20):
     print(f"  Invalid SQL: {len(invalid_sql)} ({len(invalid_sql)/len(errors)*100:.1f}% of errors)")
 
     # Save analysis
-    output_path = Path(output_path)
-    output_path.mkdir(parents=True, exist_ok=True)
+    output_path_obj = Path(output_path)  # type: ignore[assignment]
+    output_path_obj.mkdir(parents=True, exist_ok=True)  # type: ignore[attr-defined]
 
-    with open(output_path / "error_analysis.json", "w") as f:
+    with open(output_path_obj / "error_analysis.json", "w") as f:  # type: ignore[operator]
         json.dump(analysis, f, indent=2)
 
     # Save error samples
@@ -65,7 +66,7 @@ def analyze_errors(results_path: str, output_path: str, n_samples: int = 20):
             "reference_complexity",
         ]
     ]
-    error_samples.to_csv(output_path / "error_samples.csv", index=False)
+    error_samples.to_csv(output_path_obj / "error_samples.csv", index=False)  # type: ignore[operator]
 
     print(f"\nAnalysis saved to {output_path}")
 

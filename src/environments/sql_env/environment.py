@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional
 
 from verifiers import SingleTurnEnv
 
-from rubrics.sql_rubric import SQLValidationRubric
-from utils.sql_parser import SQLParser
+from src.rubrics.sql_rubric import SQLValidationRubric
+from src.utils.sql_parser import SQLParser
 
 from .prompts import PROMPT_TEMPLATES, format_few_shot_examples
 from .prompts import format_prompt as format_prompt_util
@@ -239,7 +239,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
                         score *= 0.7  # 30% penalty
                         self.logger.debug("Applied schema validation penalty")
 
-        return max(0.0, min(1.0, score))
+        return float(max(0.0, min(1.0, score)))  # type: ignore[no-any-return]
 
     def batch_compute_rewards(
         self,
@@ -269,8 +269,8 @@ class TextToSQLEnvironment(SingleTurnEnv):
             return []
 
         # Prepare references and contexts
-        refs = references if references else [None] * len(responses)
-        ctxs = contexts if contexts else [None] * len(responses)
+        refs = references if references else [None] * len(responses)  # type: ignore[list-item]
+        ctxs = contexts if contexts else [None] * len(responses)  # type: ignore[list-item]
 
         # Use batch scoring from rubric for efficiency
         if all(ctx is None for ctx in ctxs):
@@ -283,7 +283,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
                 for response, ref, ctx in zip(responses, refs, ctxs)
             ]
 
-        return rewards
+        return [float(r) for r in rewards]  # type: ignore[no-any-return]
 
     def prepare_dataset_sample(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         """Convert dataset sample to environment format.

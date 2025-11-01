@@ -9,18 +9,18 @@ from datasets import Dataset
 
 from src.environments.sql_env import TextToSQLEnvironment
 from src.environments.sql_env.prompts import (
-    get_prompt_template,
-    format_schema,
-    format_few_shot_examples,
     PROMPT_TEMPLATES,
+    format_few_shot_examples,
+    format_schema,
+    get_prompt_template,
 )
 from src.environments.sql_env.utils import (
-    extract_schema_info,
-    validate_sql_against_schema,
-    truncate_schema,
-    prepare_for_grpo,
     count_tables,
+    extract_schema_info,
     get_table_names,
+    prepare_for_grpo,
+    truncate_schema,
+    validate_sql_against_schema,
 )
 from src.rubrics.sql_rubric import SQLValidationRubric
 from src.utils.sql_parser import SQLParser
@@ -42,21 +42,17 @@ def rubric():
 def mock_dataset():
     """Create a mock dataset for testing."""
     data = {
-        "question": [
-            "How many users are there?",
-            "List all products",
-            "Get active users"
-        ],
+        "question": ["How many users are there?", "List all products", "Get active users"],
         "context": [
             "CREATE TABLE users (id INT, name VARCHAR)",
             "CREATE TABLE products (id INT, name VARCHAR, price DECIMAL)",
-            "CREATE TABLE users (id INT, active BOOLEAN)"
+            "CREATE TABLE users (id INT, active BOOLEAN)",
         ],
         "answer": [
             "SELECT COUNT(*) FROM users",
             "SELECT * FROM products",
-            "SELECT * FROM users WHERE active = TRUE"
-        ]
+            "SELECT * FROM users WHERE active = TRUE",
+        ],
     }
     return Dataset.from_dict(data)
 
@@ -150,10 +146,7 @@ class TestPromptFormatting:
     def test_format_prompt_with_schema(self, environment):
         """Test prompt formatting with schema context."""
         schema = "CREATE TABLE users (id INT, name VARCHAR(100))"
-        prompt = environment.format_prompt(
-            "How many users?",
-            context={"schema": schema}
-        )
+        prompt = environment.format_prompt("How many users?", context={"schema": schema})
 
         assert "How many users?" in prompt
         assert "users" in prompt
@@ -174,10 +167,7 @@ class TestPromptFormatting:
         )
 
         long_schema = "CREATE TABLE users (id INT);" * 50
-        prompt = env.format_prompt(
-            "Test question",
-            context={"schema": long_schema}
-        )
+        prompt = env.format_prompt("Test question", context={"schema": long_schema})
 
         # Prompt should be shorter than full schema
         assert len(prompt) < len(long_schema) + 100
@@ -192,10 +182,7 @@ class TestPromptFormatting:
         )
 
         schema = "CREATE TABLE users (id INT)"
-        prompt = env.format_prompt(
-            "How many users?",
-            context={"schema": schema}
-        )
+        prompt = env.format_prompt("How many users?", context={"schema": schema})
 
         # Schema should not be in prompt
         assert "CREATE TABLE" not in prompt
@@ -266,15 +253,11 @@ class TestRewardComputation:
         schema = "CREATE TABLE users (id INT, name VARCHAR(100))"
 
         # Valid table reference
-        reward_valid = environment.compute_reward(
-            "SELECT * FROM users",
-            context={"schema": schema}
-        )
+        reward_valid = environment.compute_reward("SELECT * FROM users", context={"schema": schema})
 
         # Invalid table reference
         reward_invalid = environment.compute_reward(
-            "SELECT * FROM products",
-            context={"schema": schema}
+            "SELECT * FROM products", context={"schema": schema}
         )
 
         # Valid reference should score higher
@@ -286,11 +269,7 @@ class TestBatchRewardComputation:
 
     def test_batch_compute_rewards(self, environment):
         """Test batch reward computation."""
-        responses = [
-            "SELECT * FROM users",
-            "SELECT id FROM products",
-            "This is invalid"
-        ]
+        responses = ["SELECT * FROM users", "SELECT id FROM products", "This is invalid"]
 
         rewards = environment.batch_compute_rewards(responses)
 
@@ -340,7 +319,7 @@ class TestDatasetPreparation:
         sample = {
             "question": "How many users?",
             "context": "CREATE TABLE users (id INT)",
-            "answer": "SELECT COUNT(*) FROM users"
+            "answer": "SELECT COUNT(*) FROM users",
         }
 
         prepared = environment.prepare_dataset_sample(sample)
@@ -364,11 +343,7 @@ class TestMetrics:
 
     def test_get_metrics(self, environment):
         """Test computing aggregate metrics."""
-        responses = [
-            "SELECT * FROM users",
-            "SELECT id FROM products",
-            "This is invalid"
-        ]
+        responses = ["SELECT * FROM users", "SELECT id FROM products", "This is invalid"]
 
         metrics = environment.get_metrics(responses)
 
@@ -501,7 +476,7 @@ class TestGRPOPreparation:
         data = {
             "question": ["Q1", "Q2"],
             "context": ["schema1", "schema2"],
-            "answer": ["sql1", "sql2"]
+            "answer": ["sql1", "sql2"],
         }
         dataset = Dataset.from_dict(data)
 

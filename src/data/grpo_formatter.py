@@ -5,12 +5,12 @@ creating prompts and structuring data for reinforcement learning.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from datasets import Dataset
 
-from environments.sql_env.environment import TextToSQLEnvironment
+from src.environments.sql_env.environment import TextToSQLEnvironment
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +89,45 @@ class GRPODatasetFormatter:
 
         return output
 
+    def _initialize_results_dict(self, examples: Dict) -> Dict:
+        """Initialize the results dictionary for formatting."""
+        results: Dict[str, List] = {
+            "prompt": [],
+            "question": [],
+            "schema": [],
+        }
+        if self.include_reference:
+            results["reference"] = []
+        results["context"] = []
+        for key in ["complexity", "sql_keywords", "is_valid"]:
+            if key in examples:
+                results[key] = []
+        return results
+
+    def _normalize_examples(self, examples: Dict) -> Tuple[Dict, int]:
+        """Normalize examples to handle both batched and single examples."""
+        if isinstance(examples["question"], list):
+            num_examples = len(examples["question"])
+        else:
+            num_examples = 1
+            examples = {k: [v] for k, v in examples.items()}
+        return examples, num_examples
+
+    def _append_formatted_sample(self, results: Dict, formatted: Dict) -> None:
+        """Append a formatted sample to the results."""
+        results["prompt"].append(formatted["prompt"])
+        results["question"].append(formatted["question"])
+        results["schema"].append(formatted["schema"])
+
+        if self.include_reference:
+            results["reference"].append(formatted.get("reference", ""))
+
+        results["context"].append(formatted.get("context", {}))
+
+        for key in ["complexity", "sql_keywords", "is_valid"]:
+            if key in results and key in formatted:
+                results[key].append(formatted[key])
+
     def format_dataset(self, dataset: Dataset) -> Dataset:
         """
         Format entire dataset for GRPO.
@@ -100,52 +139,16 @@ class GRPODatasetFormatter:
 
         def format_fn(examples):
             """Batch formatting function."""
-            results = {
-                "prompt": [],
-                "question": [],
-                "schema": [],
-            }
-
-            if self.include_reference:
-                results["reference"] = []
-
-            results["context"] = []
-
-            # Preserve additional fields
-            for key in ["complexity", "sql_keywords", "is_valid"]:
-                if key in examples:
-                    results[key] = []
-
-            # Handle both batched and single examples
-            if isinstance(examples["question"], list):
-                num_examples = len(examples["question"])
-            else:
-                num_examples = 1
-                examples = {k: [v] for k, v in examples.items()}
+            results = self._initialize_results_dict(examples)
+            examples, num_examples = self._normalize_examples(examples)
 
             for i in range(num_examples):
                 sample = {k: v[i] for k, v in examples.items()}
-
                 try:
                     formatted = self.format_for_grpo(sample)
-
-                    results["prompt"].append(formatted["prompt"])
-                    results["question"].append(formatted["question"])
-                    results["schema"].append(formatted["schema"])
-
-                    if self.include_reference:
-                        results["reference"].append(formatted.get("reference", ""))
-
-                    results["context"].append(formatted.get("context", {}))
-
-                    # Preserve additional fields
-                    for key in ["complexity", "sql_keywords", "is_valid"]:
-                        if key in results and key in formatted:
-                            results[key].append(formatted[key])
-
+                    self._append_formatted_sample(results, formatted)
                 except Exception as e:
                     self.logger.warning(f"Failed to format sample {i}: {e}")
-                    # Skip this sample by not appending to results
                     continue
 
             return results
@@ -236,7 +239,7 @@ class GRPODatasetFormatter:
                 "Using random sampling instead of stratified."
             )
             indices = np.random.choice(len(dataset), min(n_samples, len(dataset)), replace=False)
-            return dataset.select(indices.tolist())
+            return dataset.select(list(indices))
 
         # Stratified sampling by complexity
         try:
@@ -262,16 +265,19 @@ class GRPODatasetFormatter:
             total_allocated = sum(samples_per_level.values())
             if total_allocated < n_samples:
                 # Add remaining to the largest group
-                largest_level = max(complexity_counts, key=complexity_counts.get)
+                largest_level = max(complexity_counts, key=lambda k: complexity_counts[k])
                 samples_per_level[largest_level] += n_samples - total_allocated
 
             # Sample from each complexity level
             selected_indices: List[int] = []
             for level, n in samples_per_level.items():
-                indices = complexity_indices[level]
-                if len(indices) > 0:
-                    sample_indices = np.random.choice(indices, min(n, len(indices)), replace=False)
-                    selected_indices.extend([int(idx) for idx in sample_indices])
+                level_indices = list(complexity_indices[level])
+                if len(level_indices) > 0:
+                    sample_indices_arr = np.random.choice(
+                        level_indices, min(n, len(level_indices)), replace=False
+                    )
+                    # Convert numpy array to list of ints
+                    selected_indices.extend([int(idx) for idx in sample_indices_arr])
 
             eval_dataset = dataset.select(selected_indices)
 

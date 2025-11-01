@@ -4,10 +4,9 @@ Tests the SQLParser, SQLValidationRubric, and BatchSQLScorer components
 used for computing rewards during GRPO training.
 """
 
-import pytest
-from src.utils.sql_parser import SQLParser
-from src.rubrics.sql_rubric import SQLValidationRubric
 from src.rubrics.batch_scorer import BatchSQLScorer
+from src.rubrics.sql_rubric import SQLValidationRubric
+from src.utils.sql_parser import SQLParser
 
 
 class TestSQLParser:
@@ -159,7 +158,7 @@ class TestSQLParser:
             "SELECT * FROM users",
             "```sql\nINSERT INTO products VALUES (1, 'test')\n```",
             "Not SQL",
-            "UPDATE users SET name = 'test'"
+            "UPDATE users SET name = 'test'",
         ]
 
         results = parser.parse_batch(texts)
@@ -279,11 +278,7 @@ class TestSQLValidationRubric:
 
     def test_custom_weights(self):
         """Test rubric with custom weights."""
-        rubric = SQLValidationRubric(
-            syntax_weight=0.5,
-            keyword_weight=0.3,
-            format_weight=0.2
-        )
+        rubric = SQLValidationRubric(syntax_weight=0.5, keyword_weight=0.3, format_weight=0.2)
 
         score = rubric.score("SELECT * FROM users")
         assert 0.0 <= score <= 1.0
@@ -314,7 +309,7 @@ class TestSQLValidationRubric:
             "SELECT * FROM users",
             "INSERT INTO products VALUES (1, 'test')",
             "Not SQL",
-            "UPDATE users SET name = 'test'"
+            "UPDATE users SET name = 'test'",
         ]
 
         scores = rubric.score_batch(outputs)
@@ -370,7 +365,7 @@ class TestBatchSQLScorer:
         outputs = [
             "SELECT * FROM users",
             "INSERT INTO products VALUES (1, 'test')",
-            "UPDATE users SET name = 'test'"
+            "UPDATE users SET name = 'test'",
         ]
 
         scores = scorer.score_batch(outputs)
@@ -398,10 +393,7 @@ class TestBatchSQLScorer:
         rubric = SQLValidationRubric()
         scorer = BatchSQLScorer(rubric)
 
-        outputs = [
-            "SELECT * FROM users",
-            "Not SQL"
-        ]
+        outputs = ["SELECT * FROM users", "Not SQL"]
 
         metadata = scorer.score_with_metadata(outputs)
 
@@ -449,7 +441,7 @@ class TestBatchSQLScorer:
             "SELECT * FROM users",
             "INSERT INTO products VALUES (1, 'test')",
             "Not SQL",
-            "UPDATE users SET name = 'test'"
+            "UPDATE users SET name = 'test'",
         ]
 
         stats = scorer.compute_batch_statistics(outputs)
@@ -490,8 +482,8 @@ class TestBatchSQLScorer:
         outputs = [
             "SELECT * FROM users",
             None,  # Will be handled gracefully
-            "",    # Empty string
-            "UPDATE users SET name = 'test'"
+            "",  # Empty string
+            "UPDATE users SET name = 'test'",
         ]
 
         # Should not raise exception
@@ -543,14 +535,8 @@ class TestIntegration:
     def test_config_integration(self):
         """Test integration with config values."""
         # Simulate config values
-        config_keywords = [
-            "SELECT", "FROM", "WHERE", "JOIN", "INSERT", "UPDATE"
-        ]
-        config_weights = {
-            "syntax": 0.4,
-            "keyword": 0.3,
-            "format": 0.3
-        }
+        config_keywords = ["SELECT", "FROM", "WHERE", "JOIN", "INSERT", "UPDATE"]
+        config_weights = {"syntax": 0.4, "keyword": 0.3, "format": 0.3}
 
         rubric = SQLValidationRubric(
             sql_keywords=config_keywords,
@@ -575,9 +561,7 @@ class TestIntegration:
         for i in range(batch_size):
             # Each input generates multiple candidates
             for j in range(num_generations):
-                all_outputs.append(
-                    f"SELECT * FROM users WHERE id = {i} LIMIT {j+1}"
-                )
+                all_outputs.append(f"SELECT * FROM users WHERE id = {i} LIMIT {j+1}")
 
         # Score all generations
         rewards = scorer.score_batch(all_outputs)
@@ -587,6 +571,7 @@ class TestIntegration:
 
         # Reshape for GRPO (batch_size, num_generations)
         import numpy as np
+
         rewards_array = np.array(rewards).reshape(batch_size, num_generations)
 
         # Verify shape

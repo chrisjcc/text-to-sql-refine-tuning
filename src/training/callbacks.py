@@ -9,8 +9,8 @@ from typing import Any, Dict, Optional
 import torch
 from transformers import TrainerCallback, TrainerControl, TrainerState
 
-from environments.sql_env.environment import TextToSQLEnvironment
-from rubrics.sql_rubric import SQLValidationRubric
+from src.environments.sql_env.environment import TextToSQLEnvironment
+from src.rubrics.sql_rubric import SQLValidationRubric
 
 try:
     import wandb
@@ -19,7 +19,6 @@ try:
 except ImportError:
     WANDB_AVAILABLE = False
     wandb: Optional[ModuleType] = None
-
 
 logger = logging.getLogger(__name__)
 
@@ -98,10 +97,10 @@ class SQLEvaluationCallback(TrainerCallback):
                 question=sample["question"], context={"schema": sample["schema"]}
             )
 
-            inputs = self.tokenizer(prompt, return_tensors="pt").to(model.device)
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(model.device)  # type: ignore[union-attr]
 
             with torch.no_grad():
-                outputs = model.generate(
+                outputs = model.generate(  # type: ignore[union-attr]
                     **inputs,
                     max_new_tokens=256,
                     temperature=0.1,

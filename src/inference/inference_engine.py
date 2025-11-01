@@ -91,6 +91,8 @@ class SQLInferenceEngine:
         peft_config_path = model_path_obj / "adapter_config.json"
         is_peft_model = peft_config_path.exists()
 
+        model: Union[PeftModel, PreTrainedModel]
+
         if is_peft_model:
             self.logger.info("Detected PEFT model, loading with adapters")
 
@@ -147,6 +149,7 @@ class SQLInferenceEngine:
         # Load tokenizer - determine source path
         tokenizer_path = resolved_model_path if not is_peft_model else (self.base_model_name or resolved_model_path)
         is_tokenizer_local = Path(tokenizer_path).exists() if tokenizer_path else False
+
 
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_path, trust_remote_code=True, local_files_only=is_tokenizer_local
@@ -320,6 +323,7 @@ class SQLInferenceEngine:
 
         questions = [item["question"] for item in dataset]
         schemas: List[Optional[str]] = [item.get("schema") for item in dataset]
+
         references = [item.get("sql") for item in dataset]
 
         # Generate predictions
@@ -342,11 +346,12 @@ class SQLInferenceEngine:
         }
 
         # Compute exact match if references available
-        if all(r is not None for r in references):
+        if all(r is not None for r in references):  # type: ignore[arg-type]
             exact_matches = sum(
-                1
+                1 if self._normalize_sql(p["sql"]) == self._normalize_sql(r) else 0  # type: ignore[arg-type, misc]
                 for p, r in zip(predictions, references)
                 if r is not None and self._normalize_sql(p["sql"]) == self._normalize_sql(r)
+
             )
             metrics["exact_match_pct"] = exact_matches / len(dataset) * 100  # type: ignore[assignment]
 
@@ -360,4 +365,4 @@ class SQLInferenceEngine:
         """Normalize SQL for comparison."""
         import sqlparse
 
-        return sqlparse.format(sql, keyword_case="upper", strip_whitespace=True).strip()
+        return str(sqlparse.format(sql, keyword_case="upper", strip_whitespace=True).strip())

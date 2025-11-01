@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional
 from datasets import Dataset
 from trl import GRPOConfig, GRPOTrainer
 
-from environments.sql_env.environment import TextToSQLEnvironment
-from rubrics.sql_rubric import SQLValidationRubric
+from src.environments.sql_env.environment import TextToSQLEnvironment
+from src.rubrics.sql_rubric import SQLValidationRubric
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,7 @@ class SQLGRPOTrainer:
                 f"Min: {min_reward:.3f}, Max: {max_reward:.3f}"
             )
 
-        return rewards
+        return rewards  # type: ignore[no-any-return]
 
     def train(self):
         """Run GRPO training."""
@@ -157,7 +157,7 @@ class SQLGRPOTrainer:
         # Run evaluation
         metrics = self.trainer.evaluate(eval_dataset=dataset)
 
-        return metrics
+        return metrics  # type: ignore[no-any-return]
 
     def save_model(self, output_dir: str):
         """Save trained model and adapters."""

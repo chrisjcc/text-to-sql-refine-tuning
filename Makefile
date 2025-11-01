@@ -1,19 +1,28 @@
-.PHONY: help install test lint format clean docker-build docker-run train inference
+.PHONY: help install install-dev test lint format clean docker-build docker-run prepare-data train inference benchmark publish
 
 help:
 	@echo "Available commands:"
 	@echo "  install       - Install dependencies"
+	@echo "  install-dev   - Install dependencies including dev tools"
 	@echo "  test          - Run tests"
-	@echo "  lint          - Run linting checks"
-	@echo "  format        - Format code"
+	@echo "  lint          - Run linting checks (requires install-dev)"
+	@echo "  format        - Format code (requires install-dev)"
 	@echo "  clean         - Clean generated files"
 	@echo "  docker-build  - Build Docker image"
 	@echo "  docker-run    - Run Docker container"
-	@echo "  train         - Run training"
+	@echo "  prepare-data  - Download and prepare training data"
+	@echo "  train         - Run training (automatically prepares data if needed)"
 	@echo "  inference     - Run inference"
+	@echo "  benchmark     - Run benchmark tests"
+	@echo "  publish       - Publish model to HuggingFace Hub"
 
 install:
 	pip install -r requirements.txt
+	pip install -e .
+
+install-dev:
+	pip install -r requirements.txt
+	pip install -r requirements-dev.txt
 	pip install -e .
 
 test:
@@ -42,19 +51,19 @@ docker-build:
 docker-run:
 	docker-compose up -d api
 
-train:
-	python scripts/train.py
+train: prepare-data
+	python -m scripts.train
 
 inference:
-	python scripts/inference.py
+	python -m scripts.inference
 
 prepare-data:
-	python scripts/prepare_data.py
+	python -m scripts.prepare_data
 
 benchmark:
-	python scripts/benchmark.py
+	python -m scripts.benchmark
 
 publish:
-	python scripts/publish_to_hub.py \
+	python -m scripts.publish_to_hub \
 		--model-path ./outputs/final_model \
 		--repo-name $(REPO_NAME)

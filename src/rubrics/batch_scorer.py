@@ -155,7 +155,7 @@ class BatchSQLScorer:
             for i, output in enumerate(outputs):
                 # Check cache first
                 if use_cache and self._cache_enabled and output in self._cache:
-                    scores[i] = self._cache[output]
+                    scores[i] = self._cache[output]  # type: ignore[call-overload]
                     continue
 
                 # Submit scoring task
@@ -167,7 +167,7 @@ class BatchSQLScorer:
             for i, output, future in tasks:
                 try:
                     score = future.result()
-                    scores[i] = score
+                    scores[i] = score  # type: ignore[call-overload]
 
                     # Cache result
                     if use_cache and self._cache_enabled:
@@ -175,9 +175,9 @@ class BatchSQLScorer:
 
                 except Exception as e:
                     logger.error(f"Error scoring output {i}: {e}")
-                    scores[i] = 0.0
+                    scores[i] = 0.0  # type: ignore[call-overload]
 
-        return scores
+        return scores  # type: ignore[return-value]
 
     def score_with_metadata(
         self,
@@ -223,7 +223,7 @@ class BatchSQLScorer:
 
                 # Add reference if provided
                 if references and i < len(references):
-                    metadata["reference"] = references[i]
+                    metadata["reference"] = references[i]  # type: ignore[assignment]
 
                 results.append(metadata)
 
