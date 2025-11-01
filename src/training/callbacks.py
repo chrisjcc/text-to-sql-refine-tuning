@@ -13,8 +13,10 @@ from src.environments.sql_env.environment import TextToSQLEnvironment
 from src.rubrics.sql_rubric import SQLValidationRubric
 
 try:
-    import wandb
     from types import ModuleType
+
+    import wandb
+
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False

@@ -71,7 +71,9 @@ class SQLInferenceEngine:
 
         self.logger.info("Inference engine initialized")
 
-    def _load_model(self) -> Tuple[Union[AutoModelForCausalLM, PeftModel, PreTrainedModel], AutoTokenizer]:
+    def _load_model(
+        self,
+    ) -> Tuple[Union[AutoModelForCausalLM, PeftModel, PreTrainedModel], AutoTokenizer]:
         """Load model and tokenizer."""
         self.logger.info(f"Loading model from {self.model_path}")
 
@@ -147,9 +149,12 @@ class SQLInferenceEngine:
             )
 
         # Load tokenizer - determine source path
-        tokenizer_path = resolved_model_path if not is_peft_model else (self.base_model_name or resolved_model_path)
+        tokenizer_path = (
+            resolved_model_path
+            if not is_peft_model
+            else (self.base_model_name or resolved_model_path)
+        )
         is_tokenizer_local = Path(tokenizer_path).exists() if tokenizer_path else False
-
 
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_path, trust_remote_code=True, local_files_only=is_tokenizer_local
@@ -351,7 +356,6 @@ class SQLInferenceEngine:
                 1 if self._normalize_sql(p["sql"]) == self._normalize_sql(r) else 0  # type: ignore[arg-type, misc]
                 for p, r in zip(predictions, references)
                 if r is not None and self._normalize_sql(p["sql"]) == self._normalize_sql(r)
-
             )
             metrics["exact_match_pct"] = exact_matches / len(dataset) * 100  # type: ignore[assignment]
 
