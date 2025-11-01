@@ -15,6 +15,7 @@ from src.rubrics.sql_rubric import SQLValidationRubric
 try:
     import wandb
     from types import ModuleType
+
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False

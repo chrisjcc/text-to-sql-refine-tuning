@@ -408,11 +408,11 @@ class ModelLoader:
         self.logger.info(f"Model type: {type(model).__name__}")
 
         # Handle device attribute which may not exist on all model types
-        device = getattr(model, 'device', 'unknown')
+        device = getattr(model, "device", "unknown")
         self.logger.info(f"Device: {device}")
 
         # Handle dtype attribute which may not exist on all model types
-        dtype = getattr(model, 'dtype', 'unknown')
+        dtype = getattr(model, "dtype", "unknown")
         self.logger.info(f"Dtype: {dtype}")
 
         # Count parameters
