@@ -147,7 +147,7 @@ class BatchSQLScorer:
         Returns:
             List of scores
         """
-        scores = [None] * len(outputs)  # Pre-allocate list
+        scores: List[float] = [0.0] * len(outputs)  # Pre-allocate list with default values
         tasks = []
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -218,7 +218,8 @@ class BatchSQLScorer:
 
                 # Add extracted SQL if requested
                 if include_extracted_sql:
-                    metadata["extracted_sql"] = detailed.get("extracted_sql")  # type: ignore[assignment]
+                    extracted = detailed.get("extracted_sql")
+                    metadata["extracted_sql"] = extracted if extracted is not None else None
 
                 # Add reference if provided
                 if references and i < len(references):
@@ -228,23 +229,22 @@ class BatchSQLScorer:
 
             except Exception as e:
                 logger.error(f"Error getting metadata for output {i}: {e}")
-                results.append(  # type: ignore[dict-item]
-                    {
-                        "index": i,
-                        "total": 0.0,
-                        "syntax": 0.0,
-                        "syntax_valid": False,
-                        "keywords": 0.0,
-                        "format": 0.0,
-                        "extracted_sql": None,  # type: ignore[dict-item]
-                        "weights": {  # type: ignore[dict-item]
-                            "syntax": self.rubric.syntax_weight,
-                            "keywords": self.rubric.keyword_weight,
-                            "format": self.rubric.format_weight,
-                        },
-                        "error": str(e),  # type: ignore[dict-item]
-                    }
-                )
+                error_metadata: Dict[str, Any] = {
+                    "index": i,
+                    "total": 0.0,
+                    "syntax": 0.0,
+                    "syntax_valid": False,
+                    "keywords": 0.0,
+                    "format": 0.0,
+                    "extracted_sql": None,
+                    "weights": {
+                        "syntax": self.rubric.syntax_weight,
+                        "keywords": self.rubric.keyword_weight,
+                        "format": self.rubric.format_weight,
+                    },
+                    "error": str(e),
+                }
+                results.append(error_metadata)
 
         return results
 

@@ -7,7 +7,7 @@ from natural language questions using fine-tuned models.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from peft import PeftModel
@@ -71,7 +71,7 @@ class SQLInferenceEngine:
 
         self.logger.info("Inference engine initialized")
 
-    def _load_model(self) -> tuple:
+    def _load_model(self) -> Tuple[Union[AutoModelForCausalLM, PeftModel, PreTrainedModel], AutoTokenizer]:
         """Load model and tokenizer."""
         self.logger.info(f"Loading model from {self.model_path}")
 
@@ -147,8 +147,9 @@ class SQLInferenceEngine:
             )
 
         # Load tokenizer - determine source path
-        tokenizer_path = resolved_model_path if not is_peft_model else self.base_model_name
-        is_tokenizer_local = Path(tokenizer_path).exists() if tokenizer_path is not None else False
+        tokenizer_path = resolved_model_path if not is_peft_model else (self.base_model_name or resolved_model_path)
+        is_tokenizer_local = Path(tokenizer_path).exists() if tokenizer_path else False
+
 
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_path, trust_remote_code=True, local_files_only=is_tokenizer_local
@@ -321,7 +322,8 @@ class SQLInferenceEngine:
         self.logger.info(f"Evaluating on {len(dataset)} samples")
 
         questions = [item["question"] for item in dataset]
-        schemas = [item.get("schema") for item in dataset]  # type: ignore[misc]
+        schemas: List[Optional[str]] = [item.get("schema") for item in dataset]
+
         references = [item.get("sql") for item in dataset]
 
         # Generate predictions
@@ -348,8 +350,10 @@ class SQLInferenceEngine:
             exact_matches = sum(
                 1 if self._normalize_sql(p["sql"]) == self._normalize_sql(r) else 0  # type: ignore[arg-type, misc]
                 for p, r in zip(predictions, references)
+                if r is not None and self._normalize_sql(p["sql"]) == self._normalize_sql(r)
+
             )
-            metrics["exact_match_pct"] = exact_matches / len(dataset) * 100
+            metrics["exact_match_pct"] = exact_matches / len(dataset) * 100  # type: ignore[assignment]
 
         self.logger.info("Evaluation complete")
         for key, value in metrics.items():

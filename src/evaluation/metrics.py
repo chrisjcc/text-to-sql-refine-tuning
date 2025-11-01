@@ -177,7 +177,7 @@ class SQLMetrics:
         else:
             complexity_level = "complex"
 
-        complexity = {
+        result = {
             "num_tokens": num_tokens,
             "num_tables": num_tables,
             "num_joins": num_joins,
@@ -191,7 +191,7 @@ class SQLMetrics:
             "complexity_score": float(score),
         }
 
-        return complexity
+        return result
 
     def edit_distance(self, predicted: str, reference: str) -> int:
         """

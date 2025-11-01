@@ -96,7 +96,7 @@ class ModelLoader:
             lora_alpha: LoRA alpha parameter
             lora_dropout: Dropout probability
             target_modules: Modules to apply LoRA to
-            bias: Bias training strategy
+            bias: Bias training strategy ("none", "all", or "lora_only")
             task_type: Type of task
 
         Returns:
@@ -106,12 +106,18 @@ class ModelLoader:
             # Default for Llama models
             target_modules = ["q_proj", "v_proj", "k_proj", "o_proj"]
 
+        # Ensure bias is a valid literal
+        valid_bias_values = ["none", "all", "lora_only"]
+        if bias not in valid_bias_values:
+            self.logger.warning(f"Invalid bias value '{bias}', defaulting to 'none'")
+            bias = "none"
+
         lora_config = LoraConfig(
             r=r,
             lora_alpha=lora_alpha,
             lora_dropout=lora_dropout,
             target_modules=target_modules,
-            bias=bias,
+            bias=bias,  # type: ignore[arg-type]
             task_type=task_type,
         )
 
@@ -122,11 +128,31 @@ class ModelLoader:
 
     def _prepare_quantization_config(
         self,
-        use_quantization: bool,
-        bnb_config: Optional[BitsAndBytesConfig],
-        torch_dtype: Optional[torch.dtype],
-    ) -> Tuple[Optional[BitsAndBytesConfig], torch.dtype]:
-        """Prepare quantization configuration and torch dtype."""
+        use_quantization: bool = True,
+        use_peft: bool = True,
+        bnb_config: Optional[BitsAndBytesConfig] = None,
+        lora_config: Optional[LoraConfig] = None,
+        torch_dtype: Optional[torch.dtype] = None,
+        attn_implementation: Optional[str] = "auto",
+    ) -> Union[AutoModelForCausalLM, PeftModel, PreTrainedModel]:
+        """
+        Load model with optional quantization and LoRA adapters.
+
+        Args:
+            use_quantization: Whether to use QLoRA
+            use_peft: Whether to apply LoRA adapters
+            bnb_config: Custom BnB config (created if None)
+            lora_config: Custom LoRA config (created if None)
+            torch_dtype: Base dtype for non-quantized loading
+            attn_implementation: Attention implementation ("flash_attention_2", "sdpa", "eager", or "auto")
+                                "auto" will try flash_attention_2 and fall back to default if unavailable
+
+        Returns:
+            Loaded model (with PEFT if enabled)
+        """
+        self.logger.info(f"Loading model: {self.model_name}")
+
+        # Prepare quantization config
         if use_quantization:
             if bnb_config is None:
                 bnb_config = self.create_bnb_config()
@@ -363,7 +389,7 @@ class ModelLoader:
 
     def load_model_and_tokenizer(
         self, use_quantization: bool = True, use_peft: bool = True, **kwargs
-    ) -> Tuple[Union[PreTrainedModel, PeftModel], AutoTokenizer]:
+    ) -> Tuple[Union[AutoModelForCausalLM, PeftModel, PreTrainedModel], AutoTokenizer]:
         """
         Convenience method to load both model and tokenizer.
 
@@ -375,13 +401,19 @@ class ModelLoader:
 
         return model, tokenizer
 
-    def print_model_info(self, model: Union[PreTrainedModel, PeftModel]):
+    def print_model_info(self, model: Union[AutoModelForCausalLM, PeftModel, PreTrainedModel]):
         """Print detailed model information for debugging."""
         self.logger.info("\n" + "=" * 80)
         self.logger.info("Model Information:")
         self.logger.info(f"Model type: {type(model).__name__}")
-        self.logger.info(f"Device: {model.device}")  # type: ignore[attr-defined]
-        self.logger.info(f"Dtype: {model.dtype}")  # type: ignore[attr-defined]
+
+        # Handle device attribute which may not exist on all model types
+        device = getattr(model, 'device', 'unknown')
+        self.logger.info(f"Device: {device}")
+
+        # Handle dtype attribute which may not exist on all model types
+        dtype = getattr(model, 'dtype', 'unknown')
+        self.logger.info(f"Dtype: {dtype}")
 
         # Count parameters
         total_params = sum(p.numel() for p in model.parameters())  # type: ignore[attr-defined]

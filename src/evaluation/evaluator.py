@@ -112,7 +112,7 @@ class SQLEvaluator:
         self, predicted: str, reference: str, compute_execution: bool = False
     ) -> Dict[str, Any]:
         """Compute all metrics for a single sample."""
-        metrics_dict = {}
+        metrics_dict: Dict[str, Any] = {}
 
         # Basic metrics
         metrics_dict["exact_match"] = float(self.metrics.exact_match(predicted, reference))  # type: ignore[assignment]
@@ -207,6 +207,7 @@ class SQLEvaluator:
 
         # Save JSON results
         json_path = output_path_obj / "evaluation_results.json"  # type: ignore[operator]
+
         with open(json_path, "w") as f:
             # Remove per-sample results for cleaner summary
             summary = {

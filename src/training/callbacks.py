@@ -13,13 +13,12 @@ from src.environments.sql_env.environment import TextToSQLEnvironment
 from src.rubrics.sql_rubric import SQLValidationRubric
 
 try:
-    import wandb  # type: ignore
-
+    import wandb
+    from types import ModuleType
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
-    wandb = None  # type: ignore
-
+    wandb: Optional[ModuleType] = None
 
 logger = logging.getLogger(__name__)
 
