@@ -65,9 +65,7 @@ def run_inference(cfg: DictConfig) -> None:
         split = cfg.inference.get("split", "test")
         if split not in dataset:
             split = "validation"
-            logger.warning(
-                f"Split 'test' not found, using '{split}' instead"
-            )
+            logger.warning(f"Split 'test' not found, using '{split}' instead")
 
         data: Dataset = dataset[split]
         logger.info(f"Using {split} split: {len(data)} samples")

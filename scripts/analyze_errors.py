@@ -14,9 +14,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def analyze_errors(
-    results_path: str, output_path: str, n_samples: int = 20
-) -> None:
+def analyze_errors(results_path: str, output_path: str, n_samples: int = 20) -> None:
     """Analyze evaluation errors and generate detailed error reports.
 
     Loads evaluation results, identifies errors, analyzes error patterns
@@ -42,9 +40,7 @@ def analyze_errors(
     errors = df[df["exact_match"] is False]
 
     logger.info(f"Total samples: {len(df)}")
-    logger.info(
-        f"Errors: {len(errors)} ({len(errors)/len(df)*100:.1f}%)"
-    )
+    logger.info(f"Errors: {len(errors)} ({len(errors)/len(df)*100:.1f}%)")
 
     # Analyze error patterns
     analysis = {
@@ -65,10 +61,7 @@ def analyze_errors(
     logger.info("\nCommon issues:")
     invalid_sql = errors[errors["valid"] is False]
     invalid_pct = len(invalid_sql) / len(errors) * 100
-    logger.info(
-        f"  Invalid SQL: {len(invalid_sql)} "
-        f"({invalid_pct:.1f}% of errors)"
-    )
+    logger.info(f"  Invalid SQL: {len(invalid_sql)} " f"({invalid_pct:.1f}% of errors)")
 
     # Save analysis
     output_path_obj = Path(output_path)

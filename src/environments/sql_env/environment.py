@@ -6,17 +6,25 @@ handling prompt formatting, response parsing, and reward computation.
 
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from verifiers import SingleTurnEnv
 
 from src.rubrics.sql_rubric import SQLValidationRubric
 from src.utils.sql_parser import SQLParser
 
-from .prompts import PROMPT_TEMPLATES, format_few_shot_examples
+from .prompts import (
+    PROMPT_TEMPLATES,
+    format_few_shot_examples,
+    format_schema,
+    get_prompt_template,
+)
 from .prompts import format_prompt as format_prompt_util
-from .prompts import format_schema, get_prompt_template
-from .utils import extract_schema_info, truncate_schema, validate_sql_against_schema
+from .utils import (
+    extract_schema_info,
+    truncate_schema,
+    validate_sql_against_schema,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +40,15 @@ class TextToSQLEnvironment(SingleTurnEnv):
 
     This environment is designed for stateless text-to-SQL generation where
     each query is independent and requires no conversation history.
+
+    Attributes:
+        rubric: SQL validation rubric for scoring responses.
+        parser: SQL parser for extraction and validation.
+        include_schema: Whether to include table schema in prompts.
+        max_examples: Number of few-shot examples to include.
+        max_schema_length: Maximum characters for schema context.
+        prompt_template: Loaded prompt template string.
+        logger: Logger instance for this class.
 
     Examples:
         >>> from src.rubrics.sql_rubric import SQLValidationRubric
@@ -55,26 +72,34 @@ class TextToSQLEnvironment(SingleTurnEnv):
         include_schema: bool = True,
         max_examples: int = 0,
         max_schema_length: int = 1024,
-        dataset: Optional[Any] = None,
-        eval_dataset: Optional[Any] = None,
-        **kwargs,
-    ):
+        dataset: Any | None = None,
+        eval_dataset: Any | None = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialize text-to-SQL environment.
 
         Args:
-            rubric: SQL validation rubric for scoring
-            parser: SQL parser for extraction
-            prompt_template: Template name or custom template string
-            include_schema: Whether to include table schema in prompt
-            max_examples: Number of few-shot examples to include
-            max_schema_length: Maximum characters for schema context
-            dataset: Optional dataset for training (required by verifiers base class)
-            eval_dataset: Optional evaluation dataset (required by verifiers base class)
-            **kwargs: Additional arguments for SingleTurnEnv
+            rubric: SQL validation rubric for scoring responses.
+            parser: SQL parser for SQL extraction from text.
+            prompt_template: Template name from PROMPT_TEMPLATES or
+                custom template string. Defaults to "default".
+            include_schema: Whether to include table schema in prompt.
+                Defaults to True.
+            max_examples: Number of few-shot examples to include.
+                Defaults to 0 (no examples).
+            max_schema_length: Maximum characters for schema context.
+                Defaults to 1024.
+            dataset: Optional dataset for training (required by verifiers
+                base class). Defaults to None.
+            eval_dataset: Optional evaluation dataset (required by
+                verifiers base class). Defaults to None.
+            **kwargs: Additional arguments for SingleTurnEnv base class.
         """
         # Initialize base class with dataset parameters
         # Note: verifiers base class requires either dataset or eval_dataset
-        super().__init__(dataset=dataset, eval_dataset=eval_dataset, **kwargs)
+        super().__init__(
+            dataset=dataset, eval_dataset=eval_dataset, **kwargs
+        )
 
         self.rubric = rubric
         self.parser = parser
@@ -91,38 +116,53 @@ class TextToSQLEnvironment(SingleTurnEnv):
         """Load prompt template by name or use custom template.
 
         Args:
-            template: Template name from PROMPT_TEMPLATES or custom string
+            template: Template name from PROMPT_TEMPLATES or custom
+                template string.
 
         Returns:
-            Template string
+            Template string ready for formatting.
+
+        Raises:
+            ValueError: If template name is invalid or custom template
+                is missing required placeholders.
         """
         # Check if it's a template name
         if template in PROMPT_TEMPLATES:
             return get_prompt_template(template)
 
         # Check if this looks like an invalid template name
-        # (single word without spaces or special characters that looks like a name)
+        # (single word without spaces that looks like a name)
         if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", template):
+            available = ", ".join(PROMPT_TEMPLATES.keys())
             raise ValueError(
-                f"Unknown template: '{template}'. Available templates: {', '.join(PROMPT_TEMPLATES.keys())}"
+                f"Unknown template: '{template}'. "
+                f"Available templates: {available}"
             )
 
         # Otherwise, treat as custom template
         # Validate it has required placeholders
         if "{question}" not in template:
-            raise ValueError("Custom template must contain '{question}' placeholder")
+            raise ValueError(
+                "Custom template must contain '{question}' placeholder"
+            )
 
         return template
 
-    def format_prompt(self, question: str, context: Optional[Dict[str, Any]] = None) -> str:
+    def format_prompt(
+        self, question: str, context: dict[str, Any] | None = None
+    ) -> str:
         """Format input prompt with question and optional schema context.
 
         Args:
-            question: Natural language question
-            context: Optional dict with 'schema', 'tables', 'examples' keys
+            question: Natural language question to convert to SQL.
+            context: Optional dict with 'schema', 'tables', 'examples' keys.
+                Defaults to None.
 
         Returns:
-            Formatted prompt string
+            Formatted prompt string ready for model input.
+
+        Raises:
+            ValueError: If question is empty.
 
         Example:
             >>> env = TextToSQLEnvironment(rubric, parser)
@@ -145,46 +185,62 @@ class TextToSQLEnvironment(SingleTurnEnv):
             # Truncate if too long
             if len(schema) > self.max_schema_length:
                 schema = truncate_schema(schema, self.max_schema_length)
-                self.logger.debug(f"Truncated schema from {len(raw_schema)} to {len(schema)} chars")
+                self.logger.debug(
+                    f"Truncated schema from {len(raw_schema)} to "
+                    f"{len(schema)} chars"
+                )
 
         # Prepare few-shot examples if requested
         examples_str = ""
         if self.max_examples > 0 and context and "examples" in context:
             examples = context["examples"]
-            examples_str = format_few_shot_examples(examples, self.max_examples)
+            examples_str = format_few_shot_examples(
+                examples, self.max_examples
+            )
 
         # Format using template
-        prompt = format_prompt_util(
+        return format_prompt_util(
             template=self.prompt_template,
             question=question,
             schema=schema,
             examples=examples_str if examples_str else None,
         )
 
-        return prompt
-
-    def parse_response(self, response: str) -> Dict[str, Any]:
+    def parse_response(self, response: str) -> dict[str, Any]:
         """Parse model response to extract SQL query.
 
         Args:
-            response: Raw model output
+            response: Raw model output text.
 
         Returns:
-            Dict with 'sql', 'valid', 'metadata' keys
+            Dictionary containing:
+            - sql: Extracted SQL string or None
+            - valid: Boolean indicating if format is valid
+            - metadata: Additional parsing information
 
         Example:
-            >>> result = env.parse_response("```sql\\nSELECT * FROM users\\n```")
+            >>> result = env.parse_response(
+            ...     "```sql\\nSELECT * FROM users\\n```"
+            ... )
             >>> print(result['sql'])
             SELECT * FROM users
         """
         if not response:
-            return {"sql": None, "valid": False, "metadata": {"error": "Empty response"}}
+            return {
+                "sql": None,
+                "valid": False,
+                "metadata": {"error": "Empty response"},
+            }
 
         # Extract SQL using parser
         sql = self.parser.extract_sql(response)
 
         if sql is None:
-            return {"sql": None, "valid": False, "metadata": {"error": "Failed to extract SQL"}}
+            return {
+                "sql": None,
+                "valid": False,
+                "metadata": {"error": "Failed to extract SQL"},
+            }
 
         # Validate basic format
         is_valid = self.parser.is_valid_format(response)
@@ -201,18 +257,20 @@ class TextToSQLEnvironment(SingleTurnEnv):
     def compute_reward(
         self,
         response: str,
-        reference: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
+        reference: str | None = None,
+        context: dict[str, Any] | None = None,
     ) -> float:
         """Compute reward score for generated SQL.
 
         Args:
-            response: Model's generated response
-            reference: Optional ground truth SQL (if available)
-            context: Additional context for scoring (e.g., schema for validation)
+            response: Model's generated response text.
+            reference: Optional ground truth SQL for comparison.
+                Defaults to None.
+            context: Additional context for scoring (e.g., schema for
+                validation). Defaults to None.
 
         Returns:
-            Reward score between 0.0 and 1.0
+            Reward score between 0.0 and 1.0.
 
         Example:
             >>> reward = env.compute_reward("SELECT * FROM users")
@@ -232,32 +290,38 @@ class TextToSQLEnvironment(SingleTurnEnv):
             if sql:
                 schema_info = extract_schema_info(context["schema"])
                 if schema_info:
-                    is_valid_schema = validate_sql_against_schema(sql, schema_info)
+                    is_valid_schema = validate_sql_against_schema(
+                        sql, schema_info
+                    )
 
                     # If SQL references invalid tables, penalize the score
                     if not is_valid_schema:
                         score *= 0.7  # 30% penalty
                         self.logger.debug("Applied schema validation penalty")
 
-        return float(max(0.0, min(1.0, score)))  # type: ignore[no-any-return]
+        return float(max(0.0, min(1.0, score)))
 
     def batch_compute_rewards(
         self,
-        responses: List[str],
-        references: Optional[List[str]] = None,
-        contexts: Optional[List[Dict[str, Any]]] = None,
-    ) -> List[float]:
+        responses: list[str],
+        references: list[str] | None = None,
+        contexts: list[dict[str, Any]] | None = None,
+    ) -> list[float]:
         """Efficiently compute rewards for batch of responses.
 
-        Critical for GRPO training performance.
+        Critical for GRPO training performance. Uses batch scoring from
+        rubric when possible, falls back to individual scoring when
+        schema validation is required.
 
         Args:
-            responses: List of model responses
-            references: Optional list of ground truth SQLs
-            contexts: Optional list of context dicts
+            responses: List of model responses to score.
+            references: Optional list of ground truth SQLs corresponding
+                to responses. Defaults to None.
+            contexts: Optional list of context dicts for each response.
+                Defaults to None.
 
         Returns:
-            List of reward scores
+            List of reward scores between 0.0 and 1.0.
 
         Example:
             >>> responses = ["SELECT * FROM users", "SELECT id FROM products"]
@@ -269,7 +333,9 @@ class TextToSQLEnvironment(SingleTurnEnv):
             return []
 
         # Prepare references and contexts
-        refs = references if references else [None] * len(responses)  # type: ignore[list-item]
+        refs = (
+            references if references else [None] * len(responses)  # type: ignore[list-item]
+        )
         ctxs = contexts if contexts else [None] * len(responses)  # type: ignore[list-item]
 
         # Use batch scoring from rubric for efficiency
@@ -280,28 +346,37 @@ class TextToSQLEnvironment(SingleTurnEnv):
             # Complex case: apply schema validation per response
             rewards = [
                 self.compute_reward(response, ref, ctx)
-                for response, ref, ctx in zip(responses, refs, ctxs)
+                for response, ref, ctx in zip(
+                    responses, refs, ctxs, strict=True
+                )
             ]
 
-        return [float(r) for r in rewards]  # type: ignore[no-any-return]
+        return [float(r) for r in rewards]
 
-    def prepare_dataset_sample(self, sample: Dict[str, Any]) -> Dict[str, Any]:
+    def prepare_dataset_sample(
+        self, sample: dict[str, Any]
+    ) -> dict[str, Any]:
         """Convert dataset sample to environment format.
 
-        Handles b-mc2/sql-create-context dataset structure.
-
-        Expected sample format:
-        {
-            'question': str,
-            'context': str,  # CREATE TABLE statements
-            'answer': str    # SQL query
-        }
+        Handles b-mc2/sql-create-context dataset structure and transforms
+        it into the format expected by the environment.
 
         Args:
-            sample: Dataset sample
+            sample: Dataset sample with expected format:
+                - question: Natural language query string
+                - context: CREATE TABLE statements
+                - answer: Reference SQL query
 
         Returns:
-            Formatted sample ready for environment
+            Formatted sample dictionary containing:
+            - prompt: Formatted prompt for model input
+            - question: Original question
+            - schema: Database schema
+            - reference: Ground truth SQL
+            - context: Context dict for reward computation
+
+        Raises:
+            ValueError: If sample doesn't contain 'question' field.
 
         Example:
             >>> sample = {
@@ -322,7 +397,8 @@ class TextToSQLEnvironment(SingleTurnEnv):
 
         # Format prompt
         prompt = self.format_prompt(
-            question=question, context={"schema": context} if context else None
+            question=question,
+            context={"schema": context} if context else None,
         )
 
         return {
@@ -335,19 +411,28 @@ class TextToSQLEnvironment(SingleTurnEnv):
 
     def get_metrics(
         self,
-        responses: List[str],
-        references: Optional[List[str]] = None,
-        contexts: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, float]:
+        responses: list[str],
+        references: list[str] | None = None,
+        contexts: list[dict[str, Any]] | None = None,
+    ) -> dict[str, float]:
         """Compute aggregate metrics for evaluation.
 
+        Analyzes a batch of responses to compute comprehensive evaluation
+        metrics including validity, rewards, and syntax correctness.
+
         Args:
-            responses: List of model responses
-            references: Optional list of ground truth SQLs
-            contexts: Optional list of context dicts
+            responses: List of model responses to evaluate.
+            references: Optional list of ground truth SQLs. Defaults to None.
+            contexts: Optional list of context dicts. Defaults to None.
 
         Returns:
-            Dict with evaluation metrics
+            Dictionary containing evaluation metrics:
+            - valid_sql_pct: Percentage of responses with valid SQL
+            - avg_reward: Average reward score
+            - syntax_correct_pct: Percentage with correct syntax
+            - num_samples: Number of responses evaluated
+            - min_reward: Minimum reward in batch
+            - max_reward: Maximum reward in batch
 
         Example:
             >>> responses = ["SELECT * FROM users", "invalid query"]
@@ -394,6 +479,10 @@ class TextToSQLEnvironment(SingleTurnEnv):
     def reset(self) -> None:
         """Reset environment state.
 
-        SingleTurnEnv is stateless, so this is a no-op.
+        SingleTurnEnv is stateless, so this is a no-op included for
+        compatibility with the base class interface.
+
+        Returns:
+            None.
         """
         pass

@@ -7,7 +7,7 @@ and SQL normalization.
 
 import logging
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Any
 
 import sqlparse
 from datasets import Dataset
@@ -18,9 +18,19 @@ logger = logging.getLogger(__name__)
 
 
 class SQLDataPreprocessor:
-    """
-    Preprocesses SQL dataset samples for training.
-    Handles cleaning, validation, and formatting.
+    """Preprocesses SQL dataset samples for training.
+
+    Handles cleaning, validation, and formatting of SQL dataset samples
+    including question text, database schemas, and SQL queries.
+
+    Attributes:
+        max_question_length: Maximum tokens for question.
+        max_schema_length: Maximum tokens for schema context.
+        max_sql_length: Maximum tokens for SQL query.
+        normalize_sql: Whether to normalize SQL formatting.
+        filter_invalid: Whether to filter out invalid samples.
+        parser: SQL parser for syntax validation.
+        logger: Logger instance for this class.
     """
 
     def __init__(
@@ -30,16 +40,18 @@ class SQLDataPreprocessor:
         max_sql_length: int = 512,
         normalize_sql: bool = True,
         filter_invalid: bool = True,
-    ):
-        """
-        Initialize preprocessor.
+    ) -> None:
+        """Initialize preprocessor.
 
         Args:
-            max_question_length: Maximum tokens for question
-            max_schema_length: Maximum tokens for schema context
-            max_sql_length: Maximum tokens for SQL query
-            normalize_sql: Whether to normalize SQL formatting
-            filter_invalid: Whether to filter out invalid samples
+            max_question_length: Maximum tokens for question. Defaults to 512.
+            max_schema_length: Maximum tokens for schema context.
+                Defaults to 1024.
+            max_sql_length: Maximum tokens for SQL query. Defaults to 512.
+            normalize_sql: Whether to normalize SQL formatting with sqlparse.
+                Defaults to True.
+            filter_invalid: Whether to filter out invalid samples.
+                Defaults to True.
         """
         self.max_question_length = max_question_length
         self.max_schema_length = max_schema_length
@@ -50,12 +62,18 @@ class SQLDataPreprocessor:
         self.logger = logging.getLogger(__name__)
 
     def clean_question(self, question: str) -> str:
-        """
-        Clean and normalize natural language question.
+        """Clean and normalize natural language question.
 
+        Performs the following operations:
         - Remove extra whitespace
-        - Fix encoding issues
+        - Fix encoding issues (non-breaking spaces, quotation marks)
         - Standardize punctuation
+
+        Args:
+            question: Raw question text.
+
+        Returns:
+            Cleaned and normalized question string.
         """
         if not question:
             return ""
@@ -68,9 +86,9 @@ class SQLDataPreprocessor:
 
         # Fix common encoding issues
         question = question.replace("\u00a0", " ")  # Non-breaking space
-        question = question.replace("\u2019", "'")  # Right single quotation mark
-        question = question.replace("\u201c", '"')  # Left double quotation mark
-        question = question.replace("\u201d", '"')  # Right double quotation mark
+        question = question.replace("\u2019", "'")  # Right single quote
+        question = question.replace("\u201c", '"')  # Left double quote
+        question = question.replace("\u201d", '"')  # Right double quote
 
         # Ensure question ends with proper punctuation
         if question and question[-1] not in ".?!":
@@ -79,12 +97,18 @@ class SQLDataPreprocessor:
         return question
 
     def clean_schema(self, context: str) -> str:
-        """
-        Clean and format schema (CREATE TABLE statements).
+        """Clean and format schema (CREATE TABLE statements).
 
-        - Remove comments
-        - Normalize formatting
-        - Truncate if too long
+        Performs the following operations:
+        - Remove SQL comments (single-line and multi-line)
+        - Normalize whitespace formatting
+        - Truncate if too long (at table boundaries when possible)
+
+        Args:
+            context: Raw schema text containing CREATE TABLE statements.
+
+        Returns:
+            Cleaned and normalized schema string.
         """
         if not context:
             return ""
@@ -100,26 +124,36 @@ class SQLDataPreprocessor:
         context = context.strip()
 
         # Truncate if too long (by character count)
-        # We use character count as a proxy for token count (rough estimate: 1 token ≈ 4 chars)
+        # Use char count as proxy for token count (rough: 1 token ≈ 4 chars)
         max_chars = self.max_schema_length * 4
         if len(context) > max_chars:
-            self.logger.debug(f"Truncating schema from {len(context)} to {max_chars} chars")
+            self.logger.debug(
+                f"Truncating schema from {len(context)} to "
+                f"{max_chars} chars"
+            )
             context = context[:max_chars]
             # Try to truncate at a table boundary
             last_create = context.rfind("CREATE TABLE")
-            if last_create > max_chars * 0.8:  # If we're close to the end, truncate there
+            # If close to the end, truncate there
+            if last_create > max_chars * 0.8:
                 context = context[:last_create]
 
         return context
 
     def clean_sql(self, sql: str) -> str:
-        """
-        Clean and normalize SQL query.
+        """Clean and normalize SQL query.
 
-        - Remove extra whitespace
+        Performs the following operations:
+        - Remove SQL comments
         - Standardize keywords (uppercase)
-        - Remove comments
-        - Validate basic syntax
+        - Normalize whitespace
+        - Validate basic syntax with sqlparse
+
+        Args:
+            sql: Raw SQL query string.
+
+        Returns:
+            Cleaned and normalized SQL string.
         """
         if not sql:
             return ""
@@ -153,12 +187,22 @@ class SQLDataPreprocessor:
 
         return sql
 
-    def validate_sample(self, sample: Dict) -> Tuple[bool, Optional[str]]:
-        """
-        Validate that the sample has all required fields and valid content.
+    def validate_sample(
+        self, sample: dict[str, Any]
+    ) -> tuple[bool, str | None]:
+        """Validate that sample has required fields and valid content.
+
+        Checks for:
+        - Presence of required fields (question, context, answer)
+        - Non-empty content
+        - Valid SQL syntax using sqlparse
+
+        Args:
+            sample: Sample dictionary to validate.
 
         Returns:
-            (is_valid, error_message)
+            Tuple of (is_valid, error_message). error_message is None
+            if valid.
         """
         # Check required fields
         required_fields = ["question", "context", "answer"]
@@ -192,29 +236,32 @@ class SQLDataPreprocessor:
 
         return True, None
 
-    def preprocess_sample(self, sample: Dict) -> Dict:
-        """
-        Preprocess a single sample.
+    def preprocess_sample(
+        self, sample: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Preprocess a single sample.
 
-        Expected input format (b-mc2/sql-create-context):
-        {
-            'question': str,
-            'context': str,  # CREATE TABLE statements
-            'answer': str    # SQL query
-        }
+        Takes raw sample and returns cleaned, validated, and enriched
+        version with additional metadata fields.
 
-        Returns preprocessed sample with additional fields:
-        {
-            'question': str (cleaned),
-            'schema': str (cleaned context),
-            'sql': str (cleaned answer),
-            'question_length': int,
-            'schema_length': int,
-            'sql_length': int,
-            'is_valid': bool,
-            'sql_keywords': List[str],
-            'complexity': str  # 'simple', 'medium', 'complex'
-        }
+        Args:
+            sample: Input sample with expected format:
+                - question: Natural language query string
+                - context: CREATE TABLE statements
+                - answer: SQL query string
+
+        Returns:
+            Preprocessed sample dictionary containing:
+            - question: Cleaned question text
+            - schema: Cleaned schema (renamed from context)
+            - sql: Cleaned SQL query (renamed from answer)
+            - question_length: Word count of question
+            - schema_length: Word count of schema
+            - sql_length: Word count of SQL
+            - is_valid: Boolean validation status
+            - validation_error: Error message if invalid, None otherwise
+            - sql_keywords: List of SQL keywords present
+            - complexity: Complexity classification (simple/medium/complex)
         """
         # Clean fields
         question = self.clean_question(sample.get("question", ""))
@@ -250,8 +297,15 @@ class SQLDataPreprocessor:
             "complexity": complexity,
         }
 
-    def _extract_sql_keywords(self, sql: str) -> List[str]:
-        """Extract SQL keywords from query."""
+    def _extract_sql_keywords(self, sql: str) -> list[str]:
+        """Extract SQL keywords from query.
+
+        Args:
+            sql: SQL query string.
+
+        Returns:
+            List of SQL keywords found in the query.
+        """
         keywords = [
             "SELECT",
             "FROM",
@@ -291,22 +345,29 @@ class SQLDataPreprocessor:
 
         return found_keywords
 
-    def preprocess_dataset(self, dataset: Dataset, num_proc: int = 4) -> Dataset:
-        """
-        Preprocess the entire dataset in parallel.
+    def preprocess_dataset(
+        self, dataset: Dataset, num_proc: int = 4
+    ) -> Dataset:
+        """Preprocess the entire dataset in parallel.
+
+        Applies preprocessing to all samples using parallel processing
+        for improved performance.
 
         Args:
-            dataset: Dataset to preprocess
-            num_proc: Number of processes for parallel preprocessing
+            dataset: Dataset to preprocess.
+            num_proc: Number of processes for parallel preprocessing.
+                Defaults to 4.
 
         Returns:
-            Preprocessed dataset
+            Preprocessed dataset with cleaned and validated samples.
         """
         self.logger.info(f"Preprocessing dataset with {num_proc} processes")
 
-        def preprocess_fn(examples):
+        def preprocess_fn(
+            examples: dict[str, Any]
+        ) -> dict[str, list[Any]]:
             """Batch preprocessing function."""
-            results = {
+            results: dict[str, list[Any]] = {
                 "question": [],
                 "schema": [],
                 "sql": [],
@@ -341,29 +402,41 @@ class SQLDataPreprocessor:
             return results
 
         processed_dataset = dataset.map(
-            preprocess_fn, batched=True, num_proc=num_proc, desc="Preprocessing samples"
+            preprocess_fn,
+            batched=True,
+            num_proc=num_proc,
+            desc="Preprocessing samples",
         )
 
-        self.logger.info(f"Preprocessing complete: {len(processed_dataset)} samples")
+        self.logger.info(
+            f"Preprocessing complete: {len(processed_dataset)} samples"
+        )
 
         return processed_dataset
 
     def filter_dataset(self, dataset: Dataset) -> Dataset:
-        """
-        Filter out invalid or problematic samples.
+        """Filter out invalid or problematic samples.
 
-        Filters:
-        - Missing required fields
+        Applies multiple filters to remove:
+        - Samples with missing required fields
         - Invalid SQL syntax
-        - Questions/SQL too long
+        - Questions/SQL exceeding length limits
         - Empty or malformed content
+
+        Args:
+            dataset: Dataset to filter.
+
+        Returns:
+            Filtered dataset containing only valid samples.
         """
         self.logger.info("Filtering invalid samples")
 
         initial_size = len(dataset)
 
         # Filter by validity
-        filtered = dataset.filter(lambda x: x["is_valid"], desc="Filtering invalid samples")
+        filtered = dataset.filter(
+            lambda x: x["is_valid"], desc="Filtering invalid samples"
+        )
 
         # Filter by length constraints
         filtered = filtered.filter(
@@ -380,19 +453,26 @@ class SQLDataPreprocessor:
         removed = initial_size - final_size
 
         self.logger.info(
-            f"Filtered {removed} samples ({removed/initial_size*100:.1f}%). "
+            f"Filtered {removed} samples "
+            f"({removed/initial_size*100:.1f}%). "
             f"Remaining: {final_size}"
         )
 
         return filtered
 
     def classify_complexity(self, sql: str) -> str:
-        """
-        Classify SQL complexity based on features.
+        """Classify SQL complexity based on features.
 
-        Simple: Basic SELECT with WHERE
-        Medium: JOINs, GROUP BY, or subqueries
-        Complex: Multiple JOINs, nested subqueries, or CTEs
+        Classification levels:
+        - Simple: Basic SELECT with WHERE
+        - Medium: JOINs, GROUP BY, or single subquery
+        - Complex: Multiple JOINs, nested subqueries, or CTEs
+
+        Args:
+            sql: SQL query string to classify.
+
+        Returns:
+            Complexity level: "simple", "medium", or "complex".
         """
         sql_upper = sql.upper()
 
@@ -409,7 +489,14 @@ class SQLDataPreprocessor:
             return "complex"
 
         # Medium: Single JOIN, GROUP BY, HAVING, UNION, or single subquery
-        if join_count >= 1 or has_group_by or has_having or has_union or subquery_count >= 1:
+        conditions = [
+            join_count >= 1,
+            has_group_by,
+            has_having,
+            has_union,
+            subquery_count >= 1,
+        ]
+        if any(conditions):
             return "medium"
 
         # Simple: Basic SELECT

@@ -178,9 +178,7 @@ def analyze_schema_statistics(dataset: Dataset) -> None:
         all_tables.update(tables)
 
         # Count columns (rough estimate)
-        column_pattern = (
-            r"(\w+)\s+(?:INT|VARCHAR|TEXT|FLOAT|DOUBLE|DATE|BOOLEAN)"
-        )
+        column_pattern = r"(\w+)\s+(?:INT|VARCHAR|TEXT|FLOAT|DOUBLE|DATE|BOOLEAN)"
         columns = re.findall(column_pattern, schema, re.IGNORECASE)
         column_counts.append(len(columns))
 
@@ -224,22 +222,16 @@ def find_quality_issues(dataset: Dataset) -> None:
         invalid_count = sum(1 for v in dataset["is_valid"] if not v)
         if invalid_count > 0:
             pct = (invalid_count / len(dataset)) * 100
-            logger.warning(
-                f"\n⚠ Invalid samples: {invalid_count} ({pct:.1f}%)"
-            )
+            logger.warning(f"\n⚠ Invalid samples: {invalid_count} ({pct:.1f}%)")
             issues_found = True
 
     # Check for empty fields
     for field in ["question", "sql", "schema"]:
         if field in dataset.column_names:
-            empty_count = sum(
-                1 for v in dataset[field] if not v or not v.strip()
-            )
+            empty_count = sum(1 for v in dataset[field] if not v or not v.strip())
             if empty_count > 0:
                 pct = (empty_count / len(dataset)) * 100
-                logger.warning(
-                    f"\n⚠ Empty {field}: {empty_count} ({pct:.1f}%)"
-                )
+                logger.warning(f"\n⚠ Empty {field}: {empty_count} ({pct:.1f}%)")
                 issues_found = True
 
     # Check for very short questions
@@ -260,8 +252,7 @@ def find_quality_issues(dataset: Dataset) -> None:
             pct = (very_long / len(dataset)) * 100
             logger.warning(
                 f"\n⚠ Very long SQL queries (>100 words): "
-                f"{very_long} ({pct:.1f}%)"
-            )
+                f"{very_long} ({pct:.1f}%)")
             issues_found = True
 
     if not issues_found:
@@ -305,9 +296,7 @@ def show_examples(dataset: Dataset, n_per_complexity: int = 2) -> None:
         logger.info(f"{'-' * 80}")
 
         # Find examples of this complexity
-        indices = [
-            i for i, c in enumerate(dataset["complexity"]) if c == complexity
-        ]
+        indices = [i for i, c in enumerate(dataset["complexity"]) if c == complexity]
 
         if not indices:
             logger.warning(f"No {complexity} examples found")
@@ -315,7 +304,9 @@ def show_examples(dataset: Dataset, n_per_complexity: int = 2) -> None:
 
         # Sample randomly
         sample_indices = rng.choice(
-            indices, min(n_per_complexity, len(indices)), replace=False
+            indices,
+            min(n_per_complexity, len(indices)),
+            replace=False
         )
 
         for idx, sample_idx in enumerate(sample_indices, 1):
@@ -362,6 +353,7 @@ def main() -> None:
             "\nPlease run 'python scripts/prepare_data.py' first to "
             "prepare the dataset."
         )
+
         return
 
     logger.info("\n" + "=" * 80)
