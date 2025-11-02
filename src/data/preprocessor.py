@@ -127,10 +127,7 @@ class SQLDataPreprocessor:
         # Use char count as proxy for token count (rough: 1 token ≈ 4 chars)
         max_chars = self.max_schema_length * 4
         if len(context) > max_chars:
-            self.logger.debug(
-                f"Truncating schema from {len(context)} to "
-                f"{max_chars} chars"
-            )
+            self.logger.debug(f"Truncating schema from {len(context)} to " f"{max_chars} chars")
             context = context[:max_chars]
             # Try to truncate at a table boundary
             last_create = context.rfind("CREATE TABLE")
@@ -187,9 +184,7 @@ class SQLDataPreprocessor:
 
         return sql
 
-    def validate_sample(
-        self, sample: dict[str, Any]
-    ) -> tuple[bool, str | None]:
+    def validate_sample(self, sample: dict[str, Any]) -> tuple[bool, str | None]:
         """Validate that sample has required fields and valid content.
 
         Checks for:
@@ -236,9 +231,7 @@ class SQLDataPreprocessor:
 
         return True, None
 
-    def preprocess_sample(
-        self, sample: dict[str, Any]
-    ) -> dict[str, Any]:
+    def preprocess_sample(self, sample: dict[str, Any]) -> dict[str, Any]:
         """Preprocess a single sample.
 
         Takes raw sample and returns cleaned, validated, and enriched
@@ -345,9 +338,7 @@ class SQLDataPreprocessor:
 
         return found_keywords
 
-    def preprocess_dataset(
-        self, dataset: Dataset, num_proc: int = 4
-    ) -> Dataset:
+    def preprocess_dataset(self, dataset: Dataset, num_proc: int = 4) -> Dataset:
         """Preprocess the entire dataset in parallel.
 
         Applies preprocessing to all samples using parallel processing
@@ -363,9 +354,7 @@ class SQLDataPreprocessor:
         """
         self.logger.info(f"Preprocessing dataset with {num_proc} processes")
 
-        def preprocess_fn(
-            examples: dict[str, Any]
-        ) -> dict[str, list[Any]]:
+        def preprocess_fn(examples: dict[str, Any]) -> dict[str, list[Any]]:
             """Batch preprocessing function."""
             results: dict[str, list[Any]] = {
                 "question": [],
@@ -408,9 +397,7 @@ class SQLDataPreprocessor:
             desc="Preprocessing samples",
         )
 
-        self.logger.info(
-            f"Preprocessing complete: {len(processed_dataset)} samples"
-        )
+        self.logger.info(f"Preprocessing complete: {len(processed_dataset)} samples")
 
         return processed_dataset
 
@@ -434,9 +421,7 @@ class SQLDataPreprocessor:
         initial_size = len(dataset)
 
         # Filter by validity
-        filtered = dataset.filter(
-            lambda x: x["is_valid"], desc="Filtering invalid samples"
-        )
+        filtered = dataset.filter(lambda x: x["is_valid"], desc="Filtering invalid samples")
 
         # Filter by length constraints
         filtered = filtered.filter(

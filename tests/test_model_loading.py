@@ -236,11 +236,7 @@ class TestConfigUtils:
     def test_bnb_config_from_hydra(self):
         """Test BnB config creation from Hydra config."""
         cfg = OmegaConf.create(
-            {
-                "training": {
-                    "peft": {"use_qlora": True, "bnb_4bit_compute_dtype": "bfloat16"}
-                }
-            }
+            {"training": {"peft": {"use_qlora": True, "bnb_4bit_compute_dtype": "bfloat16"}}}
         )
 
         config = create_bnb_config_from_hydra(cfg)
@@ -252,11 +248,7 @@ class TestConfigUtils:
     def test_bnb_config_from_hydra_disabled(self):
         """Test BnB config when QLoRA is disabled."""
         cfg = OmegaConf.create(
-            {
-                "training": {
-                    "peft": {"use_qlora": False, "bnb_4bit_compute_dtype": "bfloat16"}
-                }
-            }
+            {"training": {"peft": {"use_qlora": False, "bnb_4bit_compute_dtype": "bfloat16"}}}
         )
 
         config = create_bnb_config_from_hydra(cfg)
@@ -344,9 +336,7 @@ class TestModelInference:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        model, tokenizer = loader.load_model_and_tokenizer(
-            use_quantization=False, use_peft=False
-        )
+        model, tokenizer = loader.load_model_and_tokenizer(use_quantization=False, use_peft=False)
 
         # Test inference
         test_prompt = "SELECT * FROM"

@@ -175,11 +175,7 @@ class BatchSQLScorer:
             # Submit tasks
             for i, output in enumerate(outputs):
                 # Check cache first
-                if (
-                    use_cache
-                    and self._cache_enabled
-                    and output in self._cache
-                ):
+                if use_cache and self._cache_enabled and output in self._cache:
                     scores[i] = self._cache[output]  # type: ignore[call-overload]
                     continue
 
@@ -247,9 +243,7 @@ class BatchSQLScorer:
                 # Add extracted SQL if requested
                 if include_extracted_sql:
                     extracted = detailed.get("extracted_sql")
-                    metadata["extracted_sql"] = (
-                        extracted if extracted is not None else None
-                    )
+                    metadata["extracted_sql"] = extracted if extracted is not None else None
 
                 # Add reference if provided
                 if references and i < len(references):
@@ -311,9 +305,7 @@ class BatchSQLScorer:
         format_scores = [m["format"] for m in metadata_list]
 
         # Count valid SQL
-        valid_count = sum(
-            1 for m in metadata_list if m.get("syntax_valid", False)
-        )
+        valid_count = sum(1 for m in metadata_list if m.get("syntax_valid", False))
 
         # Compute statistics
         import numpy as np
@@ -359,15 +351,11 @@ class BatchSQLScorer:
 
                 # Create metrics dict with prefix
                 metrics = {
-                    f"{wandb_prefix}/{k}": v
-                    for k, v in stats.items()
-                    if isinstance(v, int | float)
+                    f"{wandb_prefix}/{k}": v for k, v in stats.items() if isinstance(v, int | float)
                 }
 
                 wandb.log(metrics)
-                logger.info(
-                    f"Logged batch statistics to WandB: {wandb_prefix}"
-                )
+                logger.info(f"Logged batch statistics to WandB: {wandb_prefix}")
 
             except ImportError:
                 logger.warning("wandb not available, skipping logging")

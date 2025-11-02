@@ -16,15 +16,11 @@ from src.utils.sql_parser import SQLParser
 from .prompts import (
     PROMPT_TEMPLATES,
     format_few_shot_examples,
+    format_prompt as format_prompt_util,
     format_schema,
     get_prompt_template,
 )
-from .prompts import format_prompt as format_prompt_util
-from .utils import (
-    extract_schema_info,
-    truncate_schema,
-    validate_sql_against_schema,
-)
+from .utils import extract_schema_info, truncate_schema, validate_sql_against_schema
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +93,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
         """
         # Initialize base class with dataset parameters
         # Note: verifiers base class requires either dataset or eval_dataset
-        super().__init__(
-            dataset=dataset, eval_dataset=eval_dataset, **kwargs
-        )
+        super().__init__(dataset=dataset, eval_dataset=eval_dataset, **kwargs)
 
         self.rubric = rubric
         self.parser = parser
@@ -135,22 +129,17 @@ class TextToSQLEnvironment(SingleTurnEnv):
         if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", template):
             available = ", ".join(PROMPT_TEMPLATES.keys())
             raise ValueError(
-                f"Unknown template: '{template}'. "
-                f"Available templates: {available}"
+                f"Unknown template: '{template}'. " f"Available templates: {available}"
             )
 
         # Otherwise, treat as custom template
         # Validate it has required placeholders
         if "{question}" not in template:
-            raise ValueError(
-                "Custom template must contain '{question}' placeholder"
-            )
+            raise ValueError("Custom template must contain '{question}' placeholder")
 
         return template
 
-    def format_prompt(
-        self, question: str, context: dict[str, Any] | None = None
-    ) -> str:
+    def format_prompt(self, question: str, context: dict[str, Any] | None = None) -> str:
         """Format input prompt with question and optional schema context.
 
         Args:
@@ -186,17 +175,14 @@ class TextToSQLEnvironment(SingleTurnEnv):
             if len(schema) > self.max_schema_length:
                 schema = truncate_schema(schema, self.max_schema_length)
                 self.logger.debug(
-                    f"Truncated schema from {len(raw_schema)} to "
-                    f"{len(schema)} chars"
+                    f"Truncated schema from {len(raw_schema)} to " f"{len(schema)} chars"
                 )
 
         # Prepare few-shot examples if requested
         examples_str = ""
         if self.max_examples > 0 and context and "examples" in context:
             examples = context["examples"]
-            examples_str = format_few_shot_examples(
-                examples, self.max_examples
-            )
+            examples_str = format_few_shot_examples(examples, self.max_examples)
 
         # Format using template
         return format_prompt_util(
@@ -290,9 +276,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
             if sql:
                 schema_info = extract_schema_info(context["schema"])
                 if schema_info:
-                    is_valid_schema = validate_sql_against_schema(
-                        sql, schema_info
-                    )
+                    is_valid_schema = validate_sql_against_schema(sql, schema_info)
 
                     # If SQL references invalid tables, penalize the score
                     if not is_valid_schema:
@@ -333,9 +317,7 @@ class TextToSQLEnvironment(SingleTurnEnv):
             return []
 
         # Prepare references and contexts
-        refs = (
-            references if references else [None] * len(responses)  # type: ignore[list-item]
-        )
+        refs = references if references else [None] * len(responses)  # type: ignore[list-item]
         ctxs = contexts if contexts else [None] * len(responses)  # type: ignore[list-item]
 
         # Use batch scoring from rubric for efficiency
@@ -346,16 +328,12 @@ class TextToSQLEnvironment(SingleTurnEnv):
             # Complex case: apply schema validation per response
             rewards = [
                 self.compute_reward(response, ref, ctx)
-                for response, ref, ctx in zip(
-                    responses, refs, ctxs, strict=True
-                )
+                for response, ref, ctx in zip(responses, refs, ctxs, strict=True)
             ]
 
         return [float(r) for r in rewards]
 
-    def prepare_dataset_sample(
-        self, sample: dict[str, Any]
-    ) -> dict[str, Any]:
+    def prepare_dataset_sample(self, sample: dict[str, Any]) -> dict[str, Any]:
         """Convert dataset sample to environment format.
 
         Handles b-mc2/sql-create-context dataset structure and transforms

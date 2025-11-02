@@ -53,9 +53,7 @@ class SQLInteractiveCLI:
             None. Updates internal schema and displays confirmation.
         """
         self.schema = schema
-        self.console.print(
-            f"[green]Schema loaded ({len(schema)} characters)[/green]"
-        )
+        self.console.print(f"[green]Schema loaded ({len(schema)} characters)[/green]")
 
     def load_schema_from_file(self, filepath: str) -> None:
         """Load schema from file.
@@ -80,9 +78,7 @@ class SQLInteractiveCLI:
         Returns:
             Dictionary with generated SQL and metadata.
         """
-        return self.engine.generate_sql(
-            question=question, schema=self.schema, **kwargs
-        )
+        return self.engine.generate_sql(question=question, schema=self.schema, **kwargs)
 
     def display_result(self, result: dict[str, Any]) -> None:
         """Display generation result.
@@ -94,20 +90,12 @@ class SQLInteractiveCLI:
             None. Prints formatted result to console.
         """
         # Display SQL
-        sql_syntax = Syntax(
-            result["sql"], "sql", theme="monokai", line_numbers=True
-        )
+        sql_syntax = Syntax(result["sql"], "sql", theme="monokai", line_numbers=True)
 
-        self.console.print(
-            Panel(sql_syntax, title="Generated SQL", border_style="blue")
-        )
+        self.console.print(Panel(sql_syntax, title="Generated SQL", border_style="blue"))
 
         # Display metadata
-        valid_status = (
-            "[green]✓ Valid[/green]"
-            if result["valid"]
-            else "[red]✗ Invalid[/red]"
-        )
+        valid_status = "[green]✓ Valid[/green]" if result["valid"] else "[red]✗ Invalid[/red]"
         self.console.print(f"\nStatus: {valid_status}")
 
         if result["metadata"]:
@@ -183,9 +171,7 @@ class SQLInteractiveCLI:
   2. Enter your natural language question
   3. View the generated SQL query
         """
-        self.console.print(
-            Panel(help_text, title="Help", border_style="cyan")
-        )
+        self.console.print(Panel(help_text, title="Help", border_style="cyan"))
 
 
 def main() -> None:
@@ -197,9 +183,7 @@ def main() -> None:
     Returns:
         None. Runs CLI until user exits.
     """
-    parser = argparse.ArgumentParser(
-        description="Text-to-SQL Interactive CLI"
-    )
+    parser = argparse.ArgumentParser(description="Text-to-SQL Interactive CLI")
     parser.add_argument(
         "--model-path",
         type=str,
@@ -212,9 +196,7 @@ def main() -> None:
         default=None,
         help="Base model name (for PEFT models)",
     )
-    parser.add_argument(
-        "--schema", type=str, default=None, help="Path to schema file"
-    )
+    parser.add_argument("--schema", type=str, default=None, help="Path to schema file")
     parser.add_argument(
         "--load-in-4bit",
         action="store_true",

@@ -109,9 +109,7 @@ class GRPODatasetFormatter:
 
         return output
 
-    def _initialize_results_dict(
-        self, examples: dict[str, Any]
-    ) -> dict[str, list[Any]]:
+    def _initialize_results_dict(self, examples: dict[str, Any]) -> dict[str, list[Any]]:
         """Initialize the results dictionary for formatting.
 
         Args:
@@ -133,9 +131,7 @@ class GRPODatasetFormatter:
                 results[key] = []
         return results
 
-    def _normalize_examples(
-        self, examples: dict[str, Any]
-    ) -> tuple[dict[str, Any], int]:
+    def _normalize_examples(self, examples: dict[str, Any]) -> tuple[dict[str, Any], int]:
         """Normalize examples to handle both batched and single examples.
 
         Args:
@@ -214,15 +210,11 @@ class GRPODatasetFormatter:
             desc="Formatting for GRPO",
         )
 
-        self.logger.info(
-            f"Formatted {len(formatted_dataset)} samples for GRPO"
-        )
+        self.logger.info(f"Formatted {len(formatted_dataset)} samples for GRPO")
 
         return formatted_dataset
 
-    def validate_tokenization(
-        self, dataset: Dataset, max_length: int = 2048
-    ) -> dict[str, Any]:
+    def validate_tokenization(self, dataset: Dataset, max_length: int = 2048) -> dict[str, Any]:
         """Validate that prompts fit within model's context window.
 
         Samples prompts from the dataset and checks their tokenized
@@ -268,9 +260,7 @@ class GRPODatasetFormatter:
             "max_token_length": int(max(token_lengths)),
             "min_token_length": int(min(token_lengths)),
             "too_long_count": too_long_count,
-            "too_long_pct": (
-                (too_long_count / sample_size) * 100 if sample_size > 0 else 0
-            ),
+            "too_long_pct": ((too_long_count / sample_size) * 100 if sample_size > 0 else 0),
             "max_length_threshold": max_length,
         }
 
@@ -289,9 +279,7 @@ class GRPODatasetFormatter:
 
         return stats
 
-    def create_evaluation_set(
-        self, dataset: Dataset, n_samples: int = 100
-    ) -> Dataset:
+    def create_evaluation_set(self, dataset: Dataset, n_samples: int = 100) -> Dataset:
         """Create a small evaluation set for during-training eval.
 
         Samples diverse examples across complexity levels using
@@ -306,9 +294,7 @@ class GRPODatasetFormatter:
         Returns:
             Evaluation dataset with stratified or random sampling.
         """
-        self.logger.info(
-            f"Creating evaluation set with {n_samples} samples"
-        )
+        self.logger.info(f"Creating evaluation set with {n_samples} samples")
 
         # If dataset doesn't have complexity field, do random sampling
         if "complexity" not in dataset.column_names:
@@ -316,9 +302,7 @@ class GRPODatasetFormatter:
                 "Dataset doesn't have 'complexity' field. "
                 "Using random sampling instead of stratified."
             )
-            indices = self.rng.choice(
-                len(dataset), min(n_samples, len(dataset)), replace=False
-            )
+            indices = self.rng.choice(len(dataset), min(n_samples, len(dataset)), replace=False)
             return dataset.select(list(indices))
 
         # Stratified sampling by complexity
@@ -350,12 +334,8 @@ class GRPODatasetFormatter:
             total_allocated = sum(samples_per_level.values())
             if total_allocated < n_samples:
                 # Add remaining to the largest group
-                largest_level = max(
-                    complexity_counts, key=lambda k: complexity_counts[k]
-                )
-                samples_per_level[largest_level] += (
-                    n_samples - total_allocated
-                )
+                largest_level = max(complexity_counts, key=lambda k: complexity_counts[k])
+                samples_per_level[largest_level] += n_samples - total_allocated
 
             # Sample from each complexity level
             selected_indices: list[int] = []
@@ -366,17 +346,13 @@ class GRPODatasetFormatter:
                         level_indices, min(n, len(level_indices)), replace=False
                     )
                     # Convert numpy array to list of ints
-                    selected_indices.extend(
-                        [int(idx) for idx in sample_indices_arr]
-                    )
+                    selected_indices.extend([int(idx) for idx in sample_indices_arr])
 
             eval_dataset = dataset.select(selected_indices)
 
             complexity_dist = dict(
                 zip(
-                    *np.unique(
-                        eval_dataset["complexity"], return_counts=True
-                    ),
+                    *np.unique(eval_dataset["complexity"], return_counts=True),
                     strict=True,
                 )
             )
@@ -389,11 +365,7 @@ class GRPODatasetFormatter:
             return eval_dataset
 
         except Exception as e:
-            self.logger.warning(
-                f"Failed to create stratified evaluation set: {e}"
-            )
+            self.logger.warning(f"Failed to create stratified evaluation set: {e}")
             # Fall back to random sampling
-            indices = self.rng.choice(
-                len(dataset), min(n_samples, len(dataset)), replace=False
-            )
+            indices = self.rng.choice(len(dataset), min(n_samples, len(dataset)), replace=False)
             return dataset.select(indices.tolist())

@@ -30,9 +30,7 @@ class SQLGenerationRequest(BaseModel):
     """
 
     question: str = Field(..., description="Natural language question")
-    schema: str | None = Field(  # type: ignore[assignment]
-        None, description="Database schema"
-    )
+    schema: str | None = Field(None, description="Database schema")  # type: ignore[assignment]
     max_new_tokens: int = Field(256, ge=1, le=1024)
     temperature: float = Field(0.1, ge=0.0, le=2.0)
     top_p: float = Field(0.95, ge=0.0, le=1.0)
@@ -198,9 +196,7 @@ def create_app(engine: SQLInferenceEngine) -> FastAPI:
                 for r in results
             ]
 
-            return BatchSQLGenerationResponse(
-                results=responses, total_count=len(responses)
-            )
+            return BatchSQLGenerationResponse(results=responses, total_count=len(responses))
 
         except Exception as e:
             logger.error(f"Batch generation error: {e}")

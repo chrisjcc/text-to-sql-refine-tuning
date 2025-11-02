@@ -17,12 +17,7 @@ from peft import (
     get_peft_model,
     prepare_model_for_kbit_training,
 )
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    PreTrainedModel,
-)
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, PreTrainedModel
 
 
 class ModelLoader:
@@ -93,10 +88,7 @@ class ModelLoader:
             bnb_4bit_use_double_quant=bnb_4bit_use_double_quant,
         )
 
-        self.logger.info(
-            f"Created BitsAndBytes config: {bnb_4bit_quant_type} "
-            "quantization"
-        )
+        self.logger.info(f"Created BitsAndBytes config: {bnb_4bit_quant_type} " "quantization")
         return bnb_config
 
     def create_lora_config(
@@ -129,9 +121,7 @@ class ModelLoader:
         # Ensure bias is a valid literal
         valid_bias_values = ["none", "all", "lora_only"]
         if bias not in valid_bias_values:
-            self.logger.warning(
-                f"Invalid bias value '{bias}', defaulting to 'none'"
-            )
+            self.logger.warning(f"Invalid bias value '{bias}', defaulting to 'none'")
             bias = "none"
 
         lora_config = LoraConfig(
@@ -144,8 +134,7 @@ class ModelLoader:
         )
 
         self.logger.info(
-            f"Created LoRA config: r={r}, alpha={lora_alpha}, "
-            f"targets={target_modules}"
+            f"Created LoRA config: r={r}, alpha={lora_alpha}, " f"targets={target_modules}"
         )
         return lora_config
 
@@ -172,8 +161,7 @@ class ModelLoader:
             if torch_dtype is None:
                 torch_dtype = bnb_config.bnb_4bit_compute_dtype
                 self.logger.info(
-                    f"Setting torch_dtype to {torch_dtype} to match "
-                    "quantization compute dtype"
+                    f"Setting torch_dtype to {torch_dtype} to match " "quantization compute dtype"
                 )
         else:
             quantization_config = None
@@ -181,9 +169,7 @@ class ModelLoader:
                 torch_dtype = torch.bfloat16
         return quantization_config, torch_dtype
 
-    def _determine_attention_implementation(
-        self, attn_implementation: str | None
-    ) -> str | None:
+    def _determine_attention_implementation(self, attn_implementation: str | None) -> str | None:
         """Determine which attention implementation to use.
 
         Args:
@@ -197,9 +183,7 @@ class ModelLoader:
                 try:
                     import flash_attn  # noqa: F401
 
-                    self.logger.info(
-                        "Using Flash Attention 2 for improved performance"
-                    )
+                    self.logger.info("Using Flash Attention 2 for improved performance")
                     return "flash_attention_2"
                 except (ImportError, ModuleNotFoundError):
                     self.logger.warning(
@@ -242,12 +226,8 @@ class ModelLoader:
             )  # type: ignore[return-value]
         except Exception as e:
             if attn_impl == "flash_attention_2" and "flash_attn" in str(e):
-                self.logger.warning(
-                    f"Failed to load model with Flash Attention 2: {e!s}"
-                )
-                self.logger.info(
-                    "Retrying with default attention implementation..."
-                )
+                self.logger.warning(f"Failed to load model with Flash Attention 2: {e!s}")
+                self.logger.info("Retrying with default attention implementation...")
                 return AutoModelForCausalLM.from_pretrained(
                     self.model_name,
                     quantization_config=quantization_config,
@@ -280,19 +260,14 @@ class ModelLoader:
             and model.lm_head.weight is not None
         ):
             original_dtype = model.lm_head.weight.dtype
-            model.lm_head.weight.data = model.lm_head.weight.data.to(
-                compute_dtype
-            )
+            model.lm_head.weight.data = model.lm_head.weight.data.to(compute_dtype)
             self.logger.info(
-                f"✓ Cast lm_head.weight.data from {original_dtype} to "
-                f"{compute_dtype}"
+                f"✓ Cast lm_head.weight.data from {original_dtype} to " f"{compute_dtype}"
             )
 
             actual_dtype = model.lm_head.weight.dtype
             if actual_dtype == compute_dtype:
-                self.logger.info(
-                    f"✓ Verified: lm_head.weight is {actual_dtype}"
-                )
+                self.logger.info(f"✓ Verified: lm_head.weight is {actual_dtype}")
             else:
                 self.logger.warning(
                     f"⚠ Verification failed: lm_head.weight is "
@@ -317,9 +292,7 @@ class ModelLoader:
             base_model = model.get_base_model()
             if hasattr(base_model, "lm_head"):
                 models_to_check.append(("base_model", base_model))
-        if hasattr(model, "base_model") and hasattr(
-            model.base_model, "model"
-        ):
+        if hasattr(model, "base_model") and hasattr(model.base_model, "model"):
             underlying_model = model.base_model.model
             if hasattr(underlying_model, "lm_head"):
                 models_to_check.append(("underlying_model", underlying_model))
@@ -341,15 +314,10 @@ class ModelLoader:
         """
         models_to_check = self._get_peft_model_variants(model)
         for model_name, model_obj in models_to_check:
-            if (
-                hasattr(model_obj.lm_head, "weight")
-                and model_obj.lm_head.weight is not None
-            ):
+            if hasattr(model_obj.lm_head, "weight") and model_obj.lm_head.weight is not None:
                 original_dtype = model_obj.lm_head.weight.dtype
                 if original_dtype != compute_dtype:
-                    model_obj.lm_head.weight.data = (
-                        model_obj.lm_head.weight.data.to(compute_dtype)
-                    )
+                    model_obj.lm_head.weight.data = model_obj.lm_head.weight.data.to(compute_dtype)
                     self.logger.info(
                         f"✓ Cast {model_name}.lm_head.weight.data from "
                         f"{original_dtype} to {compute_dtype}"
@@ -357,8 +325,7 @@ class ModelLoader:
                 actual_dtype = model_obj.lm_head.weight.dtype
                 if actual_dtype == compute_dtype:
                     self.logger.info(
-                        f"✓ Verified {model_name}.lm_head.weight is "
-                        f"{actual_dtype}"
+                        f"✓ Verified {model_name}.lm_head.weight is " f"{actual_dtype}"
                     )
                 else:
                     self.logger.warning(
@@ -394,9 +361,7 @@ class ModelLoader:
         peft_model = get_peft_model(prepared_model, lora_config)
 
         if use_quantization and bnb_config is not None:
-            self._cast_peft_lm_heads(
-                peft_model, bnb_config.bnb_4bit_compute_dtype
-            )
+            self._cast_peft_lm_heads(peft_model, bnb_config.bnb_4bit_compute_dtype)
 
         trainable_params, all_param = peft_model.get_nb_trainable_parameters()
         self.logger.info(
@@ -435,27 +400,18 @@ class ModelLoader:
         """
         self.logger.info(f"Loading model: {self.model_name}")
 
-        quantization_config, torch_dtype = (
-            self._prepare_quantization_config(
-                use_quantization, bnb_config, torch_dtype
-            )
+        quantization_config, torch_dtype = self._prepare_quantization_config(
+            use_quantization, bnb_config, torch_dtype
         )
-        attn_impl = self._determine_attention_implementation(
-            attn_implementation
-        )
-        model = self._load_base_model(
-            quantization_config, torch_dtype, attn_impl
-        )
+        attn_impl = self._determine_attention_implementation(attn_implementation)
+        model = self._load_base_model(quantization_config, torch_dtype, attn_impl)
 
         self.logger.info(
-            f"Model loaded. Memory footprint: "
-            f"{model.get_memory_footprint() / 1e9:.2f} GB"
+            f"Model loaded. Memory footprint: " f"{model.get_memory_footprint() / 1e9:.2f} GB"
         )
 
         if use_quantization and bnb_config is not None:
-            self._cast_lm_head_dtype(
-                model, bnb_config.bnb_4bit_compute_dtype
-            )
+            self._cast_lm_head_dtype(model, bnb_config.bnb_4bit_compute_dtype)
 
         if use_peft:
             model = self._apply_peft(
@@ -511,9 +467,7 @@ class ModelLoader:
         use_quantization: bool = True,
         use_peft: bool = True,
         **kwargs: Any,
-    ) -> tuple[
-        AutoModelForCausalLM | PeftModel | PreTrainedModel, AutoTokenizer
-    ]:
+    ) -> tuple[AutoModelForCausalLM | PeftModel | PreTrainedModel, AutoTokenizer]:
         """Convenience method to load both model and tokenizer.
 
         Args:
@@ -533,9 +487,7 @@ class ModelLoader:
 
         return model, tokenizer
 
-    def print_model_info(
-        self, model: AutoModelForCausalLM | PeftModel | PreTrainedModel
-    ) -> None:
+    def print_model_info(self, model: AutoModelForCausalLM | PeftModel | PreTrainedModel) -> None:
         """Print detailed model information for debugging.
 
         Args:
@@ -557,30 +509,22 @@ class ModelLoader:
         self.logger.info(f"Dtype: {dtype}")
 
         # Count parameters
-        total_params = sum(
-            p.numel() for p in model.parameters()  # type: ignore[attr-defined]
-        )
+        total_params = sum(p.numel() for p in model.parameters())  # type: ignore[attr-defined]
         trainable_params = sum(
-            p.numel()
-            for p in model.parameters()  # type: ignore[attr-defined]
-            if p.requires_grad
+            p.numel() for p in model.parameters() if p.requires_grad  # type: ignore[attr-defined]
         )
 
         self.logger.info(f"Total parameters: {total_params:,}")
         self.logger.info(f"Trainable parameters: {trainable_params:,}")
-        self.logger.info(
-            f"Trainable %: {100 * trainable_params / total_params:.2f}%"
-        )
+        self.logger.info(f"Trainable %: {100 * trainable_params / total_params:.2f}%")
 
         # Memory info
         if torch.cuda.is_available():
             self.logger.info(
-                f"GPU Memory allocated: "
-                f"{torch.cuda.memory_allocated() / 1e9:.2f} GB"
+                f"GPU Memory allocated: " f"{torch.cuda.memory_allocated() / 1e9:.2f} GB"
             )
             self.logger.info(
-                f"GPU Memory reserved: "
-                f"{torch.cuda.memory_reserved() / 1e9:.2f} GB"
+                f"GPU Memory reserved: " f"{torch.cuda.memory_reserved() / 1e9:.2f} GB"
             )
 
         self.logger.info("=" * 80 + "\n")

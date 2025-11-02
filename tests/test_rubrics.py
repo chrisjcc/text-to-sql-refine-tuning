@@ -182,9 +182,7 @@ class TestSQLValidationRubric:
         assert 0.8 <= score <= 1.0  # Should score high
 
         # Query with JOIN
-        score = rubric.score(
-            "SELECT u.name FROM users u JOIN orders o ON u.id = o.user_id"
-        )
+        score = rubric.score("SELECT u.name FROM users u JOIN orders o ON u.id = o.user_id")
         assert 0.8 <= score <= 1.0
 
     def test_score_invalid_sql(self):
@@ -280,9 +278,7 @@ class TestSQLValidationRubric:
 
     def test_custom_weights(self):
         """Test rubric with custom weights."""
-        rubric = SQLValidationRubric(
-            syntax_weight=0.5, keyword_weight=0.3, format_weight=0.2
-        )
+        rubric = SQLValidationRubric(syntax_weight=0.5, keyword_weight=0.3, format_weight=0.2)
 
         score = rubric.score("SELECT * FROM users")
         assert 0.0 <= score <= 1.0
@@ -329,9 +325,7 @@ class TestSQLValidationRubric:
         rubric = SQLValidationRubric()
 
         # Very long query
-        long_query = (
-            "SELECT " + ", ".join([f"col{i}" for i in range(100)]) + " FROM users"
-        )
+        long_query = "SELECT " + ", ".join([f"col{i}" for i in range(100)]) + " FROM users"
         score = rubric.score(long_query)
         assert 0.0 <= score <= 1.0
 

@@ -46,9 +46,7 @@ def test_environment(cfg: DictConfig):
     # Load sample data first (required for environment initialization)
     logger.info("\n[1/4] Loading dataset samples...")
     try:
-        dataset = load_dataset(
-            cfg.dataset.name, split="train[:10]", trust_remote_code=True
-        )
+        dataset = load_dataset(cfg.dataset.name, split="train[:10]", trust_remote_code=True)
         logger.info(f"  ✓ Loaded {len(dataset)} samples from {cfg.dataset.name}")
     except Exception as e:
         logger.error(f"  ✗ Failed to load dataset: {e}")
@@ -65,10 +63,7 @@ def test_environment(cfg: DictConfig):
             ],
             "context": [
                 "CREATE TABLE users (id INT, name VARCHAR(100), email VARCHAR(100))",
-                (
-                    "CREATE TABLE products (id INT, name VARCHAR(200), "
-                    "price DECIMAL(10,2))"
-                ),
+                ("CREATE TABLE products (id INT, name VARCHAR(200), " "price DECIMAL(10,2))"),
                 "CREATE TABLE users (id INT, name VARCHAR(100), joined_date DATE)",
             ],
             "answer": [
@@ -123,8 +118,7 @@ def test_environment(cfg: DictConfig):
 
         logger.info(f"\n📝 Question: {sample['question']}")
         schema_preview = (
-            f"{sample['context'][:200]}"
-            f"{'...' if len(sample['context']) > 200 else ''}"
+            f"{sample['context'][:200]}" f"{'...' if len(sample['context']) > 200 else ''}"
         )
         logger.info(f"\n🗃️  Schema:\n{schema_preview}")
         logger.info(f"\n💬 Prompt:\n{prompt[:300]}{'...' if len(prompt) > 300 else ''}")
@@ -141,9 +135,7 @@ def test_environment(cfg: DictConfig):
             logger.info(f"  - Extracted SQL: {parsed['sql']}")
 
             # Compute reward
-            reward = env.compute_reward(
-                reference_sql, context={"schema": sample["context"]}
-            )
+            reward = env.compute_reward(reference_sql, context={"schema": sample["context"]})
             logger.info(f"\n⭐ Reward Score: {reward:.3f}")
 
             all_responses.append(reference_sql)
@@ -162,9 +154,7 @@ def test_environment(cfg: DictConfig):
 
         samples_per_sec = len(all_responses) / elapsed if elapsed > 0 else 0
 
-        logger.info(
-            f"\n  ✓ Processed {len(all_responses)} responses in {elapsed:.3f}s"
-        )
+        logger.info(f"\n  ✓ Processed {len(all_responses)} responses in {elapsed:.3f}s")
         logger.info(f"  ✓ Throughput: {samples_per_sec:.1f} samples/sec")
 
         # Compare with individual rewards
@@ -173,9 +163,7 @@ def test_environment(cfg: DictConfig):
             zip(all_rewards, batch_rewards, strict=True)
         ):
             match = "✓" if abs(ind_reward - batch_reward) < 0.001 else "✗"
-            logger.info(
-                f"    Sample {i+1}: {ind_reward:.3f} vs {batch_reward:.3f} {match}"
-            )
+            logger.info(f"    Sample {i+1}: {ind_reward:.3f} vs {batch_reward:.3f} {match}")
 
     # Compute aggregate metrics
     logger.info("\n" + "=" * 80)

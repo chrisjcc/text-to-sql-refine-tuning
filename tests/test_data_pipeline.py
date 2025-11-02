@@ -70,9 +70,7 @@ def test_split_creation():
     assert "test" in splits
 
     # Check that all samples are accounted for
-    total_samples = (
-        len(splits["train"]) + len(splits["validation"]) + len(splits["test"])
-    )
+    total_samples = len(splits["train"]) + len(splits["validation"]) + len(splits["test"])
     assert total_samples == len(dataset)
 
 
@@ -296,9 +294,7 @@ def test_grpo_formatting():
 
     tokenizer = MockTokenizer()
 
-    formatter = GRPODatasetFormatter(
-        environment=env, tokenizer=tokenizer, include_reference=True
-    )
+    formatter = GRPODatasetFormatter(environment=env, tokenizer=tokenizer, include_reference=True)
 
     # Test single sample formatting
     sample = {

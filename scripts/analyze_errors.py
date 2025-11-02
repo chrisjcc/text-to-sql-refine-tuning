@@ -34,25 +34,25 @@ def analyze_errors(results_path: str, output_path: str, n_samples: int = 20) -> 
         None. Saves analysis results to files and logs statistics.
     """
     # Load results
-    df = pd.read_csv(results_path)
+    results_df = pd.read_csv(results_path)
 
     # Identify errors
-    errors = df[df["exact_match"] is False]
+    errors = results_df[results_df["exact_match"] is False]
 
-    logger.info(f"Total samples: {len(df)}")
-    logger.info(f"Errors: {len(errors)} ({len(errors)/len(df)*100:.1f}%)")
+    logger.info(f"Total samples: {len(results_df)}")
+    logger.info(f"Errors: {len(errors)} ({len(errors)/len(results_df)*100:.1f}%)")
 
     # Analyze error patterns
     analysis = {
         "total_errors": int(len(errors)),
-        "error_rate": float(len(errors) / len(df) * 100),
+        "error_rate": float(len(errors) / len(results_df) * 100),
     }
 
     # By complexity
     logger.info("\nErrors by complexity:")
     complexity_errors = errors.groupby("reference_complexity").size()
     for complexity, count in complexity_errors.items():
-        total = len(df[df["reference_complexity"] == complexity])
+        total = len(results_df[results_df["reference_complexity"] == complexity])
         rate = count / total * 100 if total > 0 else 0
         logger.info(f"  {complexity}: {count}/{total} ({rate:.1f}%)")
         analysis[f"{complexity}_error_rate"] = float(rate)
@@ -101,9 +101,7 @@ def main() -> None:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    parser = argparse.ArgumentParser(
-        description="Analyze evaluation errors and generate insights"
-    )
+    parser = argparse.ArgumentParser(description="Analyze evaluation errors and generate insights")
     parser.add_argument(
         "--results",
         type=str,

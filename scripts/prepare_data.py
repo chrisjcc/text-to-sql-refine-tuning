@@ -4,7 +4,6 @@ Loads, preprocesses, and formats the SQL dataset.
 """
 
 import logging
-import sys
 from pathlib import Path
 
 import hydra
@@ -12,12 +11,12 @@ import numpy as np
 from datasets import Dataset, DatasetDict
 from omegaconf import DictConfig
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from data.dataset_loader import SQLDatasetLoader  # noqa: E402
 from data.preprocessor import SQLDataPreprocessor  # noqa: E402
 from utils.logging_utils import setup_logging  # noqa: E402
+
+# Add parent directory to path for imports
+# sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 def _load_dataset_with_split(
@@ -196,11 +195,7 @@ def _compute_final_statistics(dataset: DatasetDict, logger: logging.Logger) -> N
             logger.info(f"  Avg schema length: {np.mean(schema_len):.1f} words")
 
 
-def _save_processed_dataset(
-    dataset: DatasetDict,
-    cfg: DictConfig,
-    logger: logging.Logger
-) -> None:
+def _save_processed_dataset(dataset: DatasetDict, cfg: DictConfig, logger: logging.Logger) -> None:
     """Save the processed dataset to disk.
 
     Args:

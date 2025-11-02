@@ -188,9 +188,7 @@ def test_trainer_initialization(
         assert trainer.config is not None
 
 
-def test_evaluation_callback(
-    text_to_sql_env, sql_rubric, sample_dataset, mock_tokenizer
-):
+def test_evaluation_callback(text_to_sql_env, sql_rubric, sample_dataset, mock_tokenizer):
     """Test SQL evaluation callback."""
     callback = SQLEvaluationCallback(
         environment=text_to_sql_env,
@@ -215,9 +213,7 @@ def test_wandb_callback():
     assert callback.config == config
 
 
-def test_training_step(
-    mock_model, mock_tokenizer, text_to_sql_env, sql_rubric, sample_dataset
-):
+def test_training_step(mock_model, mock_tokenizer, text_to_sql_env, sql_rubric, sample_dataset):
     """Test training step (mock test)."""
     with patch("src.training.grpo_trainer.GRPOTrainer") as mock_grpo_trainer:
         mock_trainer = Mock()
@@ -293,9 +289,7 @@ def test_compute_rewards_integration(
         assert all(0.0 <= r <= 1.0 for r in rewards)
 
 
-def test_evaluation_callback_step_end(
-    text_to_sql_env, sql_rubric, sample_dataset, mock_tokenizer
-):
+def test_evaluation_callback_step_end(text_to_sql_env, sql_rubric, sample_dataset, mock_tokenizer):
     """Test evaluation callback on_step_end."""
     callback = SQLEvaluationCallback(
         environment=text_to_sql_env,

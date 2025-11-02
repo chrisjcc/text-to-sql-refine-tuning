@@ -94,9 +94,7 @@ class SQLInferenceEngine:
 
     def _load_model(
         self,
-    ) -> tuple[
-        AutoModelForCausalLM | PeftModel | PreTrainedModel, AutoTokenizer
-    ]:
+    ) -> tuple[AutoModelForCausalLM | PeftModel | PreTrainedModel, AutoTokenizer]:
         """Load model and tokenizer.
 
         Automatically detects PEFT models and loads them with adapters.
@@ -117,9 +115,7 @@ class SQLInferenceEngine:
         is_local_path = model_path_obj.exists()
 
         # Use the absolute path string for loading
-        resolved_model_path = (
-            str(model_path_obj) if is_local_path else self.model_path
-        )
+        resolved_model_path = str(model_path_obj) if is_local_path else self.model_path
 
         # Check if this is a PEFT model
         peft_config_path = model_path_obj / "adapter_config.json"
@@ -134,9 +130,7 @@ class SQLInferenceEngine:
             if self.base_model_name is None:
                 with peft_config_path.open() as f:
                     config = json.load(f)
-                    self.base_model_name = config.get(
-                        "base_model_name_or_path"
-                    )
+                    self.base_model_name = config.get("base_model_name_or_path")
 
             self.logger.info(f"Loading base model: {self.base_model_name}")
 
@@ -165,9 +159,7 @@ class SQLInferenceEngine:
                 )
 
             # Load PEFT adapters
-            self.logger.info(
-                f"Loading PEFT adapters from {resolved_model_path}"
-            )
+            self.logger.info(f"Loading PEFT adapters from {resolved_model_path}")
             model = PeftModel.from_pretrained(
                 base_model, resolved_model_path, local_files_only=is_local_path
             )
@@ -190,9 +182,7 @@ class SQLInferenceEngine:
             if not is_peft_model
             else (self.base_model_name or resolved_model_path)
         )
-        is_tokenizer_local = (
-            Path(tokenizer_path).exists() if tokenizer_path else False
-        )
+        is_tokenizer_local = Path(tokenizer_path).exists() if tokenizer_path else False
 
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_path,
@@ -206,9 +196,7 @@ class SQLInferenceEngine:
 
         model.eval()
 
-        self.logger.info(
-            f"Model loaded. Device: {model.device}, Dtype: {model.dtype}"
-        )
+        self.logger.info(f"Model loaded. Device: {model.device}, Dtype: {model.dtype}")
 
         return model, tokenizer
 
@@ -250,9 +238,9 @@ class SQLInferenceEngine:
         prompt = self.environment.format_prompt(question, context)
 
         # Tokenize
-        inputs = self.tokenizer(
-            prompt, return_tensors="pt", padding=True, truncation=True
-        ).to(self.model.device)
+        inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True).to(
+            self.model.device
+        )
 
         # Generate
         with torch.no_grad():
@@ -269,9 +257,7 @@ class SQLInferenceEngine:
             )
 
         # Decode
-        generated_text = self.tokenizer.decode(
-            outputs[0], skip_special_tokens=True
-        )
+        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
         # Extract SQL from output
         sql_output = generated_text[len(prompt) :].strip()
@@ -351,9 +337,7 @@ class SQLInferenceEngine:
 
             # Decode and parse
             for j, output in enumerate(outputs):
-                generated_text = self.tokenizer.decode(
-                    output, skip_special_tokens=True
-                )
+                generated_text = self.tokenizer.decode(output, skip_special_tokens=True)
                 sql_output = generated_text[len(batch_prompts[j]) :].strip()
                 parsed = self.environment.parse_response(sql_output)
 
@@ -422,10 +406,12 @@ class SQLInferenceEngine:
         # Compute exact match if references available
         if all(r is not None for r in references):  # type: ignore[arg-type]
             exact_matches = sum(
-                1
-                if self._normalize_sql(p["sql"])
-                == self._normalize_sql(r)  # type: ignore[arg-type]
-                else 0
+                (
+                    1
+                    if self._normalize_sql(p["sql"])
+                    == self._normalize_sql(r)  # type: ignore[arg-type]
+                    else 0
+                )
                 for p, r in zip(predictions, references, strict=True)
                 if r is not None
                 and self._normalize_sql(p["sql"])
@@ -451,7 +437,5 @@ class SQLInferenceEngine:
         """
         import sqlparse
 
-        normalized = sqlparse.format(
-            sql, keyword_case="upper", strip_whitespace=True
-        )
+        normalized = sqlparse.format(sql, keyword_case="upper", strip_whitespace=True)
         return str(normalized.strip())

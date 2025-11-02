@@ -79,9 +79,7 @@ def get_prompt_template(name: str) -> str:
     """
     if name not in PROMPT_TEMPLATES:
         available = ", ".join(PROMPT_TEMPLATES.keys())
-        raise ValueError(
-            f"Unknown template '{name}'. Available templates: {available}"
-        )
+        raise ValueError(f"Unknown template '{name}'. Available templates: {available}")
     return PROMPT_TEMPLATES[name]
 
 
@@ -112,9 +110,7 @@ def format_schema(context: str) -> str:
     return "\n".join(formatted_lines)
 
 
-def format_few_shot_examples(
-    examples: list[dict[str, Any]], n: int = 3
-) -> str:
+def format_few_shot_examples(examples: list[dict[str, Any]], n: int = 3) -> str:
     """Format few-shot examples for prompting.
 
     Creates a formatted string of example question-SQL pairs to include
@@ -189,6 +185,4 @@ def format_prompt(
     try:
         return template.format(**template_vars)
     except KeyError as e:
-        raise ValueError(
-            f"Template requires variable {e} which was not provided"
-        ) from e
+        raise ValueError(f"Template requires variable {e} which was not provided") from e

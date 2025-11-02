@@ -12,20 +12,15 @@ a comprehensive quality report including:
 
 import logging
 import re
-import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+from datasets import Dataset, DatasetDict, load_from_disk
 from numpy.random import Generator
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from datasets import Dataset, DatasetDict, load_from_disk  # noqa: E402
-
-from utils.logging_utils import setup_logging  # noqa: E402
+from src.utils.logging_utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -239,10 +234,7 @@ def find_quality_issues(dataset: Dataset) -> None:
         very_short = sum(1 for v in dataset["question_length"] if v < 3)
         if very_short > 0:
             pct = (very_short / len(dataset)) * 100
-            logger.warning(
-                f"\n⚠ Very short questions (<3 words): "
-                f"{very_short} ({pct:.1f}%)"
-            )
+            logger.warning(f"\n⚠ Very short questions (<3 words): " f"{very_short} ({pct:.1f}%)")
             issues_found = True
 
     # Check for very long SQL
@@ -250,9 +242,7 @@ def find_quality_issues(dataset: Dataset) -> None:
         very_long = sum(1 for v in dataset["sql_length"] if v > 100)
         if very_long > 0:
             pct = (very_long / len(dataset)) * 100
-            logger.warning(
-                f"\n⚠ Very long SQL queries (>100 words): "
-                f"{very_long} ({pct:.1f}%)")
+            logger.warning(f"\n⚠ Very long SQL queries (>100 words): " f"{very_long} ({pct:.1f}%)")
             issues_found = True
 
     if not issues_found:
@@ -303,11 +293,7 @@ def show_examples(dataset: Dataset, n_per_complexity: int = 2) -> None:
             continue
 
         # Sample randomly
-        sample_indices = rng.choice(
-            indices,
-            min(n_per_complexity, len(indices)),
-            replace=False
-        )
+        sample_indices = rng.choice(indices, min(n_per_complexity, len(indices)), replace=False)
 
         for idx, sample_idx in enumerate(sample_indices, 1):
             sample: dict[str, Any] = dataset[int(sample_idx)]
@@ -350,8 +336,7 @@ def main() -> None:
         logger.error("=" * 80)
         logger.error(f"\nExpected location: {processed_path}")
         logger.error(
-            "\nPlease run 'python scripts/prepare_data.py' first to "
-            "prepare the dataset."
+            "\nPlease run 'python scripts/prepare_data.py' first to " "prepare the dataset."
         )
 
         return

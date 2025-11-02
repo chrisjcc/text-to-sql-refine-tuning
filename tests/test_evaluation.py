@@ -181,9 +181,7 @@ class TestExecutionMetrics:
 
     def test_execution_accuracy_no_connection(self, exec_metrics):
         """Test execution accuracy without database connection."""
-        result = exec_metrics.execution_accuracy(
-            "SELECT * FROM users", "SELECT * FROM users"
-        )
+        result = exec_metrics.execution_accuracy("SELECT * FROM users", "SELECT * FROM users")
         assert result["execution_match"] is None
         assert result["error"] == "No database connection"
 

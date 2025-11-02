@@ -38,10 +38,7 @@ def extract_schema_info(context: str) -> dict[str, list[str]]:
     # Use greedy .* but stop at semicolon to avoid matching across tables
     # Handles nested parens in types like VARCHAR(100) while respecting
     # statement boundaries
-    table_pattern = (
-        r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
-        r"[`\"]?(\w+)[`\"]?\s*\(([^;]*)\)"
-    )
+    table_pattern = r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?" r"[`\"]?(\w+)[`\"]?\s*\(([^;]*)\)"
 
     matches = re.finditer(table_pattern, context, re.IGNORECASE)
 
@@ -76,9 +73,7 @@ def extract_schema_info(context: str) -> dict[str, list[str]]:
     return schema_info
 
 
-def validate_sql_against_schema(
-    sql: str, schema_info: dict[str, list[str]]
-) -> bool:
+def validate_sql_against_schema(sql: str, schema_info: dict[str, list[str]]) -> bool:
     """Check if SQL references valid tables/columns from schema.
 
     Performs basic validation that doesn't require database execution,

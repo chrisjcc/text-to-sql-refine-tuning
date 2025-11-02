@@ -130,23 +130,16 @@ class SQLDatasetLoader:
             # This would require preprocessing first to get complexity
             # For now, we'll do simple random split
             self.logger.warning(
-                "Stratified splitting requires preprocessing. "
-                "Falling back to random split."
+                "Stratified splitting requires preprocessing. " "Falling back to random split."
             )
 
         # First split: train vs rest
-        train_test = dataset.train_test_split(
-            test_size=(val_size + test_size),
-            seed=self.seed
-        )
+        train_test = dataset.train_test_split(test_size=(val_size + test_size), seed=self.seed)
 
         # Second split: validation vs test
         if test_size > 0:
             val_test_ratio = test_size / (val_size + test_size)
-            val_test = train_test["test"].train_test_split(
-                test_size=val_test_ratio,
-                seed=self.seed
-            )
+            val_test = train_test["test"].train_test_split(test_size=val_test_ratio, seed=self.seed)
 
             dataset_dict = DatasetDict(
                 {
@@ -254,32 +247,17 @@ class SQLDatasetLoader:
         return {
             "total_samples": len(dataset),
             "sampled_for_stats": sample_size,
-            "avg_question_length": (
-                np.mean(question_lengths) if question_lengths else 0
-            ),
+            "avg_question_length": (np.mean(question_lengths) if question_lengths else 0),
             "avg_sql_length": np.mean(sql_lengths) if sql_lengths else 0,
-            "avg_schema_length": (
-                np.mean(schema_lengths) if schema_lengths else 0
-            ),
-            "median_question_length": (
-                np.median(question_lengths) if question_lengths else 0
-            ),
-            "median_sql_length": (
-                np.median(sql_lengths) if sql_lengths else 0
-            ),
-            "median_schema_length": (
-                np.median(schema_lengths) if schema_lengths else 0
-            ),
-            "max_question_length": (
-                max(question_lengths) if question_lengths else 0
-            ),
+            "avg_schema_length": (np.mean(schema_lengths) if schema_lengths else 0),
+            "median_question_length": (np.median(question_lengths) if question_lengths else 0),
+            "median_sql_length": (np.median(sql_lengths) if sql_lengths else 0),
+            "median_schema_length": (np.median(schema_lengths) if schema_lengths else 0),
+            "max_question_length": (max(question_lengths) if question_lengths else 0),
             "max_sql_length": max(sql_lengths) if sql_lengths else 0,
-            "max_schema_length": (
-                max(schema_lengths) if schema_lengths else 0
-            ),
+            "max_schema_length": (max(schema_lengths) if schema_lengths else 0),
             "unique_tables_count": len(tables),
-            "sql_keyword_distribution":
-                dict(Counter(sql_keywords).most_common(10)),
+            "sql_keyword_distribution": dict(Counter(sql_keywords).most_common(10)),
         }
 
     def load_from_disk(self, path: str) -> DatasetDict:

@@ -50,9 +50,7 @@ class SQLParser:
     ]
 
     # Patterns for detecting SQL in text
-    CODE_BLOCK_PATTERN = re.compile(
-        r"```(?:sql|SQL)?\s*\n(.*?)```", re.DOTALL | re.IGNORECASE
-    )
+    CODE_BLOCK_PATTERN = re.compile(r"```(?:sql|SQL)?\s*\n(.*?)```", re.DOTALL | re.IGNORECASE)
 
     INLINE_CODE_PATTERN = re.compile(r"`([^`]+)`", re.DOTALL)
 
@@ -218,9 +216,7 @@ class SQLParser:
             return sql
 
         # Remove common prefixes
-        sql = re.sub(
-            r"^(SQL:|Query:|Answer:)\s*", "", sql, flags=re.IGNORECASE
-        )
+        sql = re.sub(r"^(SQL:|Query:|Answer:)\s*", "", sql, flags=re.IGNORECASE)
 
         # Clean whitespace if enabled
         if self.clean_whitespace:
@@ -268,9 +264,7 @@ class SQLParser:
             r"\bCREATE\s+(TABLE|DATABASE|INDEX|VIEW)\b",
         ]
 
-        return any(
-            re.search(pattern, text, re.IGNORECASE) for pattern in sql_patterns
-        )
+        return any(re.search(pattern, text, re.IGNORECASE) for pattern in sql_patterns)
 
     def is_valid_format(self, text: str) -> bool:
         """Check if text is in valid format for SQL extraction.
@@ -287,10 +281,7 @@ class SQLParser:
         text = text.strip()
 
         # Check length constraints
-        if (
-            len(text) < self.min_sql_length
-            or len(text) > self.max_sql_length * 2
-        ):
+        if len(text) < self.min_sql_length or len(text) > self.max_sql_length * 2:
             return False
 
         # Try to extract SQL

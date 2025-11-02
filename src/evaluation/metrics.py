@@ -106,9 +106,7 @@ class SQLMetrics:
 
         return float(np.mean(scores)) if scores else 0.0
 
-    def keyword_f1(
-        self, predicted: str, reference: str
-    ) -> dict[str, float]:
+    def keyword_f1(self, predicted: str, reference: str) -> dict[str, float]:
         """F1 score for SQL keywords (SELECT, FROM, WHERE, etc.).
 
         Args:
@@ -173,11 +171,7 @@ class SQLMetrics:
 
         sql_upper = sql.upper()
         from_pos = sql_upper.find("FROM")
-        has_subquery = (
-            "SELECT" in sql_upper[from_pos:]
-            if "FROM" in sql_upper
-            else False
-        )
+        has_subquery = "SELECT" in sql_upper[from_pos:] if "FROM" in sql_upper else False
 
         agg_functions = ["SUM", "COUNT", "AVG", "MAX", "MIN"]
         has_aggregation = any(agg in sql_upper for agg in agg_functions)
@@ -185,11 +179,7 @@ class SQLMetrics:
         has_group_by = "GROUP BY" in sql_upper
         has_order_by = "ORDER BY" in sql_upper
         has_having = "HAVING" in sql_upper
-        num_conditions = (
-            sql_upper.count("WHERE")
-            + sql_upper.count("AND")
-            + sql_upper.count("OR")
-        )
+        num_conditions = sql_upper.count("WHERE") + sql_upper.count("AND") + sql_upper.count("OR")
 
         # Compute overall complexity score
         score = (
@@ -237,9 +227,7 @@ class SQLMetrics:
         ref_norm = self._normalize_sql(reference)
 
         # Use difflib for similarity
-        similarity_ratio = SequenceMatcher(
-            None, pred_norm, ref_norm
-        ).ratio()
+        similarity_ratio = SequenceMatcher(None, pred_norm, ref_norm).ratio()
         return len(ref_norm) - int(similarity_ratio * len(ref_norm))
 
     def _normalize_sql(self, sql: str) -> str:
@@ -323,9 +311,7 @@ class SQLMetrics:
 
         # Extract SELECT columns (simplified)
         if "SELECT" in sql_upper:
-            select_part = (
-                sql_upper.split("FROM")[0].replace("SELECT", "").strip()
-            )
+            select_part = sql_upper.split("FROM")[0].replace("SELECT", "").strip()
             structure["select_columns"] = set(select_part.split(","))
 
         # Extract table names (simplified)
@@ -458,9 +444,7 @@ class ExecutionMetrics:
 
             # Compare results if both executed
             if ref_executable and pred_executable:
-                execution_match = self._compare_results(
-                    pred_result["data"], ref_result["data"]
-                )
+                execution_match = self._compare_results(pred_result["data"], ref_result["data"])
             else:
                 execution_match = False
 
@@ -481,9 +465,7 @@ class ExecutionMetrics:
                 "reference_executable": None,
             }
 
-    def _execute_query(
-        self, sql: str, timeout: int
-    ) -> dict[str, Any]:
+    def _execute_query(self, sql: str, timeout: int) -> dict[str, Any]:
         """Execute SQL query and return results.
 
         Args:

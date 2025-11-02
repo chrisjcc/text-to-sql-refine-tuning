@@ -10,10 +10,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from src.data.grpo_formatter import GRPODatasetFormatter
 from src.environments.sql_env.environment import TextToSQLEnvironment
-from src.models.config_utils import (
-    create_bnb_config_from_hydra,
-    create_lora_config_from_hydra,
-)
+from src.models.config_utils import create_bnb_config_from_hydra, create_lora_config_from_hydra
 from src.models.model_loader import ModelLoader
 from src.rubrics.sql_rubric import SQLValidationRubric
 from src.training.callbacks import SQLEvaluationCallback
@@ -36,8 +33,7 @@ def _setup_wandb(cfg: DictConfig, logger):
     if cfg.wandb.enabled:
         if not WANDB_AVAILABLE:
             logger.warning(
-                "WandB is enabled in config but not installed. "
-                "Disabling WandB logging."
+                "WandB is enabled in config but not installed. " "Disabling WandB logging."
             )
         else:
             wandb.init(
@@ -125,10 +121,7 @@ def _format_datasets(environment, tokenizer, dataset, logger):
 
     if "validation" in dataset:
         eval_dataset = formatter.format_dataset(dataset["validation"])
-        eval_dataset_small = formatter.create_evaluation_set(
-            dataset["validation"],
-        n_samples=100
-    )
+        eval_dataset_small = formatter.create_evaluation_set(dataset["validation"], n_samples=100)
 
     logger.info(f"Formatted train dataset: {len(train_dataset)} samples")
     if eval_dataset:

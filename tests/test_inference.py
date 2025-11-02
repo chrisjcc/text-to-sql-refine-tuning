@@ -90,9 +90,7 @@ def temp_model_dir():
 class TestInferenceEngine:
     """Tests for SQLInferenceEngine."""
 
-    def test_inference_engine_initialization(
-        self, temp_model_dir, mock_environment, mock_parser
-    ):
+    def test_inference_engine_initialization(self, temp_model_dir, mock_environment, mock_parser):
         """Test that inference engine initializes correctly."""
         from src.inference.inference_engine import SQLInferenceEngine
 
@@ -214,9 +212,7 @@ class TestInferenceEngine:
             # Verify full model loading was called
             mock_torch_and_transformers["model"].from_pretrained.assert_called()
 
-    def test_sql_parsing(
-        self, temp_model_dir, mock_environment, mock_torch_and_transformers
-    ):
+    def test_sql_parsing(self, temp_model_dir, mock_environment, mock_torch_and_transformers):
         """Test SQL parsing in results."""
         from src.inference.inference_engine import SQLInferenceEngine
         from src.utils.sql_parser import SQLParser
@@ -314,9 +310,7 @@ class TestAPI:
         assert response.status_code == 200
         assert response.json() == {"status": "healthy"}
 
-    def test_api_generate_endpoint(
-        self, _mock_environment, _mock_parser, _temp_model_dir
-    ):
+    def test_api_generate_endpoint(self, _mock_environment, _mock_parser, _temp_model_dir):
         """Test generate endpoint."""
         from fastapi.testclient import TestClient
 

@@ -110,9 +110,7 @@ class SQLValidationRubric:
 
         # Filter out non-string values (e.g., boolean from config parsing)
         # and convert to uppercase
-        self.sql_keywords = [
-            kw.upper() for kw in sql_keywords if isinstance(kw, str)
-        ]
+        self.sql_keywords = [kw.upper() for kw in sql_keywords if isinstance(kw, str)]
 
         # Validate weights sum to 1.0
         total_weight = syntax_weight + keyword_weight + format_weight
@@ -130,9 +128,7 @@ class SQLValidationRubric:
         self.strict_mode = strict_mode
         self.normalize_sql = normalize_sql
 
-    def score(
-        self, output: str, reference: str | None = None  # noqa: ARG002
-    ) -> float:
+    def score(self, output: str, reference: str | None = None) -> float:  # noqa: ARG002
         """Compute reward score for SQL output.
 
         Args:
@@ -184,11 +180,7 @@ class SQLValidationRubric:
         Returns:
             True if statement has meaningful (non-whitespace) tokens.
         """
-        meaningful_tokens = [
-            t
-            for t in statement.tokens
-            if not t.is_whitespace and str(t).strip()
-        ]
+        meaningful_tokens = [t for t in statement.tokens if not t.is_whitespace and str(t).strip()]
         return len(meaningful_tokens) > 0
 
     def _check_syntax_error_patterns(self, sql: str) -> tuple[bool, float]:
@@ -273,9 +265,7 @@ class SQLValidationRubric:
                         keywords_found.append(keyword)
         return keywords_found
 
-    def _score_keyword_diversity(
-        self, keywords_found: list[str], sql_upper: str
-    ) -> float:
+    def _score_keyword_diversity(self, keywords_found: list[str], sql_upper: str) -> float:
         """Score based on keyword diversity.
 
         Args:
@@ -378,11 +368,7 @@ class SQLValidationRubric:
         sql_upper = sql.upper()
         query_types = ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE"]
         has_query_type = any(kw in sql_upper for kw in query_types)
-        has_table_ref = (
-            "FROM" in sql_upper
-            or "INTO" in sql_upper
-            or "TABLE" in sql_upper
-        )
+        has_table_ref = "FROM" in sql_upper or "INTO" in sql_upper or "TABLE" in sql_upper
 
         if has_query_type and has_table_ref:
             score += 0.15

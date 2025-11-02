@@ -84,10 +84,11 @@ class SQLEvaluator:
 
         # Generate predictions
         questions = [item["question"] for item in dataset]
-        schemas = [item.get("schema") for item in dataset]  # type: ignore[misc]
+        schemas = [item["schema"] for item in dataset if item.get("schema") is not None]
         references = [item["sql"] for item in dataset]
 
         self.logger.info("Generating predictions...")
+
         predictions = self.engine.batch_generate_sql(
             questions=questions,
             schemas=schemas,
@@ -129,9 +130,7 @@ class SQLEvaluator:
         aggregate_metrics = self._compute_aggregate_metrics(per_sample_results)
 
         # Compute complexity-stratified metrics
-        complexity_metrics = self._compute_complexity_metrics(
-            per_sample_results
-        )
+        complexity_metrics = self._compute_complexity_metrics(per_sample_results)
 
         return {
             "aggregate": aggregate_metrics,
@@ -182,12 +181,8 @@ class SQLEvaluator:
         pred_complexity = self.metrics.complexity_score(predicted)
         ref_complexity = self.metrics.complexity_score(reference)
 
-        metrics_dict["predicted_complexity"] = pred_complexity[
-            "complexity_level"
-        ]
-        metrics_dict["reference_complexity"] = ref_complexity[
-            "complexity_level"
-        ]
+        metrics_dict["predicted_complexity"] = pred_complexity["complexity_level"]
+        metrics_dict["reference_complexity"] = ref_complexity["complexity_level"]
         pred_level = pred_complexity["complexity_level"]
         ref_level = ref_complexity["complexity_level"]
         metrics_dict["complexity_match"] = int(pred_level == ref_level)  # type: ignore[assignment]
@@ -198,19 +193,13 @@ class SQLEvaluator:
 
         # Execution metrics (if enabled)
         if compute_execution and self.execution_metrics:
-            exec_metrics = self.execution_metrics.execution_accuracy(
-                predicted, reference
-            )
+            exec_metrics = self.execution_metrics.execution_accuracy(predicted, reference)
             metrics_dict["execution_match"] = exec_metrics["execution_match"]
-            metrics_dict["predicted_executable"] = exec_metrics[
-                "predicted_executable"
-            ]
+            metrics_dict["predicted_executable"] = exec_metrics["predicted_executable"]
 
         return metrics_dict
 
-    def _compute_aggregate_metrics(
-        self, results: list[dict[str, Any]]
-    ) -> dict[str, float]:
+    def _compute_aggregate_metrics(self, results: list[dict[str, Any]]) -> dict[str, float]:
         """Compute aggregate metrics across all samples.
 
         Args:
@@ -219,27 +208,23 @@ class SQLEvaluator:
         Returns:
             Dictionary of aggregated metrics including means and rates.
         """
-        df = pd.DataFrame(results)
+        results_df = pd.DataFrame(results)
 
         aggregate = {
-            "exact_match_rate": df["exact_match"].mean() * 100,
-            "avg_token_accuracy": df["token_accuracy"].mean() * 100,
-            "avg_structural_similarity": (
-                df["structural_similarity"].mean() * 100
-            ),
-            "avg_keyword_f1": df["keyword_f1"].mean() * 100,
-            "avg_keyword_precision": df["keyword_precision"].mean() * 100,
-            "avg_keyword_recall": df["keyword_recall"].mean() * 100,
-            "valid_sql_rate": df["valid"].mean() * 100,
-            "complexity_match_rate": df["complexity_match"].mean() * 100,
-            "avg_edit_distance": df["edit_distance"].mean(),
+            "exact_match_rate": results_df["exact_match"].mean() * 100,
+            "avg_token_accuracy": results_df["token_accuracy"].mean() * 100,
+            "avg_structural_similarity": (results_df["structural_similarity"].mean() * 100),
+            "avg_keyword_f1": results_df["keyword_f1"].mean() * 100,
+            "avg_keyword_precision": results_df["keyword_precision"].mean() * 100,
+            "avg_keyword_recall": results_df["keyword_recall"].mean() * 100,
+            "valid_sql_rate": results_df["valid"].mean() * 100,
+            "complexity_match_rate": results_df["complexity_match"].mean() * 100,
+            "avg_edit_distance": results_df["edit_distance"].mean(),
         }
 
-        if "execution_match" in df.columns:
-            aggregate["execution_accuracy"] = (
-                df["execution_match"].mean() * 100
-            )
-            executable_rate = df["predicted_executable"].mean() * 100
+        if "execution_match" in results_df.columns:
+            aggregate["execution_accuracy"] = results_df["execution_match"].mean() * 100
+            executable_rate = results_df["predicted_executable"].mean() * 100
             aggregate["predicted_executable_rate"] = executable_rate
 
         return aggregate
@@ -255,12 +240,12 @@ class SQLEvaluator:
         Returns:
             Dictionary mapping complexity levels to their metrics.
         """
-        df = pd.DataFrame(results)
+        results_df = pd.DataFrame(results)
 
         complexity_metrics: dict[str, dict[str, float]] = {}
 
         for complexity_level in ["simple", "medium", "complex"]:
-            subset = df[df["reference_complexity"] == complexity_level]
+            subset = results_df[results_df["reference_complexity"] == complexity_level]
 
             if len(subset) == 0:
                 continue
@@ -276,9 +261,7 @@ class SQLEvaluator:
 
         return complexity_metrics
 
-    def generate_report(
-        self, evaluation_results: dict[str, Any], output_path: str
-    ) -> None:
+    def generate_report(self, evaluation_results: dict[str, Any], output_path: str) -> None:
         """Generate detailed evaluation report.
 
         Creates multiple output files including JSON summary, CSV with
@@ -308,18 +291,16 @@ class SQLEvaluator:
             json.dump(summary, f, indent=2)
 
         # Save per-sample results as CSV
-        df = pd.DataFrame(evaluation_results["per_sample"])
+        results_df = pd.DataFrame(evaluation_results["per_sample"])
         csv_path = output_path_obj / "per_sample_results.csv"
-        df.to_csv(csv_path, index=False)
+        results_df.to_csv(csv_path, index=False)
 
         # Generate markdown report
         self._generate_markdown_report(evaluation_results, output_path_obj)
 
         self.logger.info(f"Report saved to {output_path_obj}")
 
-    def _generate_markdown_report(
-        self, results: dict[str, Any], output_path: Path
-    ) -> None:
+    def _generate_markdown_report(self, results: dict[str, Any], output_path: Path) -> None:
         """Generate markdown evaluation report.
 
         Args:
@@ -339,9 +320,7 @@ class SQLEvaluator:
             f.write("| Metric | Value |\n")
             f.write("|--------|-------|\n")
             for key, value in results["aggregate"].items():
-                f.write(
-                    f"| {key.replace('_', ' ').title()} | {value:.2f} |\n"
-                )
+                f.write(f"| {key.replace('_', ' ').title()} | {value:.2f} |\n")
 
             # Complexity metrics
             f.write("\n## Metrics by Complexity\n\n")

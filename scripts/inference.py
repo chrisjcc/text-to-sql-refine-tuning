@@ -5,7 +5,6 @@ computes evaluation metrics, and saves results.
 """
 
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -13,11 +12,11 @@ import hydra
 from datasets import Dataset, DatasetDict, load_from_disk
 from omegaconf import DictConfig
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from src.inference.inference_engine import SQLInferenceEngine  # noqa: E402
 from src.utils.logging_utils import setup_logging_from_config  # noqa: E402
+
+# Add src to path
+# sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -86,8 +85,7 @@ def run_inference(cfg: DictConfig) -> None:
             {
                 "question": "What are the names of all users?",
                 "schema": (
-                    "CREATE TABLE users (id INT, name VARCHAR(100), "
-                    "email VARCHAR(100));"
+                    "CREATE TABLE users (id INT, name VARCHAR(100), " "email VARCHAR(100));"
                 ),
                 "sql": "SELECT name FROM users;",
             }

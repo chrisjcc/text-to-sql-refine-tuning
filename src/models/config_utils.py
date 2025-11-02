@@ -116,9 +116,7 @@ def estimate_memory_requirements(
 
     # 4-bit quantization: ~0.5 bytes per parameter
     # bfloat16: 2 bytes per parameter
-    model_memory = (
-        base_model_size * 0.5 if use_quantization else base_model_size * 2
-    )
+    model_memory = base_model_size * 0.5 if use_quantization else base_model_size * 2
 
     # LoRA adapters (small additional memory)
     lora_memory = 0.1 if use_peft else 0  # ~100MB for typical LoRA config
@@ -128,19 +126,13 @@ def estimate_memory_requirements(
 
     # Optimizer states (if training full model)
     # AdamW needs 2x for momentum
-    optimizer_memory = (
-        lora_memory * 2 if use_peft else model_memory * 2
-    )
+    optimizer_memory = lora_memory * 2 if use_peft else model_memory * 2
 
     # Gradient memory
     gradient_memory = lora_memory if use_peft else model_memory
 
     total_memory = (
-        model_memory
-        + lora_memory
-        + activation_memory
-        + optimizer_memory
-        + gradient_memory
+        model_memory + lora_memory + activation_memory + optimizer_memory + gradient_memory
     )
 
     return {

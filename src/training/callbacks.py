@@ -7,20 +7,11 @@ import logging
 from typing import Any
 
 import torch
+import wandb
 from transformers import TrainerCallback, TrainerControl, TrainerState
 
 from src.environments.sql_env.environment import TextToSQLEnvironment
 from src.rubrics.sql_rubric import SQLValidationRubric
-
-try:
-    from types import ModuleType
-
-    import wandb
-
-    WANDB_AVAILABLE = True
-except ImportError:
-    WANDB_AVAILABLE = False
-    wandb: ModuleType | None = None
 
 logger = logging.getLogger(__name__)
 
@@ -118,9 +109,7 @@ class SQLEvaluationCallback(TrainerCallback):
         model = kwargs.get("model")
 
         # Sample evaluation data
-        eval_samples = self.eval_dataset.shuffle().select(
-            range(self.num_samples)
-        )
+        eval_samples = self.eval_dataset.shuffle().select(range(self.num_samples))
 
         metrics = {
             "valid_sql_count": 0,
@@ -151,9 +140,7 @@ class SQLEvaluationCallback(TrainerCallback):
                     pad_token_id=self.tokenizer.pad_token_id,
                 )
 
-            generated_text = self.tokenizer.decode(
-                outputs[0], skip_special_tokens=True
-            )
+            generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
             generated_sql = generated_text[len(prompt) :].strip()
 
             # Compute metrics
@@ -175,9 +162,7 @@ class SQLEvaluationCallback(TrainerCallback):
                 examples.append(
                     {
                         "question": sample["question"],
-                        "reference": sample.get(
-                            "reference", sample.get("sql", "")
-                        ),
+                        "reference": sample.get("reference", sample.get("sql", "")),
                         "generated": generated_sql,
                         "reward": reward,
                         "valid": parsed["valid"],
@@ -194,7 +179,7 @@ class SQLEvaluationCallback(TrainerCallback):
         }
 
         # Log to wandb
-        if WANDB_AVAILABLE and wandb.run is not None:
+        if wandb.run is not None:
             wandb.log(eval_metrics, step=step)
 
             if self.log_examples:
@@ -267,12 +252,6 @@ class WandbLoggingCallback(TrainerCallback):
         Returns:
             None. Initializes WandB run if configured.
         """
-        if not WANDB_AVAILABLE:
-            self.logger.warning(
-                "WandB not available, skipping initialization"
-            )
-            return
-
         if wandb.run is None and args.report_to and "wandb" in args.report_to:
             wandb.init(
                 project=self.config.get("project", "text-to-sql-grpo"),
@@ -304,8 +283,5 @@ class WandbLoggingCallback(TrainerCallback):
         Returns:
             None. Logs metrics to WandB.
         """
-        if not WANDB_AVAILABLE:
-            return
-
         if logs and wandb.run is not None:
             wandb.log(logs, step=state.global_step)
