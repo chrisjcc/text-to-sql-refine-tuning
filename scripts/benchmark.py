@@ -14,10 +14,6 @@ from src.evaluation.metrics import SQLMetrics  # noqa: E402
 from src.inference.inference_engine import SQLInferenceEngine  # noqa: E402
 from src.utils.logging_utils import setup_logging_from_config  # noqa: E402
 
-# Add project root to Python path
-# project_root = Path(__file__).resolve().parent.parent
-# sys.path.insert(0, str(project_root))
-
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
 def benchmark(cfg: DictConfig):
