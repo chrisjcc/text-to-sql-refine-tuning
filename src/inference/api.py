@@ -5,7 +5,6 @@ from natural language questions, with support for single and batch requests.
 """
 
 import logging
-from typing import List, Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -18,8 +17,22 @@ logger = logging.getLogger(__name__)
 
 # Request models
 class SQLGenerationRequest(BaseModel):
+    """Request model for single SQL generation.
+
+    Attributes:
+        question: Natural language question to convert to SQL.
+        schema: Optional database schema (CREATE TABLE statements).
+        max_new_tokens: Maximum tokens to generate.
+        temperature: Sampling temperature.
+        top_p: Nucleus sampling parameter.
+        num_beams: Number of beams for beam search.
+        do_sample: Whether to use sampling.
+    """
+
     question: str = Field(..., description="Natural language question")
-    schema: Optional[str] = Field(None, description="Database schema")  # type: ignore[assignment]
+    schema: str | None = Field(  # type: ignore[assignment]
+        None, description="Database schema"
+    )
     max_new_tokens: int = Field(256, ge=1, le=1024)
     temperature: float = Field(0.1, ge=0.0, le=2.0)
     top_p: float = Field(0.95, ge=0.0, le=1.0)
@@ -28,8 +41,18 @@ class SQLGenerationRequest(BaseModel):
 
 
 class BatchSQLGenerationRequest(BaseModel):
-    questions: List[str] = Field(..., description="List of questions")
-    schemas: Optional[List[str]] = Field(None, description="List of schemas")
+    """Request model for batch SQL generation.
+
+    Attributes:
+        questions: List of natural language questions.
+        schemas: Optional list of database schemas (one per question).
+        batch_size: Batch size for processing.
+        max_new_tokens: Maximum tokens to generate.
+        temperature: Sampling temperature.
+    """
+
+    questions: list[str] = Field(..., description="List of questions")
+    schemas: list[str] | None = Field(None, description="List of schemas")
     batch_size: int = Field(4, ge=1, le=32)
     max_new_tokens: int = Field(256, ge=1, le=1024)
     temperature: float = Field(0.1, ge=0.0, le=2.0)
@@ -37,6 +60,15 @@ class BatchSQLGenerationRequest(BaseModel):
 
 # Response models
 class SQLGenerationResponse(BaseModel):
+    """Response model for SQL generation.
+
+    Attributes:
+        sql: Generated SQL query.
+        raw_output: Raw model output before parsing.
+        valid: Whether the SQL is valid.
+        metadata: Additional metadata about generation.
+    """
+
     sql: str
     raw_output: str
     valid: bool
@@ -44,13 +76,27 @@ class SQLGenerationResponse(BaseModel):
 
 
 class BatchSQLGenerationResponse(BaseModel):
-    results: List[SQLGenerationResponse]
+    """Response model for batch SQL generation.
+
+    Attributes:
+        results: List of SQL generation results.
+        total_count: Total number of results.
+    """
+
+    results: list[SQLGenerationResponse]
     total_count: int
 
 
 # Create API
 def create_app(engine: SQLInferenceEngine) -> FastAPI:
-    """Create FastAPI application."""
+    """Create FastAPI application with SQL generation endpoints.
+
+    Args:
+        engine: SQL inference engine for generating queries.
+
+    Returns:
+        Configured FastAPI application.
+    """
     app = FastAPI(
         title="Text-to-SQL API",
         description="REST API for generating SQL queries from natural language",
@@ -58,8 +104,12 @@ def create_app(engine: SQLInferenceEngine) -> FastAPI:
     )
 
     @app.get("/")
-    def root():
-        """Root endpoint."""
+    def root() -> dict[str, str | dict[str, str]]:
+        """Root endpoint with API information.
+
+        Returns:
+            Dictionary with API message and available endpoints.
+        """
         return {
             "message": "Text-to-SQL API",
             "endpoints": {
@@ -70,14 +120,26 @@ def create_app(engine: SQLInferenceEngine) -> FastAPI:
         }
 
     @app.get("/health")
-    def health():
-        """Health check endpoint."""
+    def health() -> dict[str, str]:
+        """Health check endpoint.
+
+        Returns:
+            Dictionary with health status.
+        """
         return {"status": "healthy"}
 
     @app.post("/generate", response_model=SQLGenerationResponse)
-    def generate_sql(request: SQLGenerationRequest):
-        """
-        Generate SQL query from natural language question.
+    def generate_sql(request: SQLGenerationRequest) -> SQLGenerationResponse:
+        """Generate SQL query from natural language question.
+
+        Args:
+            request: SQL generation request with question and parameters.
+
+        Returns:
+            SQL generation response with query and metadata.
+
+        Raises:
+            HTTPException: If generation fails.
         """
         try:
             result = engine.generate_sql(
@@ -99,12 +161,23 @@ def create_app(engine: SQLInferenceEngine) -> FastAPI:
 
         except Exception as e:
             logger.error(f"Generation error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     @app.post("/batch_generate", response_model=BatchSQLGenerationResponse)
-    def batch_generate_sql(request: BatchSQLGenerationRequest):
-        """
-        Generate SQL queries for multiple questions.
+    def batch_generate_sql(
+        request: BatchSQLGenerationRequest,
+    ) -> BatchSQLGenerationResponse:
+        """Generate SQL queries for multiple questions.
+
+        Args:
+            request: Batch SQL generation request with questions and
+                parameters.
+
+        Returns:
+            Batch SQL generation response with results and count.
+
+        Raises:
+            HTTPException: If batch generation fails.
         """
         try:
             results = engine.batch_generate_sql(
@@ -125,38 +198,45 @@ def create_app(engine: SQLInferenceEngine) -> FastAPI:
                 for r in results
             ]
 
-            return BatchSQLGenerationResponse(results=responses, total_count=len(responses))
+            return BatchSQLGenerationResponse(
+                results=responses, total_count=len(responses)
+            )
 
         except Exception as e:
             logger.error(f"Batch generation error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     return app
 
 
 def serve_api(
     model_path: str,
-    base_model_name: Optional[str] = None,
+    base_model_name: str | None = None,
     host: str = "0.0.0.0",
     port: int = 8000,
     load_in_4bit: bool = False,
-):
-    """
-    Start API server.
+) -> None:
+    """Start API server.
 
     Args:
-        model_path: Path to fine-tuned model
-        base_model_name: Base model name (for PEFT models)
-        host: Host to bind to
-        port: Port to bind to
-        load_in_4bit: Use 4-bit quantization
+        model_path: Path to fine-tuned model or HuggingFace model ID.
+        base_model_name: Base model name (for PEFT models). Defaults to None.
+        host: Host to bind to. Defaults to "0.0.0.0".
+        port: Port to bind to. Defaults to 8000.
+        load_in_4bit: Use 4-bit quantization for inference.
+            Defaults to False.
+
+    Returns:
+        None. Runs server until interrupted.
     """
     logger.info(f"Starting API server on {host}:{port}")
 
     # Initialize engine
     logger.info("Loading model...")
     engine = SQLInferenceEngine(
-        model_path=model_path, base_model_name=base_model_name, load_in_4bit=load_in_4bit
+        model_path=model_path,
+        base_model_name=base_model_name,
+        load_in_4bit=load_in_4bit,
     )
 
     # Create app
