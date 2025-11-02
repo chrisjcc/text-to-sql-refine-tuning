@@ -75,7 +75,10 @@ def test_model(cfg: DictConfig):
 
     with torch.no_grad():
         outputs = model.generate(
-            **inputs, max_new_tokens=50, do_sample=False, pad_token_id=tokenizer.pad_token_id
+            **inputs,
+            max_new_tokens=50,
+            do_sample=False,
+            pad_token_id=tokenizer.pad_token_id
         )
 
     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)

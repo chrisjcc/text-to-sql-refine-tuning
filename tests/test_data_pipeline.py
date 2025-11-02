@@ -70,7 +70,9 @@ def test_split_creation():
     assert "test" in splits
 
     # Check that all samples are accounted for
-    total_samples = len(splits["train"]) + len(splits["validation"]) + len(splits["test"])
+    total_samples = (
+        len(splits["train"]) + len(splits["validation"]) + len(splits["test"])
+    )
     assert total_samples == len(dataset)
 
 
@@ -288,13 +290,15 @@ def test_grpo_formatting():
 
     # Create a mock tokenizer
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             # Simple word-based tokenization for testing
             return text.split()
 
     tokenizer = MockTokenizer()
 
-    formatter = GRPODatasetFormatter(environment=env, tokenizer=tokenizer, include_reference=True)
+    formatter = GRPODatasetFormatter(
+        environment=env, tokenizer=tokenizer, include_reference=True
+    )
 
     # Test single sample formatting
     sample = {
@@ -336,7 +340,7 @@ def test_tokenization_validation():
     env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             return text.split()
 
     tokenizer = MockTokenizer()
@@ -344,7 +348,10 @@ def test_tokenization_validation():
 
     # Create a formatted dataset
     data = {
-        "prompt": ["This is a short prompt", "This is a much longer prompt with many words"],
+        "prompt": [
+            "This is a short prompt",
+            "This is a much longer prompt with many words",
+        ],
         "question": ["Q1", "Q2"],
         "schema": ["S1", "S2"],
     }
@@ -379,7 +386,7 @@ def test_evaluation_set_creation():
     env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             return text.split()
 
     tokenizer = MockTokenizer()
@@ -444,7 +451,7 @@ def test_full_pipeline():
     env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             return text.split()
 
     tokenizer = MockTokenizer()

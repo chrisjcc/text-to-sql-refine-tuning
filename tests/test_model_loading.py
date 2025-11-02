@@ -57,7 +57,11 @@ class TestModelLoader:
         loader = ModelLoader(model_name="test-model")
 
         config = loader.create_lora_config(
-            r=16, lora_alpha=32, lora_dropout=0.05, target_modules={"q_proj", "v_proj"}, bias="none"
+            r=16,
+            lora_alpha=32,
+            lora_dropout=0.05,
+            target_modules={"q_proj", "v_proj"},
+            bias="none",
         )
 
         assert config.r == 16
@@ -124,7 +128,7 @@ class TestModelLoader:
         mock_tok.pad_token = None
         mock_tok.eos_token = "<eos>"
         mock_tok.eos_token_id = 2
-        mock_tok.__len__ = lambda self: 32000
+        mock_tok.__len__ = lambda: 32000
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
@@ -213,7 +217,10 @@ class TestConfigUtils:
         cfg = OmegaConf.create(
             {
                 "hf": {
-                    "model": {"name": "meta-llama/Llama-3.1-8B-Instruct", "cache_dir": "./cache"}
+                    "model": {
+                        "name": "meta-llama/Llama-3.1-8B-Instruct",
+                        "cache_dir": "./cache",
+                    }
                 },
                 "training": {"use_peft": True},
             }
@@ -229,7 +236,11 @@ class TestConfigUtils:
     def test_bnb_config_from_hydra(self):
         """Test BnB config creation from Hydra config."""
         cfg = OmegaConf.create(
-            {"training": {"peft": {"use_qlora": True, "bnb_4bit_compute_dtype": "bfloat16"}}}
+            {
+                "training": {
+                    "peft": {"use_qlora": True, "bnb_4bit_compute_dtype": "bfloat16"}
+                }
+            }
         )
 
         config = create_bnb_config_from_hydra(cfg)
@@ -241,7 +252,11 @@ class TestConfigUtils:
     def test_bnb_config_from_hydra_disabled(self):
         """Test BnB config when QLoRA is disabled."""
         cfg = OmegaConf.create(
-            {"training": {"peft": {"use_qlora": False, "bnb_4bit_compute_dtype": "bfloat16"}}}
+            {
+                "training": {
+                    "peft": {"use_qlora": False, "bnb_4bit_compute_dtype": "bfloat16"}
+                }
+            }
         )
 
         config = create_bnb_config_from_hydra(cfg)
@@ -329,7 +344,9 @@ class TestModelInference:
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         loader = ModelLoader(model_name="test-model")
-        model, tokenizer = loader.load_model_and_tokenizer(use_quantization=False, use_peft=False)
+        model, tokenizer = loader.load_model_and_tokenizer(
+            use_quantization=False, use_peft=False
+        )
 
         # Test inference
         test_prompt = "SELECT * FROM"
