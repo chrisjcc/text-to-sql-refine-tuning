@@ -9,19 +9,14 @@ Usage:
 """
 
 import logging
-import sys
 import time
-from pathlib import Path
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import hydra  # noqa: E402
 from datasets import load_dataset  # noqa: E402
 from omegaconf import DictConfig  # noqa: E402
 
-from environments.sql_env import TextToSQLEnvironment  # noqa: E402
 from rubrics.sql_rubric import SQLValidationRubric  # noqa: E402
+from src.environments.sql_env import TextToSQLEnvironment  # noqa: E402
 from utils.sql_parser import SQLParser  # noqa: E402
 
 # Set up logging

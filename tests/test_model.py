@@ -4,9 +4,6 @@ This script tests the ModelLoader class with different configurations
 to ensure models load correctly with QLoRA and LoRA adapters.
 """
 
-import sys
-from pathlib import Path
-
 import hydra
 import torch
 from dotenv import load_dotenv
@@ -15,16 +12,13 @@ from omegaconf import DictConfig
 # Load environment variables before anything else
 load_dotenv()
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from models.config_utils import (  # noqa: E402
+from src.models.config_utils import (  # noqa: E402
     create_bnb_config_from_hydra,
     create_lora_config_from_hydra,
     estimate_memory_requirements,
 )
-from models.model_loader import ModelLoader  # noqa: E402
-from utils.logging_utils import setup_logging_from_config  # noqa: E402
+from src.models.model_loader import ModelLoader  # noqa: E402
+from src.utils.logging_utils import setup_logging_from_config  # noqa: E402
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
