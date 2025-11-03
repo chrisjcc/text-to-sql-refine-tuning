@@ -310,7 +310,7 @@ class TestAPI:
         assert response.status_code == 200
         assert response.json() == {"status": "healthy"}
 
-    def test_api_generate_endpoint(self, _mock_environment, _mock_parser, _temp_model_dir):
+    def test_api_generate_endpoint(self, mock_environment, mock_parser, temp_model_dir):
         """Test generate endpoint."""
         from fastapi.testclient import TestClient
 

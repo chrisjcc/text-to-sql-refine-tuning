@@ -1,183 +1,133 @@
-"""Test the text-to-SQL environment with sample data.
+"""Test model loading with various configurations.
 
-This script loads the environment and tests it with real dataset samples,
-demonstrating prompt formatting, response parsing, and reward computation.
+This script tests the ModelLoader class with different configurations
+to ensure models load correctly with QLoRA and LoRA adapters.
 
 Usage:
-    python scripts/test_environment.py
-    python scripts/test_environment.py training.environment.prompt_template=chat
+    # Run with pytest:
+    pytest tests/test_model.py -v
+
+    # Run standalone:
+    python tests/test_model.py
+
+    # Run with config overrides:
+    python tests/test_model.py hf.model.name=meta-llama/Llama-3-8B-Instruct
+    python tests/test_model.py training.peft.use_qlora=false
 """
 
-import logging
-import time
+import sys
 
-import hydra  # noqa: E402
-from datasets import load_dataset  # noqa: E402
-from omegaconf import DictConfig  # noqa: E402
+import pytest
+import torch
+from dotenv import load_dotenv
+from omegaconf import DictConfig
 
-from rubrics.sql_rubric import SQLValidationRubric  # noqa: E402
-from src.environments.sql_env import TextToSQLEnvironment  # noqa: E402
-from utils.sql_parser import SQLParser  # noqa: E402
+# Load environment variables before anything else
+load_dotenv()
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
+from config.config import load_config
+from src.models.config_utils import (
+    create_bnb_config_from_hydra,
+    create_lora_config_from_hydra,
+    estimate_memory_requirements,
 )
-logger = logging.getLogger(__name__)
+from src.models.model_loader import ModelLoader
+from src.utils.logging_utils import setup_logging_from_config
 
 
-@hydra.main(version_base=None, config_path="../config", config_name="config")
-def test_environment(cfg: DictConfig):
-    """Test environment with real dataset samples.
+@pytest.fixture(scope="module")
+def cfg() -> DictConfig:
+    """Load Hydra configuration for testing.
+
+    Returns:
+        DictConfig: Loaded configuration
+    """
+    return load_config()
+
+
+def test_model(cfg: DictConfig):
+    """Test model loading with current configuration.
 
     Args:
-        cfg: Hydra configuration
+        cfg: Hydra configuration from fixture
     """
-    logger.info("=" * 80)
-    logger.info("Text-to-SQL Environment Test")
-    logger.info("=" * 80)
+    logger = setup_logging_from_config(cfg)
 
-    # Load sample data first (required for environment initialization)
-    logger.info("\n[1/4] Loading dataset samples...")
-    try:
-        dataset = load_dataset(cfg.dataset.name, split="train[:10]", trust_remote_code=True)
-        logger.info(f"  ✓ Loaded {len(dataset)} samples from {cfg.dataset.name}")
-    except Exception as e:
-        logger.error(f"  ✗ Failed to load dataset: {e}")
-        logger.info("  Using mock data instead...")
-
-        # Create mock dataset
-        from datasets import Dataset as HFDataset
-
-        mock_data = {
-            "question": [
-                "How many users are in the database?",
-                "List all product names",
-                "Get users who joined in 2024",
-            ],
-            "context": [
-                "CREATE TABLE users (id INT, name VARCHAR(100), email VARCHAR(100))",
-                ("CREATE TABLE products (id INT, name VARCHAR(200), " "price DECIMAL(10,2))"),
-                "CREATE TABLE users (id INT, name VARCHAR(100), joined_date DATE)",
-            ],
-            "answer": [
-                "SELECT COUNT(*) FROM users",
-                "SELECT name FROM products",
-                "SELECT * FROM users WHERE YEAR(joined_date) = 2024",
-            ],
-        }
-        dataset = HFDataset.from_dict(mock_data)
-        logger.info(f"  ✓ Created {len(dataset)} mock samples")
-
-    # Initialize components
-    logger.info("\n[2/4] Initializing environment...")
-    parser = SQLParser()
-    rubric = SQLValidationRubric()
-
-    # Get environment config
-    env_cfg = cfg.training.get("environment", {})
-    prompt_template = env_cfg.get("prompt_template", "instructional")
-    include_schema = env_cfg.get("include_schema", True)
-    max_schema_length = env_cfg.get("max_schema_length", 1024)
-
-    logger.info(f"  - Prompt template: {prompt_template}")
-    logger.info(f"  - Include schema: {include_schema}")
-    logger.info(f"  - Max schema length: {max_schema_length}")
-
-    env = TextToSQLEnvironment(
-        rubric=rubric,
-        parser=parser,
-        prompt_template=prompt_template,
-        include_schema=include_schema,
-        max_schema_length=max_schema_length,
-        dataset=dataset,  # Now passing the dataset
+    # Print memory estimates
+    logger.info("Estimating memory requirements...")
+    memory_est = estimate_memory_requirements(
+        model_name=cfg.hf.model.name,
+        use_quantization=cfg.training.peft.use_qlora,
+        use_peft=cfg.training.use_peft,
+        batch_size=cfg.training.per_device_train_batch_size,
+        sequence_length=cfg.dataset.preprocessing.max_length,
     )
-    logger.info("  ✓ Environment initialized")
 
-    # Test environment with samples
-    logger.info("\n[3/4] Testing environment...")
-    logger.info("-" * 80)
+    logger.info("\nMemory Estimates:")
+    for key, value in memory_est.items():
+        logger.info(f"  {key}: {value:.2f} GB")
 
-    all_responses = []
-    all_rewards = []
+    # Load model
+    logger.info(f"\nLoading model: {cfg.hf.model.name}")
 
-    for i, sample in enumerate(dataset):
-        logger.info(f"\nSample {i+1}/{len(dataset)}")
-        logger.info("-" * 80)
+    loader = ModelLoader(model_name=cfg.hf.model.name, cache_dir=cfg.hf.model.cache_dir)
 
-        # Format prompt
-        prompt = env.format_prompt(
-            question=sample["question"], context={"schema": sample["context"]}
+    bnb_config = create_bnb_config_from_hydra(cfg)
+    lora_config = create_lora_config_from_hydra(cfg)
+
+    # Get attention implementation from config if available
+    attn_impl = cfg.hf.model.get("attn_implementation", "auto")
+
+    model, tokenizer = loader.load_model_and_tokenizer(
+        use_quantization=cfg.training.peft.use_qlora,
+        use_peft=cfg.training.use_peft,
+        bnb_config=bnb_config,
+        lora_config=lora_config,
+        attn_implementation=attn_impl,
+    )
+
+    # Print model info
+    loader.print_model_info(model)
+
+    # Test inference
+    logger.info("Testing inference...")
+    test_prompt = "SELECT * FROM users WHERE"
+    inputs = tokenizer(test_prompt, return_tensors="pt").to(model.device)
+
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs, max_new_tokens=50, do_sample=False, pad_token_id=tokenizer.pad_token_id
         )
 
-        logger.info(f"\n📝 Question: {sample['question']}")
-        schema_preview = (
-            f"{sample['context'][:200]}" f"{'...' if len(sample['context']) > 200 else ''}"
-        )
-        logger.info(f"\n🗃️  Schema:\n{schema_preview}")
-        logger.info(f"\n💬 Prompt:\n{prompt[:300]}{'...' if len(prompt) > 300 else ''}")
+    generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    logger.info("\nTest generation:")
+    logger.info(f"Prompt: {test_prompt}")
+    logger.info(f"Output: {generated_text}")
 
-        # Test with reference answer
-        reference_sql = sample.get("answer", "")
-        if reference_sql:
-            logger.info(f"\n✅ Reference SQL:\n{reference_sql}")
+    logger.info("\nModel loading test complete!")
 
-            # Parse response
-            parsed = env.parse_response(reference_sql)
-            logger.info("\n🔍 Parsed Result:")
-            logger.info(f"  - Valid: {parsed['valid']}")
-            logger.info(f"  - Extracted SQL: {parsed['sql']}")
 
-            # Compute reward
-            reward = env.compute_reward(reference_sql, context={"schema": sample["context"]})
-            logger.info(f"\n⭐ Reward Score: {reward:.3f}")
+def main():
+    """Entry point for standalone execution with optional config overrides.
 
-            all_responses.append(reference_sql)
-            all_rewards.append(reward)
+    Supports Hydra-style command line overrides:
+        python tests/test_model.py hf.model.name=meta-llama/Llama-3-8B-Instruct
+        python tests/test_model.py training.peft.use_qlora=false
+    """
+    # Parse command line arguments for config overrides
+    overrides = []
+    if len(sys.argv) > 1:
+        # Collect override arguments (format: key=value)
+        overrides = [arg for arg in sys.argv[1:] if "=" in arg]
+        if overrides:
+            print(f"Applying config overrides: {overrides}")
 
-    # Test batch computation
-    logger.info("\n" + "=" * 80)
-    logger.info("[4/4] Testing batch reward computation...")
-    logger.info("-" * 80)
+    # Load config with overrides
+    cfg = load_config(overrides=overrides if overrides else None)
 
-    if all_responses:
-        # Measure batch processing speed
-        start_time = time.time()
-        batch_rewards = env.batch_compute_rewards(all_responses)
-        elapsed = time.time() - start_time
-
-        samples_per_sec = len(all_responses) / elapsed if elapsed > 0 else 0
-
-        logger.info(f"\n  ✓ Processed {len(all_responses)} responses in {elapsed:.3f}s")
-        logger.info(f"  ✓ Throughput: {samples_per_sec:.1f} samples/sec")
-
-        # Compare with individual rewards
-        logger.info("\n  Reward comparison:")
-        for i, (ind_reward, batch_reward) in enumerate(
-            zip(all_rewards, batch_rewards, strict=True)
-        ):
-            match = "✓" if abs(ind_reward - batch_reward) < 0.001 else "✗"
-            logger.info(f"    Sample {i+1}: {ind_reward:.3f} vs {batch_reward:.3f} {match}")
-
-    # Compute aggregate metrics
-    logger.info("\n" + "=" * 80)
-    logger.info("Aggregate Metrics")
-    logger.info("-" * 80)
-
-    if all_responses:
-        metrics = env.get_metrics(all_responses)
-        logger.info(f"\n  Valid SQL: {metrics['valid_sql_pct']:.1f}%")
-        logger.info(f"  Syntax Correct: {metrics['syntax_correct_pct']:.1f}%")
-        logger.info(f"  Average Reward: {metrics['avg_reward']:.3f}")
-        logger.info(f"  Min Reward: {metrics['min_reward']:.3f}")
-        logger.info(f"  Max Reward: {metrics['max_reward']:.3f}")
-        logger.info(f"  Num Samples: {metrics['num_samples']}")
-
-    logger.info("\n" + "=" * 80)
-    logger.info("✓ Environment test complete!")
-    logger.info("=" * 80)
+    # Run test
+    test_model(cfg)
 
 
 if __name__ == "__main__":
-    test_environment()
+    main()
