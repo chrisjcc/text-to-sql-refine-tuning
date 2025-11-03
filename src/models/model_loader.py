@@ -289,7 +289,7 @@ class ModelLoader:
         if hasattr(model, "lm_head"):
             models_to_check.append(("peft_wrapper", model))
         if hasattr(model, "get_base_model"):
-            base_model = model.get_base_model()
+            base_model: Any = model.get_base_model()  # type: ignore[operator]
             if hasattr(base_model, "lm_head"):
                 models_to_check.append(("base_model", base_model))
         if hasattr(model, "base_model") and hasattr(model.base_model, "model"):
@@ -509,9 +509,9 @@ class ModelLoader:
         self.logger.info(f"Dtype: {dtype}")
 
         # Count parameters
-        total_params = sum(p.numel() for p in model.parameters())  # type: ignore[attr-defined]
+        total_params = sum(p.numel() for p in model.parameters())  # type: ignore[misc, union-attr, attr-defined]
         trainable_params = sum(
-            p.numel() for p in model.parameters() if p.requires_grad  # type: ignore[attr-defined]
+            p.numel() for p in model.parameters() if p.requires_grad  # type: ignore[misc, union-attr, attr-defined]
         )
 
         self.logger.info(f"Total parameters: {total_params:,}")

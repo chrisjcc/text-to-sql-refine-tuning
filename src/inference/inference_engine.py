@@ -11,7 +11,12 @@ from typing import Any
 
 import torch
 from peft import PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizerBase,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +80,9 @@ class SQLInferenceEngine:
         self.parser = parser
 
         # Load model and tokenizer
-        self.model, self.tokenizer = self._load_model()
+        model, tokenizer = self._load_model()
+        self.model: PeftModel | PreTrainedModel = model
+        self.tokenizer: PreTrainedTokenizerBase = tokenizer
 
         # Setup environment
         if environment is None:
@@ -94,7 +101,7 @@ class SQLInferenceEngine:
 
     def _load_model(
         self,
-    ) -> tuple[AutoModelForCausalLM | PeftModel | PreTrainedModel, AutoTokenizer]:
+    ) -> tuple[PeftModel | PreTrainedModel, PreTrainedTokenizerBase]:
         """Load model and tokenizer.
 
         Automatically detects PEFT models and loads them with adapters.
@@ -244,7 +251,7 @@ class SQLInferenceEngine:
 
         # Generate
         with torch.no_grad():
-            outputs = self.model.generate(
+            outputs = self.model.generate(  # type: ignore[operator]
                 **inputs,
                 max_new_tokens=max_new_tokens,
                 temperature=temperature,
@@ -328,7 +335,7 @@ class SQLInferenceEngine:
 
             # Generate
             with torch.no_grad():
-                outputs = self.model.generate(
+                outputs = self.model.generate(  # type: ignore[operator]
                     **inputs,
                     **generation_kwargs,
                     pad_token_id=self.tokenizer.pad_token_id,
