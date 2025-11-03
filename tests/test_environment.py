@@ -22,9 +22,6 @@ import torch
 from dotenv import load_dotenv
 from omegaconf import DictConfig
 
-# Load environment variables before anything else
-load_dotenv()
-
 from config.config import load_config
 from src.models.config_utils import (
     create_bnb_config_from_hydra,
@@ -33,6 +30,9 @@ from src.models.config_utils import (
 )
 from src.models.model_loader import ModelLoader
 from src.utils.logging_utils import setup_logging_from_config
+
+# Load environment variables before anything else
+load_dotenv()
 
 
 @pytest.fixture(scope="module")
@@ -114,13 +114,16 @@ def main():
         python tests/test_model.py hf.model.name=meta-llama/Llama-3-8B-Instruct
         python tests/test_model.py training.peft.use_qlora=false
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
     # Parse command line arguments for config overrides
     overrides = []
     if len(sys.argv) > 1:
         # Collect override arguments (format: key=value)
         overrides = [arg for arg in sys.argv[1:] if "=" in arg]
         if overrides:
-            print(f"Applying config overrides: {overrides}")
+            logger.info(f"Applying config overrides: {overrides}")
 
     # Load config with overrides
     cfg = load_config(overrides=overrides if overrides else None)

@@ -281,7 +281,7 @@ def test_grpo_formatting():
 
     # Create a mock tokenizer
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             # Simple word-based tokenization for testing
             return text.split()
 
@@ -329,7 +329,7 @@ def test_tokenization_validation():
     env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             return text.split()
 
     tokenizer = MockTokenizer()
@@ -375,7 +375,7 @@ def test_evaluation_set_creation():
     env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             return text.split()
 
     tokenizer = MockTokenizer()
@@ -440,7 +440,7 @@ def test_full_pipeline():
     env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             return text.split()
 
     tokenizer = MockTokenizer()
