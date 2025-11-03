@@ -49,7 +49,10 @@ def sql_rubric(sql_parser):
 def text_to_sql_env(sql_rubric, sql_parser, sample_dataset):
     """Create text-to-SQL environment."""
     return TextToSQLEnvironment(
-        rubric=sql_rubric, parser=sql_parser, prompt_template="default", dataset=sample_dataset
+        rubric=sql_rubric,
+        parser=sql_parser,
+        prompt_template="default",
+        dataset=sample_dataset,
     )
 
 
@@ -58,7 +61,10 @@ def sample_dataset():
     """Create sample dataset."""
     return Dataset.from_dict(
         {
-            "prompt": ["Generate SQL for: Get all users", "Generate SQL for: Count products"],
+            "prompt": [
+                "Generate SQL for: Get all users",
+                "Generate SQL for: Count products",
+            ],
             "question": ["Get all users", "Count products"],
             "schema": ["CREATE TABLE users (id INT)", "CREATE TABLE products (id INT)"],
             "reference": ["SELECT * FROM users", "SELECT COUNT(*) FROM products"],
@@ -209,9 +215,9 @@ def test_wandb_callback():
 
 def test_training_step(mock_model, mock_tokenizer, text_to_sql_env, sql_rubric, sample_dataset):
     """Test training step (mock test)."""
-    with patch("src.training.grpo_trainer.GRPOTrainer") as MockGRPOTrainer:
+    with patch("src.training.grpo_trainer.GRPOTrainer") as mock_grpo_trainer:
         mock_trainer = Mock()
-        MockGRPOTrainer.return_value = mock_trainer
+        mock_grpo_trainer.return_value = mock_trainer
 
         trainer = SQLGRPOTrainer(
             model=mock_model,
@@ -230,9 +236,9 @@ def test_checkpoint_saving(
     mock_model, mock_tokenizer, text_to_sql_env, sql_rubric, sample_dataset, tmp_path
 ):
     """Test checkpoint saving."""
-    with patch("src.training.grpo_trainer.GRPOTrainer") as MockGRPOTrainer:
+    with patch("src.training.grpo_trainer.GRPOTrainer") as mock_grpo_trainer:
         mock_trainer = Mock()
-        MockGRPOTrainer.return_value = mock_trainer
+        mock_grpo_trainer.return_value = mock_trainer
 
         trainer = SQLGRPOTrainer(
             model=mock_model,
@@ -252,7 +258,8 @@ def test_checkpoint_saving(
 def test_model_generation(text_to_sql_env):
     """Test model generation parameters."""
     prompt = text_to_sql_env.format_prompt(
-        question="Get all users", context={"schema": "CREATE TABLE users (id INT, name VARCHAR)"}
+        question="Get all users",
+        context={"schema": "CREATE TABLE users (id INT, name VARCHAR)"},
     )
 
     assert isinstance(prompt, str)

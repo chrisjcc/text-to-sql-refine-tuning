@@ -7,14 +7,13 @@ that integrates with Hydra's logging system.
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
 
 
 def setup_logging(
     log_level: str = "INFO",
-    log_dir: Optional[str] = "logs",
-    log_file: Optional[str] = None,
-    format_string: Optional[str] = None,
+    log_dir: str | None = "logs",
+    log_file: str | None = None,
+    format_string: str | None = None,
 ) -> logging.Logger:
     """Set up structured logging with file and console handlers.
 
@@ -134,4 +133,4 @@ if __name__ == "__main__":
     module_logger = get_logger(__name__)
     module_logger.info("Module-specific log message")
 
-    print("\nLogging test completed. Check the logs/ directory for output.")
+    logger.info("\nLogging test completed. Check the logs/ directory for output.")

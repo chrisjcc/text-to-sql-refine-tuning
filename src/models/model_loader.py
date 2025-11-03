@@ -6,7 +6,7 @@ memory-efficient fine-tuning on A100 GPUs.
 """
 
 import logging
-from typing import Any, List, Literal, Optional, Tuple, Union
+from typing import Any, Literal
 
 import torch
 from peft import (
@@ -21,26 +21,36 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 
 class ModelLoader:
-    """
-    Loads and configures language models for GRPO fine-tuning.
-    Supports QLoRA quantization and LoRA adapters.
+    """Loads and configures language models for GRPO fine-tuning.
+
+    Supports QLoRA quantization and LoRA adapters for memory-efficient
+    fine-tuning. Handles model loading, configuration, and special token
+    setup.
+
+    Attributes:
+        model_name: HuggingFace model identifier.
+        cache_dir: Directory for caching model weights.
+        device_map: Device mapping strategy.
+        trust_remote_code: Whether to trust remote code.
+        logger: Logger instance for this class.
     """
 
     def __init__(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
         device_map: str = "auto",
         trust_remote_code: bool = True,
-    ):
-        """
-        Initialize model loader.
+    ) -> None:
+        """Initialize model loader.
 
         Args:
-            model_name: HuggingFace model identifier
-            cache_dir: Directory for caching model weights
-            device_map: Device mapping strategy
-            trust_remote_code: Whether to trust remote code
+            model_name: HuggingFace model identifier.
+            cache_dir: Directory for caching model weights. Defaults to None.
+            device_map: Device mapping strategy for distributed loading.
+                Defaults to "auto".
+            trust_remote_code: Whether to trust remote code in model.
+                Defaults to True.
         """
         self.model_name = model_name
         self.cache_dir = cache_dir
@@ -55,17 +65,19 @@ class ModelLoader:
         bnb_4bit_quant_type: str = "nf4",
         bnb_4bit_use_double_quant: bool = True,
     ) -> BitsAndBytesConfig:
-        """
-        Create BitsAndBytes quantization configuration for QLoRA.
+        """Create BitsAndBytes quantization configuration for QLoRA.
 
         Args:
-            load_in_4bit: Use 4-bit quantization
-            bnb_4bit_compute_dtype: Compute dtype (bfloat16/float16)
-            bnb_4bit_quant_type: Quantization type (nf4/fp4)
-            bnb_4bit_use_double_quant: Use nested quantization
+            load_in_4bit: Use 4-bit quantization. Defaults to True.
+            bnb_4bit_compute_dtype: Compute dtype (bfloat16/float16).
+                Defaults to "bfloat16".
+            bnb_4bit_quant_type: Quantization type (nf4/fp4).
+                Defaults to "nf4".
+            bnb_4bit_use_double_quant: Use nested quantization.
+                Defaults to True.
 
         Returns:
-            BitsAndBytesConfig for model loading
+            BitsAndBytesConfig for model loading.
         """
         compute_dtype = getattr(torch, bnb_4bit_compute_dtype)
 
@@ -76,7 +88,7 @@ class ModelLoader:
             bnb_4bit_use_double_quant=bnb_4bit_use_double_quant,
         )
 
-        self.logger.info(f"Created BitsAndBytes config: {bnb_4bit_quant_type} quantization")
+        self.logger.info(f"Created BitsAndBytes config: {bnb_4bit_quant_type} " "quantization")
         return bnb_config
 
     def create_lora_config(
@@ -84,23 +96,23 @@ class ModelLoader:
         r: int = 16,
         lora_alpha: int = 32,
         lora_dropout: float = 0.05,
-        target_modules: Optional[list] = None,
+        target_modules: list[str] | None = None,
         bias: Literal["none", "all", "lora_only"] = "none",
         task_type: TaskType = TaskType.CAUSAL_LM,
     ) -> LoraConfig:
-        """
-        Create LoRA configuration for PEFT.
+        """Create LoRA configuration for PEFT.
 
         Args:
-            r: LoRA rank
-            lora_alpha: LoRA alpha parameter
-            lora_dropout: Dropout probability
-            target_modules: Modules to apply LoRA to
-            bias: Bias training strategy ("none", "all", or "lora_only")
-            task_type: Type of task
+            r: LoRA rank. Defaults to 16.
+            lora_alpha: LoRA alpha parameter. Defaults to 32.
+            lora_dropout: Dropout probability. Defaults to 0.05.
+            target_modules: Modules to apply LoRA to. If None, uses default
+                Llama modules. Defaults to None.
+            bias: Bias training strategy. Defaults to "none".
+            task_type: Type of task. Defaults to CAUSAL_LM.
 
         Returns:
-            LoraConfig for PEFT
+            LoraConfig for PEFT.
         """
         if target_modules is None:
             # Default for Llama models
@@ -128,31 +140,20 @@ class ModelLoader:
 
     def _prepare_quantization_config(
         self,
-        use_quantization: bool = True,
-        use_peft: bool = True,
-        bnb_config: Optional[BitsAndBytesConfig] = None,
-        lora_config: Optional[LoraConfig] = None,
-        torch_dtype: Optional[torch.dtype] = None,
-        attn_implementation: Optional[str] = "auto",
-    ) -> Union[AutoModelForCausalLM, PeftModel, PreTrainedModel]:
-        """
-        Load model with optional quantization and LoRA adapters.
+        use_quantization: bool,
+        bnb_config: BitsAndBytesConfig | None,
+        torch_dtype: torch.dtype | None,
+    ) -> tuple[BitsAndBytesConfig | None, torch.dtype]:
+        """Prepare quantization configuration.
 
         Args:
-            use_quantization: Whether to use QLoRA
-            use_peft: Whether to apply LoRA adapters
-            bnb_config: Custom BnB config (created if None)
-            lora_config: Custom LoRA config (created if None)
-            torch_dtype: Base dtype for non-quantized loading
-            attn_implementation: Attention implementation ("flash_attention_2", "sdpa", "eager", or "auto")
-                                "auto" will try flash_attention_2 and fall back to default if unavailable
+            use_quantization: Whether to use QLoRA.
+            bnb_config: Custom BnB config (created if None).
+            torch_dtype: Base dtype for non-quantized loading.
 
         Returns:
-            Loaded model (with PEFT if enabled)
+            Tuple of (quantization_config, torch_dtype).
         """
-        self.logger.info(f"Loading model: {self.model_name}")
-
-        # Prepare quantization config
         if use_quantization:
             if bnb_config is None:
                 bnb_config = self.create_bnb_config()
@@ -160,7 +161,7 @@ class ModelLoader:
             if torch_dtype is None:
                 torch_dtype = bnb_config.bnb_4bit_compute_dtype
                 self.logger.info(
-                    f"Setting torch_dtype to {torch_dtype} to match quantization compute dtype"
+                    f"Setting torch_dtype to {torch_dtype} to match " "quantization compute dtype"
                 )
         else:
             quantization_config = None
@@ -168,10 +169,15 @@ class ModelLoader:
                 torch_dtype = torch.bfloat16
         return quantization_config, torch_dtype
 
-    def _determine_attention_implementation(
-        self, attn_implementation: Optional[str]
-    ) -> Optional[str]:
-        """Determine which attention implementation to use."""
+    def _determine_attention_implementation(self, attn_implementation: str | None) -> str | None:
+        """Determine which attention implementation to use.
+
+        Args:
+            attn_implementation: Requested attention implementation.
+
+        Returns:
+            Attention implementation to use, or None for default.
+        """
         if attn_implementation == "auto":
             if torch.cuda.is_available():
                 try:
@@ -181,7 +187,8 @@ class ModelLoader:
                     return "flash_attention_2"
                 except (ImportError, ModuleNotFoundError):
                     self.logger.warning(
-                        "Flash Attention 2 not available. Install with: pip install flash-attn --no-build-isolation"
+                        "Flash Attention 2 not available. Install with: "
+                        "pip install flash-attn --no-build-isolation"
                     )
                     return None
         elif attn_implementation is not None:
@@ -190,11 +197,23 @@ class ModelLoader:
 
     def _load_base_model(
         self,
-        quantization_config: Optional[BitsAndBytesConfig],
+        quantization_config: BitsAndBytesConfig | None,
         torch_dtype: torch.dtype,
-        attn_impl: Optional[str],
+        attn_impl: str | None,
     ) -> PreTrainedModel:
-        """Load the base model with retry logic for attention implementation."""
+        """Load the base model with retry logic for attention.
+
+        Args:
+            quantization_config: Quantization configuration.
+            torch_dtype: PyTorch data type for model.
+            attn_impl: Attention implementation to use.
+
+        Returns:
+            Loaded base model.
+
+        Raises:
+            Exception: If model loading fails.
+        """
         try:
             return AutoModelForCausalLM.from_pretrained(
                 self.model_name,
@@ -204,10 +223,10 @@ class ModelLoader:
                 cache_dir=self.cache_dir,
                 torch_dtype=torch_dtype,
                 attn_implementation=attn_impl,
-            )
+            )  # type: ignore[return-value]
         except Exception as e:
             if attn_impl == "flash_attention_2" and "flash_attn" in str(e):
-                self.logger.warning(f"Failed to load model with Flash Attention 2: {str(e)}")
+                self.logger.warning(f"Failed to load model with Flash Attention 2: {e!s}")
                 self.logger.info("Retrying with default attention implementation...")
                 return AutoModelForCausalLM.from_pretrained(
                     self.model_name,
@@ -217,37 +236,60 @@ class ModelLoader:
                     cache_dir=self.cache_dir,
                     torch_dtype=torch_dtype,
                     attn_implementation=None,
-                )
+                )  # type: ignore[return-value]
+            raise
+
+    def _cast_lm_head_dtype(
+        self,
+        model: PeftModel | PreTrainedModel,
+        compute_dtype: torch.dtype,
+    ) -> None:
+        """Cast lm_head weight to the specified compute dtype.
+
+        Args:
+            model: Model to cast.
+            compute_dtype: Target dtype for lm_head.
+
+        Returns:
+            None. Modifies model in-place.
+        """
+        if (
+            hasattr(model, "lm_head")
+            and model.lm_head is not None
+            and hasattr(model.lm_head, "weight")
+            and model.lm_head.weight is not None
+        ):
+            original_dtype = model.lm_head.weight.dtype
+            model.lm_head.weight.data = model.lm_head.weight.data.to(compute_dtype)
+            self.logger.info(
+                f"✓ Cast lm_head.weight.data from {original_dtype} to " f"{compute_dtype}"
+            )
+
+            actual_dtype = model.lm_head.weight.dtype
+            if actual_dtype == compute_dtype:
+                self.logger.info(f"✓ Verified: lm_head.weight is {actual_dtype}")
             else:
-                raise
-
-    def _cast_lm_head_dtype(self, model: Union[PeftModel, PreTrainedModel], compute_dtype: torch.dtype) -> None:  # type: ignore[misc]
-        """Cast lm_head weight to the specified compute dtype."""
-        if hasattr(model, "lm_head") and model.lm_head is not None:
-            if hasattr(model.lm_head, "weight") and model.lm_head.weight is not None:
-                original_dtype = model.lm_head.weight.dtype
-                model.lm_head.weight.data = model.lm_head.weight.data.to(compute_dtype)
-                self.logger.info(
-                    f"✓ Cast lm_head.weight.data from {original_dtype} to {compute_dtype}"
+                self.logger.warning(
+                    f"⚠ Verification failed: lm_head.weight is "
+                    f"{actual_dtype}, expected {compute_dtype}"
                 )
-
-                actual_dtype = model.lm_head.weight.dtype
-                if actual_dtype == compute_dtype:
-                    self.logger.info(f"✓ Verified: lm_head.weight is {actual_dtype}")
-                else:
-                    self.logger.warning(
-                        f"⚠ Verification failed: lm_head.weight is {actual_dtype}, expected {compute_dtype}"
-                    )
 
     def _get_peft_model_variants(
-        self, model: Union[PeftMixedModel, PeftModel, PreTrainedModel]
-    ) -> List[Tuple[str, Any]]:
-        """Get all model variants in the PEFT structure that may have lm_head."""
-        models_to_check: List[Tuple[str, Any]] = []
+        self, model: PeftMixedModel | PeftModel | PreTrainedModel
+    ) -> list[tuple[str, Any]]:
+        """Get all model variants in PEFT structure that may have lm_head.
+
+        Args:
+            model: PEFT or base model to inspect.
+
+        Returns:
+            List of (name, model_object) tuples for models with lm_head.
+        """
+        models_to_check: list[tuple[str, Any]] = []
         if hasattr(model, "lm_head"):
             models_to_check.append(("peft_wrapper", model))
         if hasattr(model, "get_base_model"):
-            base_model = model.get_base_model()
+            base_model: Any = model.get_base_model()  # type: ignore[operator]
             if hasattr(base_model, "lm_head"):
                 models_to_check.append(("base_model", base_model))
         if hasattr(model, "base_model") and hasattr(model.base_model, "model"):
@@ -256,8 +298,20 @@ class ModelLoader:
                 models_to_check.append(("underlying_model", underlying_model))
         return models_to_check
 
-    def _cast_peft_lm_heads(self, model: Union[PeftMixedModel, PeftModel, PreTrainedModel], compute_dtype: torch.dtype) -> None:  # type: ignore[misc]
-        """Cast lm_head at all levels in the PEFT structure."""
+    def _cast_peft_lm_heads(
+        self,
+        model: PeftMixedModel | PeftModel | PreTrainedModel,
+        compute_dtype: torch.dtype,
+    ) -> None:
+        """Cast lm_head at all levels in the PEFT structure.
+
+        Args:
+            model: PEFT model to cast.
+            compute_dtype: Target dtype for all lm_heads.
+
+        Returns:
+            None. Modifies model in-place.
+        """
         models_to_check = self._get_peft_model_variants(model)
         for model_name, model_obj in models_to_check:
             if hasattr(model_obj.lm_head, "weight") and model_obj.lm_head.weight is not None:
@@ -265,24 +319,38 @@ class ModelLoader:
                 if original_dtype != compute_dtype:
                     model_obj.lm_head.weight.data = model_obj.lm_head.weight.data.to(compute_dtype)
                     self.logger.info(
-                        f"✓ Cast {model_name}.lm_head.weight.data from {original_dtype} to {compute_dtype}"
+                        f"✓ Cast {model_name}.lm_head.weight.data from "
+                        f"{original_dtype} to {compute_dtype}"
                     )
                 actual_dtype = model_obj.lm_head.weight.dtype
                 if actual_dtype == compute_dtype:
-                    self.logger.info(f"✓ Verified {model_name}.lm_head.weight is {actual_dtype}")
+                    self.logger.info(
+                        f"✓ Verified {model_name}.lm_head.weight is " f"{actual_dtype}"
+                    )
                 else:
                     self.logger.warning(
-                        f"⚠ {model_name}.lm_head.weight is {actual_dtype}, expected {compute_dtype}"
+                        f"⚠ {model_name}.lm_head.weight is {actual_dtype}, "
+                        f"expected {compute_dtype}"
                     )
 
     def _apply_peft(
         self,
         model: PreTrainedModel,
-        lora_config: Optional[LoraConfig],
+        lora_config: LoraConfig | None,
         use_quantization: bool,
-        bnb_config: Optional[BitsAndBytesConfig],
+        bnb_config: BitsAndBytesConfig | None,
     ) -> PeftModel:
-        """Apply PEFT (LoRA) to the model."""
+        """Apply PEFT (LoRA) to the model.
+
+        Args:
+            model: Base model to apply PEFT to.
+            lora_config: LoRA configuration.
+            use_quantization: Whether quantization is enabled.
+            bnb_config: Quantization configuration.
+
+        Returns:
+            Model with PEFT adapters applied.
+        """
         self.logger.info("Preparing model for k-bit training")
         prepared_model = prepare_model_for_kbit_training(model)
 
@@ -307,25 +375,28 @@ class ModelLoader:
         self,
         use_quantization: bool = True,
         use_peft: bool = True,
-        bnb_config: Optional[BitsAndBytesConfig] = None,
-        lora_config: Optional[LoraConfig] = None,
-        torch_dtype: Optional[torch.dtype] = None,
-        attn_implementation: Optional[str] = "auto",
-    ) -> Union[PreTrainedModel, PeftModel]:
-        """
-        Load model with optional quantization and LoRA adapters.
+        bnb_config: BitsAndBytesConfig | None = None,
+        lora_config: LoraConfig | None = None,
+        torch_dtype: torch.dtype | None = None,
+        attn_implementation: str | None = "auto",
+    ) -> PreTrainedModel | PeftModel:
+        """Load model with optional quantization and LoRA adapters.
 
         Args:
-            use_quantization: Whether to use QLoRA
-            use_peft: Whether to apply LoRA adapters
-            bnb_config: Custom BnB config (created if None)
-            lora_config: Custom LoRA config (created if None)
-            torch_dtype: Base dtype for non-quantized loading
-            attn_implementation: Attention implementation ("flash_attention_2", "sdpa", "eager", or "auto")
-                                "auto" will try flash_attention_2 and fall back to default if unavailable
+            use_quantization: Whether to use QLoRA. Defaults to True.
+            use_peft: Whether to apply LoRA adapters. Defaults to True.
+            bnb_config: Custom BnB config (created if None). Defaults to None.
+            lora_config: Custom LoRA config (created if None).
+                Defaults to None.
+            torch_dtype: Base dtype for non-quantized loading.
+                Defaults to None (uses bfloat16).
+            attn_implementation: Attention implementation
+                ("flash_attention_2", "sdpa", "eager", or "auto").
+                "auto" will try flash_attention_2 and fall back to default
+                if unavailable. Defaults to "auto".
 
         Returns:
-            Loaded model (with PEFT if enabled)
+            Loaded model (with PEFT if enabled).
         """
         self.logger.info(f"Loading model: {self.model_name}")
 
@@ -336,30 +407,34 @@ class ModelLoader:
         model = self._load_base_model(quantization_config, torch_dtype, attn_impl)
 
         self.logger.info(
-            f"Model loaded. Memory footprint: {model.get_memory_footprint() / 1e9:.2f} GB"
+            f"Model loaded. Memory footprint: " f"{model.get_memory_footprint() / 1e9:.2f} GB"
         )
 
         if use_quantization and bnb_config is not None:
             self._cast_lm_head_dtype(model, bnb_config.bnb_4bit_compute_dtype)
 
         if use_peft:
-            model = self._apply_peft(model, lora_config, use_quantization, bnb_config)  # type: ignore[assignment]
+            model = self._apply_peft(
+                model, lora_config, use_quantization, bnb_config
+            )  # type: ignore[assignment]
 
         return model
 
     def load_tokenizer(
-        self, padding_side: str = "left", add_eos_token: bool = True, add_bos_token: bool = False
+        self,
+        padding_side: str = "left",
+        add_eos_token: bool = True,
+        add_bos_token: bool = False,
     ) -> AutoTokenizer:
-        """
-        Load and configure tokenizer.
+        """Load and configure tokenizer.
 
         Args:
-            padding_side: Which side to pad on
-            add_eos_token: Add EOS token to sequences
-            add_bos_token: Add BOS token to sequences
+            padding_side: Which side to pad on. Defaults to "left".
+            add_eos_token: Add EOS token to sequences. Defaults to True.
+            add_bos_token: Add BOS token to sequences. Defaults to False.
 
         Returns:
-            Configured tokenizer
+            Configured tokenizer.
         """
         self.logger.info(f"Loading tokenizer: {self.model_name}")
 
@@ -388,36 +463,56 @@ class ModelLoader:
         return tokenizer  # type: ignore[no-any-return]
 
     def load_model_and_tokenizer(
-        self, use_quantization: bool = True, use_peft: bool = True, **kwargs
-    ) -> Tuple[Union[AutoModelForCausalLM, PeftModel, PreTrainedModel], AutoTokenizer]:
-        """
-        Convenience method to load both model and tokenizer.
+        self,
+        use_quantization: bool = True,
+        use_peft: bool = True,
+        **kwargs: Any,
+    ) -> tuple[AutoModelForCausalLM | PeftModel | PreTrainedModel, AutoTokenizer]:
+        """Convenience method to load both model and tokenizer.
+
+        Args:
+            use_quantization: Whether to use QLoRA. Defaults to True.
+            use_peft: Whether to apply LoRA adapters. Defaults to True.
+            **kwargs: Additional arguments passed to load_model.
 
         Returns:
-            (model, tokenizer)
+            Tuple of (model, tokenizer).
         """
-        model = self.load_model(use_quantization=use_quantization, use_peft=use_peft, **kwargs)
+        model = self.load_model(
+            use_quantization=use_quantization,
+            use_peft=use_peft,
+            **kwargs,
+        )
         tokenizer = self.load_tokenizer()
 
         return model, tokenizer
 
-    def print_model_info(self, model: Union[AutoModelForCausalLM, PeftModel, PreTrainedModel]):
-        """Print detailed model information for debugging."""
+    def print_model_info(self, model: AutoModelForCausalLM | PeftModel | PreTrainedModel) -> None:
+        """Print detailed model information for debugging.
+
+        Args:
+            model: Model to inspect and print information about.
+
+        Returns:
+            None. Logs model information.
+        """
         self.logger.info("\n" + "=" * 80)
         self.logger.info("Model Information:")
         self.logger.info(f"Model type: {type(model).__name__}")
 
         # Handle device attribute which may not exist on all model types
-        device = getattr(model, 'device', 'unknown')
+        device = getattr(model, "device", "unknown")
         self.logger.info(f"Device: {device}")
 
         # Handle dtype attribute which may not exist on all model types
-        dtype = getattr(model, 'dtype', 'unknown')
+        dtype = getattr(model, "dtype", "unknown")
         self.logger.info(f"Dtype: {dtype}")
 
         # Count parameters
-        total_params = sum(p.numel() for p in model.parameters())  # type: ignore[attr-defined]
-        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)  # type: ignore[attr-defined]
+        total_params = sum(p.numel() for p in model.parameters())  # type: ignore[misc, union-attr, attr-defined]
+        trainable_params = sum(
+            p.numel() for p in model.parameters() if p.requires_grad  # type: ignore[misc, union-attr, attr-defined]
+        )
 
         self.logger.info(f"Total parameters: {total_params:,}")
         self.logger.info(f"Trainable parameters: {trainable_params:,}")

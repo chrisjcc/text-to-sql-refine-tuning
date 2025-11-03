@@ -1,5 +1,7 @@
-"""
-Publish trained model to HuggingFace Hub.
+"""Publish trained model to HuggingFace Hub.
+
+This script handles uploading fine-tuned models to the HuggingFace Hub,
+including creating model cards with training metrics and repository setup.
 """
 
 import argparse
@@ -15,16 +17,30 @@ logger = logging.getLogger(__name__)
 
 
 def create_model_card(
-    model_path: str, repo_name: str, base_model: str = "meta-llama/Llama-3.1-8B-Instruct"
+    model_path: str,
+    repo_name: str,
+    base_model: str = "meta-llama/Llama-3.1-8B-Instruct",
 ) -> str:
-    """Create model card markdown."""
+    """Create model card markdown content.
 
+    Generates a comprehensive model card with training metrics, usage
+    examples, and model information formatted for HuggingFace Hub.
+
+    Args:
+        model_path: Path to the trained model checkpoint directory.
+        repo_name: Repository name on HuggingFace Hub (username/model-name).
+        base_model: Base model identifier used for fine-tuning.
+            Defaults to "meta-llama/Llama-3.1-8B-Instruct".
+
+    Returns:
+        Formatted model card content as markdown string.
+    """
     # Try to load training metrics if available
     metrics_path = Path(model_path).parent / "trainer_state.json"
     metrics_info = ""
 
     if metrics_path.exists():
-        with open(metrics_path) as f:
+        with metrics_path.open() as f:
             state = json.load(f)
             if "log_history" in state:
                 last_metrics = state["log_history"][-1]
@@ -36,7 +52,7 @@ def create_model_card(
 - Training Steps: {last_metrics.get('step', 'N/A')}
 """
 
-    model_card = f"""---
+    return f"""---
 license: apache-2.0
 base_model: {base_model}
 tags:
@@ -54,11 +70,13 @@ pipeline_tag: text-generation
 
 # {repo_name}
 
-Fine-tuned Llama-3.1-8B-Instruct model for text-to-SQL generation using GRPO (Group Relative Policy Optimization).
+Fine-tuned Llama-3.1-8B-Instruct model for text-to-SQL generation using
+GRPO (Group Relative Policy Optimization).
 
 ## Model Description
 
-This model converts natural language questions into SQL queries. It was fine-tuned using:
+This model converts natural language questions into SQL queries.
+It was fine-tuned using:
 - **Base Model**: {base_model}
 - **Training Method**: GRPO with QLoRA
 - **Dataset**: b-mc2/sql-create-context
@@ -105,7 +123,8 @@ print(sql)
 - **Training Data**: ~78k SQL examples from b-mc2/sql-create-context
 - **Hardware**: NVIDIA A100 40GB
 - **Optimization**: QLoRA (4-bit quantization)
-- **Reward Function**: Custom SQL validation rubric (syntax, keywords, format)
+- **Reward Function**: Custom SQL validation rubric
+  (syntax, keywords, format)
 - **GRPO Parameters**:
   - Learning rate: 5e-6
   - Num generations: 4
@@ -113,7 +132,9 @@ print(sql)
 
 ## Evaluation
 
-See the [GitHub repository](https://github.com/chrisjcc/text-to-sql-refine-tuning) for detailed evaluation metrics and benchmarks.
+See the [GitHub repository](
+https://github.com/chrisjcc/text-to-sql-refine-tuning) for detailed
+evaluation metrics and benchmarks.
 
 ## Limitations
 
@@ -137,18 +158,34 @@ See the [GitHub repository](https://github.com/chrisjcc/text-to-sql-refine-tunin
 
 Apache 2.0
 """
-    return model_card
 
 
-def publish_model(model_path: str, repo_name: str, private: bool = True, token: str = None):  # type: ignore[assignment]
-    """
-    Publish model to HuggingFace Hub.
+def publish_model(
+    model_path: str,
+    repo_name: str,
+    private: bool = True,
+    token: str | None = None,
+) -> None:
+    """Publish model to HuggingFace Hub.
+
+    Creates a repository on HuggingFace Hub, generates a model card,
+    and uploads all model files.
 
     Args:
-        model_path: Path to model checkpoint
-        repo_name: Repository name on HuggingFace (username/model-name)
-        private: Whether to create private repository
-        token: HuggingFace API token (or use HF_TOKEN env var)
+        model_path: Path to the model checkpoint directory containing
+            model weights, configuration, and tokenizer files.
+        repo_name: Repository name on HuggingFace Hub in the format
+            "username/model-name".
+        private: Whether to create a private repository. Defaults to True.
+        token: HuggingFace API token for authentication. If None, uses
+            the HF_TOKEN environment variable.
+
+    Returns:
+        None. Uploads model to HuggingFace Hub and logs the repository URL.
+
+    Raises:
+        ValueError: If token is None and HF_TOKEN environment variable
+            is not set.
     """
     logger.info(f"Publishing model to HuggingFace Hub: {repo_name}")
 
@@ -170,7 +207,7 @@ def publish_model(model_path: str, repo_name: str, private: bool = True, token: 
     model_card = create_model_card(model_path, repo_name)
 
     model_card_path = Path(model_path) / "README.md"
-    with open(model_card_path, "w") as f:
+    with model_card_path.open("w") as f:
         f.write(model_card)
 
     # Upload model
@@ -186,9 +223,19 @@ def publish_model(model_path: str, repo_name: str, private: bool = True, token: 
     logger.info(f"View at: https://huggingface.co/{repo_name}")
 
 
-def main():
+def main() -> None:
+    """Parse command-line arguments and publish model to HuggingFace Hub.
+
+    Returns:
+        None. Executes the model publishing workflow based on CLI arguments.
+    """
     parser = argparse.ArgumentParser(description="Publish model to HuggingFace Hub")
-    parser.add_argument("--model-path", type=str, required=True, help="Path to model checkpoint")
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        required=True,
+        help="Path to model checkpoint",
+    )
     parser.add_argument(
         "--repo-name",
         type=str,
@@ -201,12 +248,20 @@ def main():
         default=True,
         help="Make repository private",
     )
-    parser.add_argument("--token", type=str, default=None, help="HuggingFace API token")
+    parser.add_argument(
+        "--token",
+        type=str,
+        default=None,
+        help="HuggingFace API token",
+    )
 
     args = parser.parse_args()
 
     publish_model(
-        model_path=args.model_path, repo_name=args.repo_name, private=args.private, token=args.token
+        model_path=args.model_path,
+        repo_name=args.repo_name,
+        private=args.private,
+        token=args.token,
     )
 
 

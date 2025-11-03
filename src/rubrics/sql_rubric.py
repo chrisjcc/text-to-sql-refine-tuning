@@ -6,7 +6,8 @@ presence, and format quality.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+import re
+from typing import Any
 
 import sqlparse
 from sqlparse.exceptions import SQLParseError
@@ -27,6 +28,15 @@ class SQLValidationRubric:
     Returns scores between 0.0 and 1.0, with higher scores indicating
     better quality SQL generation.
 
+    Attributes:
+        sql_keywords: List of SQL keywords to check for.
+        syntax_weight: Weight for syntax validity score.
+        keyword_weight: Weight for keyword presence score.
+        format_weight: Weight for format quality score.
+        parser: SQLParser instance for extraction.
+        strict_mode: If True, syntax errors return 0.0 immediately.
+        normalize_sql: Whether to normalize SQL before validation.
+
     Examples:
         >>> rubric = SQLValidationRubric()
         >>> score = rubric.score("SELECT * FROM users WHERE id = 1")
@@ -41,24 +51,34 @@ class SQLValidationRubric:
 
     def __init__(
         self,
-        sql_keywords: Optional[List[str]] = None,
+        sql_keywords: list[str] | None = None,
         syntax_weight: float = 0.4,
         keyword_weight: float = 0.3,
         format_weight: float = 0.3,
-        parser: Optional[SQLParser] = None,
+        parser: SQLParser | None = None,
         strict_mode: bool = False,
         normalize_sql: bool = True,
-    ):
+    ) -> None:
         """Initialize the SQL validation rubric.
 
         Args:
-            sql_keywords: List of SQL keywords to check for (uses defaults if None)
-            syntax_weight: Weight for syntax validity score (0.0-1.0)
-            keyword_weight: Weight for keyword presence score (0.0-1.0)
-            format_weight: Weight for format quality score (0.0-1.0)
-            parser: Optional SQLParser instance (creates default if None)
-            strict_mode: If True, syntax errors return 0.0 immediately
-            normalize_sql: Whether to normalize SQL before validation
+            sql_keywords: List of SQL keywords to check for. If None, uses
+                comprehensive default list. Defaults to None.
+            syntax_weight: Weight for syntax validity score (0.0-1.0).
+                Defaults to 0.4.
+            keyword_weight: Weight for keyword presence score (0.0-1.0).
+                Defaults to 0.3.
+            format_weight: Weight for format quality score (0.0-1.0).
+                Defaults to 0.3.
+            parser: Optional SQLParser instance. If None, creates default
+                parser. Defaults to None.
+            strict_mode: If True, syntax errors return 0.0 immediately.
+                Defaults to False.
+            normalize_sql: Whether to normalize SQL before validation.
+                Defaults to True.
+
+        Raises:
+            ValueError: If weights do not sum to 1.0 (within 0.01 tolerance).
         """
         # Default SQL keywords if not provided
         if sql_keywords is None:
@@ -88,13 +108,13 @@ class SQLValidationRubric:
                 "ON",
             ]
 
-        # Filter out non-string values (e.g., boolean true/false from config parsing)
+        # Filter out non-string values (e.g., boolean from config parsing)
         # and convert to uppercase
         self.sql_keywords = [kw.upper() for kw in sql_keywords if isinstance(kw, str)]
 
         # Validate weights sum to 1.0
         total_weight = syntax_weight + keyword_weight + format_weight
-        if not (0.99 <= total_weight <= 1.01):  # Allow small floating point error
+        if not (0.99 <= total_weight <= 1.01):  # Allow small FP error
             raise ValueError(
                 f"Weights must sum to 1.0, got {total_weight} "
                 f"({syntax_weight} + {keyword_weight} + {format_weight})"
@@ -108,15 +128,16 @@ class SQLValidationRubric:
         self.strict_mode = strict_mode
         self.normalize_sql = normalize_sql
 
-    def score(self, output: str, reference: Optional[str] = None) -> float:
+    def score(self, output: str, reference: str | None = None) -> float:  # noqa: ARG002
         """Compute reward score for SQL output.
 
         Args:
-            output: Generated SQL output from the model
-            reference: Optional reference SQL (not currently used)
+            output: Generated SQL output from the model.
+            reference: Optional reference SQL. Currently unused but kept
+                for API compatibility. Defaults to None.
 
         Returns:
-            Score between 0.0 and 1.0
+            Score between 0.0 and 1.0 based on syntax, keywords, and format.
         """
         if not output or not isinstance(output, str):
             return 0.0
@@ -150,13 +171,28 @@ class SQLValidationRubric:
         # Ensure score is in valid range
         return max(0.0, min(1.0, total_score))
 
-    def _has_meaningful_tokens(self, statement) -> bool:
-        """Check if statement has at least one meaningful token."""
+    def _has_meaningful_tokens(self, statement: Any) -> bool:
+        """Check if statement has at least one meaningful token.
+
+        Args:
+            statement: Parsed SQL statement from sqlparse.
+
+        Returns:
+            True if statement has meaningful (non-whitespace) tokens.
+        """
         meaningful_tokens = [t for t in statement.tokens if not t.is_whitespace and str(t).strip()]
         return len(meaningful_tokens) > 0
 
-    def _check_syntax_error_patterns(self, sql: str) -> Tuple[bool, float]:
-        """Check for common syntax error patterns."""
+    def _check_syntax_error_patterns(self, sql: str) -> tuple[bool, float]:
+        """Check for common syntax error patterns.
+
+        Args:
+            sql: SQL query string.
+
+        Returns:
+            Tuple of (is_valid, score) where is_valid is False if common
+            typos are found.
+        """
         sql_upper = sql.upper()
         error_patterns = [
             "FORM ",  # Common typo of FROM
@@ -168,16 +204,16 @@ class SQLValidationRubric:
                 return False, 0.15  # Minimal partial credit for attempt
         return True, 1.0
 
-    def check_syntax(self, sql: str) -> Tuple[bool, float]:
+    def check_syntax(self, sql: str) -> tuple[bool, float]:
         """Validate SQL syntax using sqlparse.
 
         Args:
-            sql: SQL query string
+            sql: SQL query string to validate.
 
         Returns:
             Tuple of (is_valid, score) where:
-                - is_valid: True if SQL parses without errors
-                - score: Float between 0.0 and 1.0
+            - is_valid: True if SQL parses without errors
+            - score: Float between 0.0 and 1.0
         """
         if not sql or not isinstance(sql, str):
             return False, 0.0
@@ -206,10 +242,15 @@ class SQLValidationRubric:
             logger.debug(f"Unexpected error parsing SQL: {e}")
             return False, 0.0
 
-    def _find_keywords_in_sql(self, sql_upper: str) -> list:
-        """Find all matching keywords in the SQL string."""
-        import re
+    def _find_keywords_in_sql(self, sql_upper: str) -> list[str]:
+        """Find all matching keywords in the SQL string.
 
+        Args:
+            sql_upper: Uppercase SQL query string.
+
+        Returns:
+            List of found keywords.
+        """
         keywords_found = []
         for keyword in self.sql_keywords:
             if keyword in sql_upper:
@@ -224,31 +265,46 @@ class SQLValidationRubric:
                         keywords_found.append(keyword)
         return keywords_found
 
-    def _score_keyword_diversity(self, keywords_found: list, sql_upper: str) -> float:
-        """Score based on keyword diversity."""
+    def _score_keyword_diversity(self, keywords_found: list[str], sql_upper: str) -> float:
+        """Score based on keyword diversity.
+
+        Args:
+            keywords_found: List of keywords found in SQL.
+            sql_upper: Uppercase SQL query string.
+
+        Returns:
+            Score between 0.0 and 1.0 based on keyword diversity.
+        """
         if not keywords_found:
-            if any(kw in sql_upper for kw in ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE"]):
+            query_types = [
+                "SELECT",
+                "INSERT",
+                "UPDATE",
+                "DELETE",
+                "CREATE",
+            ]
+            if any(kw in sql_upper for kw in query_types):
                 return 0.3
             return 0.0
 
         num_keywords = len(keywords_found)
         if num_keywords >= 5:
             return 1.0
-        elif num_keywords >= 3:
+        if num_keywords >= 3:
             return 0.75
-        elif num_keywords >= 2:
+        if num_keywords >= 2:
             return 0.6
-        else:
-            return 0.5
+        return 0.5
 
     def check_keywords(self, sql: str) -> float:
         """Score based on SQL keyword presence.
 
         Args:
-            sql: SQL query string
+            sql: SQL query string.
 
         Returns:
-            Score between 0.0 and 1.0 based on keyword presence
+            Score between 0.0 and 1.0 based on keyword presence and
+            diversity.
         """
         if not sql or not isinstance(sql, str):
             return 0.0
@@ -260,11 +316,13 @@ class SQLValidationRubric:
     def check_format(self, output: str) -> float:
         """Score output format quality.
 
+        Evaluates extraction quality, length, truncation, and structure.
+
         Args:
-            output: Raw output from model
+            output: Raw output from model.
 
         Returns:
-            Score between 0.0 and 1.0
+            Score between 0.0 and 1.0 based on format quality.
         """
         if not output or not isinstance(output, str):
             return 0.0
@@ -300,16 +358,16 @@ class SQLValidationRubric:
             score += 0.1  # Minimal credit for short queries
 
         # 3. SQL is not truncated (doesn't end mid-word)
-        if sql and not sql.endswith(("...", "\u2026")):  # Regular and Unicode ellipsis
+        # Regular and Unicode ellipsis
+        if sql and not sql.endswith(("...", "\u2026")):
             score += 0.15
         else:
             score += 0.05
 
-        # 4. SQL has proper structure (has both query type and table reference)
+        # 4. SQL has proper structure (has both query type and table ref)
         sql_upper = sql.upper()
-        has_query_type = any(
-            kw in sql_upper for kw in ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE"]
-        )
+        query_types = ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE"]
+        has_query_type = any(kw in sql_upper for kw in query_types)
         has_table_ref = "FROM" in sql_upper or "INTO" in sql_upper or "TABLE" in sql_upper
 
         if has_query_type and has_table_ref:
@@ -319,14 +377,21 @@ class SQLValidationRubric:
 
         return min(1.0, score)
 
-    def get_detailed_scores(self, output: str) -> Dict[str, Any]:
+    def get_detailed_scores(self, output: str) -> dict[str, Any]:
         """Return breakdown of scoring components.
 
         Args:
-            output: Generated SQL output
+            output: Generated SQL output.
 
         Returns:
-            Dictionary with detailed scores for each component
+            Dictionary with detailed scores for each component:
+            - total: Overall weighted score
+            - syntax: Syntax validity score
+            - syntax_valid: Boolean syntax validity
+            - keywords: Keyword presence score
+            - format: Format quality score
+            - extracted_sql: Extracted SQL string or None
+            - weights: Dictionary of component weights
         """
         if not output or not isinstance(output, str):
             return {
@@ -377,15 +442,18 @@ class SQLValidationRubric:
         }
 
     def score_batch(
-        self, outputs: List[str], references: Optional[List[str]] = None
-    ) -> List[float]:
+        self,
+        outputs: list[str],
+        references: list[str] | None = None,  # noqa: ARG002
+    ) -> list[float]:
         """Score multiple outputs.
 
         Args:
-            outputs: List of generated SQL outputs
-            references: Optional list of reference SQLs (not currently used)
+            outputs: List of generated SQL outputs to score.
+            references: Optional list of reference SQLs. Currently unused
+                but kept for API compatibility. Defaults to None.
 
         Returns:
-            List of scores
+            List of scores corresponding to each output.
         """
         return [self.score(output) for output in outputs]

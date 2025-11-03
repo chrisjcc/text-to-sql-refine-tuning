@@ -3,14 +3,7 @@
 Tests for dataset loading, preprocessing, and GRPO formatting.
 """
 
-import sys
-from pathlib import Path
-
 import pytest
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from datasets import Dataset, DatasetDict  # noqa: E402
 
 from src.data.dataset_loader import SQLDatasetLoader  # noqa: E402
@@ -288,7 +281,7 @@ def test_grpo_formatting():
 
     # Create a mock tokenizer
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             # Simple word-based tokenization for testing
             return text.split()
 
@@ -336,7 +329,7 @@ def test_tokenization_validation():
     env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             return text.split()
 
     tokenizer = MockTokenizer()
@@ -344,7 +337,10 @@ def test_tokenization_validation():
 
     # Create a formatted dataset
     data = {
-        "prompt": ["This is a short prompt", "This is a much longer prompt with many words"],
+        "prompt": [
+            "This is a short prompt",
+            "This is a much longer prompt with many words",
+        ],
         "question": ["Q1", "Q2"],
         "schema": ["S1", "S2"],
     }
@@ -379,7 +375,7 @@ def test_evaluation_set_creation():
     env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             return text.split()
 
     tokenizer = MockTokenizer()
@@ -444,7 +440,7 @@ def test_full_pipeline():
     env = TextToSQLEnvironment(rubric=rubric, parser=parser, dataset=mock_dataset)
 
     class MockTokenizer:
-        def encode(self, text, add_special_tokens=True):
+        def encode(self, text, _add_special_tokens=True):
             return text.split()
 
     tokenizer = MockTokenizer()

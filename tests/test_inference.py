@@ -4,7 +4,6 @@ Tests for inference engine, CLI, and API components.
 """
 
 import json
-import os
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -62,7 +61,11 @@ def mock_environment():
     """Create a mock environment."""
     env = MagicMock()
     env.format_prompt.return_value = "Test prompt"
-    env.parse_response.return_value = {"sql": "SELECT * FROM users", "valid": True, "metadata": {}}
+    env.parse_response.return_value = {
+        "sql": "SELECT * FROM users",
+        "valid": True,
+        "metadata": {},
+    }
     return env
 
 
@@ -130,7 +133,8 @@ class TestInferenceEngine:
         )
 
         result = engine.generate_sql(
-            question="Show all users", schema="CREATE TABLE users (id INT, name VARCHAR)"
+            question="Show all users",
+            schema="CREATE TABLE users (id INT, name VARCHAR)",
         )
 
         assert "sql" in result
@@ -196,18 +200,17 @@ class TestInferenceEngine:
         from src.inference.inference_engine import SQLInferenceEngine
 
         # Create temp dir without adapter config (full model)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with (
-                patch("src.rubrics.sql_rubric.SQLValidationRubric"),
-                patch("src.environments.sql_env.TextToSQLEnvironment"),
-            ):
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch("src.rubrics.sql_rubric.SQLValidationRubric"),
+            patch("src.environments.sql_env.TextToSQLEnvironment"),
+        ):
+            _engine = SQLInferenceEngine(  # noqa: F841
+                model_path=tmpdir, base_model_name="test-model"
+            )
 
-                _engine = SQLInferenceEngine(  # noqa: F841
-                    model_path=tmpdir, base_model_name="test-model"
-                )
-
-                # Verify full model loading was called
-                mock_torch_and_transformers["model"].from_pretrained.assert_called()
+            # Verify full model loading was called
+            mock_torch_and_transformers["model"].from_pretrained.assert_called()
 
     def test_sql_parsing(self, temp_model_dir, mock_environment, mock_torch_and_transformers):
         """Test SQL parsing in results."""
@@ -307,7 +310,7 @@ class TestAPI:
         assert response.status_code == 200
         assert response.json() == {"status": "healthy"}
 
-    def test_api_generate_endpoint(self, mock_environment, mock_parser, temp_model_dir):
+    def test_api_generate_endpoint(self, _mock_environment, _mock_parser, _temp_model_dir):
         """Test generate endpoint."""
         from fastapi.testclient import TestClient
 
@@ -326,7 +329,10 @@ class TestAPI:
 
         response = client.post(
             "/generate",
-            json={"question": "Show all users", "schema": "CREATE TABLE users (id INT)"},
+            json={
+                "question": "Show all users",
+                "schema": "CREATE TABLE users (id INT)",
+            },
         )
 
         assert response.status_code == 200
@@ -365,7 +371,8 @@ class TestAPI:
         client = TestClient(app)
 
         response = client.post(
-            "/batch_generate", json={"questions": ["Show all users", "Show all products"]}
+            "/batch_generate",
+            json={"questions": ["Show all users", "Show all products"]},
         )
 
         assert response.status_code == 200
@@ -417,7 +424,7 @@ class TestCLI:
             cli.load_schema_from_file(temp_path)
             assert cli.schema == "CREATE TABLE users (id INT)"
         finally:
-            os.unlink(temp_path)
+            Path(temp_path).unlink()
 
     def test_cli_generate(self):
         """Test CLI generate method."""

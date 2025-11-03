@@ -49,7 +49,7 @@ dev = [
     "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "isort>=5.12.0",
-    "flake8>=6.0.0",
+    "ruff>=0.6.0",
     "mypy>=1.0.0",
 ]
 
@@ -61,13 +61,15 @@ Repository = "https://github.com/chrisjcc/text-to-sql-fine-tuning"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# ---------------------------------------------------------------------
+# Black configuration
+# ---------------------------------------------------------------------
 [tool.black]
 line-length = 100
 target-version = ['py310', 'py311']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
-  # directories
   \.eggs
   | \.git
   | \.hg
@@ -81,18 +83,64 @@ extend-exclude = '''
 )/
 '''
 
+# ---------------------------------------------------------------------
+# isort configuration
+# ---------------------------------------------------------------------
 [tool.isort]
 profile = "black"
 line_length = 100
-skip_gitignore = true
-known_third_party = ["torch", "transformers", "datasets", "trl", "peft"]
+# Skip isort entirely - let Ruff handle import sorting
+skip_glob = ["*"]
 
+# ---------------------------------------------------------------------
+# Ruff configuration
+# ---------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+# Keep I in select to match CI requirements
+ignore = []
+
+# Match CI `--select=E,F,I,N,W,UP,B,A,C4,DTZ,T20,RET,SIM,ARG,PTH,PD,NPY`
+select = [
+    "E","F","I","N","W","UP","B","A","C4","DTZ","T20",
+    "RET","SIM","ARG","PTH","PD","NPY"
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "scripts", "tests"]
+known-third-party = [
+    "torch", "transformers", "datasets", "trl", "peft",
+    "bitsandbytes", "hydra", "omegaconf", "wandb", "sqlparse",
+    "numpy", "pandas", "tqdm", "verifiers"
+]
+combine-as-imports = true
+force-sort-within-sections = false
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+# ---------------------------------------------------------------------
+# Mypy configuration
+# ---------------------------------------------------------------------
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
+strict_optional = true
+no_implicit_optional = true
+show_error_codes = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
 
+# ---------------------------------------------------------------------
+# Pytest + Coverage configuration
+# ---------------------------------------------------------------------
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

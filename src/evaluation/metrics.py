@@ -1,50 +1,60 @@
-"""
-Comprehensive SQL evaluation metrics.
+"""Comprehensive SQL evaluation metrics.
+
+This module provides a comprehensive set of metrics for evaluating SQL
+generation quality, including exact match, token accuracy, structural
+similarity, and optional execution-based metrics.
 """
 
 import logging
 from collections import Counter
 from difflib import SequenceMatcher
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import sqlparse
 
 
 class SQLMetrics:
-    """
-    Comprehensive SQL evaluation metrics.
+    """Comprehensive SQL evaluation metrics.
+
+    Provides various metrics for evaluating SQL query quality without
+    requiring database execution, including exact match, token-level
+    accuracy, structural similarity, and complexity analysis.
+
+    Attributes:
+        logger: Logger instance for this class.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize metrics calculator."""
         self.logger = logging.getLogger(__name__)
 
     def exact_match(self, predicted: str, reference: str) -> bool:
-        """
-        Exact match after normalization.
+        """Exact match after normalization.
 
         Args:
-            predicted: Predicted SQL query
-            reference: Reference SQL query
+            predicted: Predicted SQL query.
+            reference: Reference SQL query.
 
         Returns:
-            True if queries match exactly
+            True if queries match exactly after normalization.
         """
         pred_norm = self._normalize_sql(predicted)
         ref_norm = self._normalize_sql(reference)
         return pred_norm == ref_norm
 
     def token_level_accuracy(self, predicted: str, reference: str) -> float:
-        """
-        Token-level accuracy (proportion of matching tokens).
+        """Token-level accuracy (proportion of matching tokens).
+
+        Computes accuracy based on token overlap, treating tokens as
+        unordered sets.
 
         Args:
-            predicted: Predicted SQL query
-            reference: Reference SQL query
+            predicted: Predicted SQL query.
+            reference: Reference SQL query.
 
         Returns:
-            Accuracy score [0.0, 1.0]
+            Accuracy score in range [0.0, 1.0].
         """
         pred_tokens = self._tokenize_sql(predicted)
         ref_tokens = self._tokenize_sql(reference)
@@ -62,16 +72,17 @@ class SQLMetrics:
         return matching / total
 
     def structural_similarity(self, predicted: str, reference: str) -> float:
-        """
-        Measure structural similarity of SQL queries.
-        Compares clauses, joins, aggregations, etc.
+        """Measure structural similarity of SQL queries.
+
+        Compares structural components like clauses, joins, and
+        aggregations using set-based similarity.
 
         Args:
-            predicted: Predicted SQL query
-            reference: Reference SQL query
+            predicted: Predicted SQL query.
+            reference: Reference SQL query.
 
         Returns:
-            Similarity score [0.0, 1.0]
+            Similarity score in range [0.0, 1.0].
         """
         pred_struct = self._extract_structure(predicted)
         ref_struct = self._extract_structure(reference)
@@ -79,7 +90,7 @@ class SQLMetrics:
         scores = []
 
         # Compare each structural component
-        for key in ref_struct.keys():
+        for key in ref_struct:
             pred_val = pred_struct.get(key, set())
             ref_val = ref_struct.get(key, set())
 
@@ -95,16 +106,15 @@ class SQLMetrics:
 
         return float(np.mean(scores)) if scores else 0.0
 
-    def keyword_f1(self, predicted: str, reference: str) -> Dict[str, float]:
-        """
-        F1 score for SQL keywords (SELECT, FROM, WHERE, etc.).
+    def keyword_f1(self, predicted: str, reference: str) -> dict[str, float]:
+        """F1 score for SQL keywords (SELECT, FROM, WHERE, etc.).
 
         Args:
-            predicted: Predicted SQL query
-            reference: Reference SQL query
+            predicted: Predicted SQL query.
+            reference: Reference SQL query.
 
         Returns:
-            Dict with precision, recall, f1
+            Dictionary with 'precision', 'recall', and 'f1' scores.
         """
         pred_keywords = self._extract_keywords(predicted)
         ref_keywords = self._extract_keywords(reference)
@@ -126,19 +136,29 @@ class SQLMetrics:
             if (true_positives + false_negatives) > 0
             else 0.0
         )
-        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+        f1_denom = precision + recall
+        f1 = 2 * (precision * recall) / f1_denom if f1_denom > 0 else 0.0
 
         return {"precision": precision, "recall": recall, "f1": f1}
 
-    def complexity_score(self, sql: str) -> Dict[str, Any]:
-        """
-        Analyze SQL query complexity.
+    def complexity_score(self, sql: str) -> dict[str, Any]:
+        """Analyze SQL query complexity.
+
+        Computes a complexity score based on various SQL features like
+        joins, subqueries, aggregations, and conditions.
 
         Args:
-            sql: SQL query
+            sql: SQL query to analyze.
 
         Returns:
-            Dict with complexity metrics
+            Dictionary with complexity metrics including:
+            - num_tokens: Number of tokens in query
+            - num_tables: Number of tables referenced
+            - num_joins: Number of JOIN clauses
+            - has_subquery: Whether query contains subqueries
+            - has_aggregation: Whether query uses aggregation functions
+            - complexity_level: Classification (simple/medium/complex)
+            - complexity_score: Numerical complexity score
         """
         parsed = sqlparse.parse(sql)
 
@@ -148,16 +168,18 @@ class SQLMetrics:
         num_tokens = len(self._tokenize_sql(sql))
         num_tables = self._count_tables(sql)
         num_joins = sql.upper().count("JOIN")
-        has_subquery = (
-            "SELECT" in sql.upper()[sql.upper().find("FROM") :] if "FROM" in sql.upper() else False
-        )
-        has_aggregation = any(agg in sql.upper() for agg in ["SUM", "COUNT", "AVG", "MAX", "MIN"])
-        has_group_by = "GROUP BY" in sql.upper()
-        has_order_by = "ORDER BY" in sql.upper()
-        has_having = "HAVING" in sql.upper()
-        num_conditions = (
-            sql.upper().count("WHERE") + sql.upper().count("AND") + sql.upper().count("OR")
-        )
+
+        sql_upper = sql.upper()
+        from_pos = sql_upper.find("FROM")
+        has_subquery = "SELECT" in sql_upper[from_pos:] if "FROM" in sql_upper else False
+
+        agg_functions = ["SUM", "COUNT", "AVG", "MAX", "MIN"]
+        has_aggregation = any(agg in sql_upper for agg in agg_functions)
+
+        has_group_by = "GROUP BY" in sql_upper
+        has_order_by = "ORDER BY" in sql_upper
+        has_having = "HAVING" in sql_upper
+        num_conditions = sql_upper.count("WHERE") + sql_upper.count("AND") + sql_upper.count("OR")
 
         # Compute overall complexity score
         score = (
@@ -177,7 +199,7 @@ class SQLMetrics:
         else:
             complexity_level = "complex"
 
-        result = {
+        return {
             "num_tokens": num_tokens,
             "num_tables": num_tables,
             "num_joins": num_joins,
@@ -191,29 +213,32 @@ class SQLMetrics:
             "complexity_score": float(score),
         }
 
-        return result
-
     def edit_distance(self, predicted: str, reference: str) -> int:
-        """
-        Levenshtein edit distance between normalized SQL queries.
+        """Levenshtein edit distance between normalized SQL queries.
 
         Args:
-            predicted: Predicted SQL query
-            reference: Reference SQL query
+            predicted: Predicted SQL query.
+            reference: Reference SQL query.
 
         Returns:
-            Edit distance (lower is better)
+            Edit distance (lower is better).
         """
         pred_norm = self._normalize_sql(predicted)
         ref_norm = self._normalize_sql(reference)
 
         # Use difflib for similarity
-        return len(ref_norm) - int(
-            SequenceMatcher(None, pred_norm, ref_norm).ratio() * len(ref_norm)
-        )
+        similarity_ratio = SequenceMatcher(None, pred_norm, ref_norm).ratio()
+        return len(ref_norm) - int(similarity_ratio * len(ref_norm))
 
     def _normalize_sql(self, sql: str) -> str:
-        """Normalize SQL query for comparison."""
+        """Normalize SQL query for comparison.
+
+        Args:
+            sql: Raw SQL query.
+
+        Returns:
+            Normalized SQL string.
+        """
         import re
 
         # First use sqlparse for basic normalization
@@ -242,8 +267,15 @@ class SQLMetrics:
 
         return normalized.strip()
 
-    def _tokenize_sql(self, sql: str) -> List[str]:
-        """Tokenize SQL query."""
+    def _tokenize_sql(self, sql: str) -> list[str]:
+        """Tokenize SQL query.
+
+        Args:
+            sql: SQL query to tokenize.
+
+        Returns:
+            List of uppercase tokens.
+        """
         parsed = sqlparse.parse(sql)
         if not parsed:
             return []  # type: ignore[no-any-return]
@@ -256,11 +288,18 @@ class SQLMetrics:
 
         return tokens
 
-    def _extract_structure(self, sql: str) -> Dict[str, set]:
-        """Extract structural components of SQL query."""
+    def _extract_structure(self, sql: str) -> dict[str, set[str]]:
+        """Extract structural components of SQL query.
+
+        Args:
+            sql: SQL query to analyze.
+
+        Returns:
+            Dictionary mapping component names to sets of values.
+        """
         sql_upper = sql.upper()
 
-        structure: Dict[str, set] = {
+        structure: dict[str, set[str]] = {
             "select_columns": set(),
             "from_tables": set(),
             "join_tables": set(),
@@ -285,12 +324,19 @@ class SQLMetrics:
 
         # Extract aggregations
         aggs = ["SUM", "COUNT", "AVG", "MAX", "MIN"]
-        structure["aggregations"] = set(agg for agg in aggs if agg in sql_upper)
+        structure["aggregations"] = {agg for agg in aggs if agg in sql_upper}
 
         return structure
 
-    def _extract_keywords(self, sql: str) -> set:
-        """Extract SQL keywords."""
+    def _extract_keywords(self, sql: str) -> set[str]:
+        """Extract SQL keywords.
+
+        Args:
+            sql: SQL query.
+
+        Returns:
+            Set of SQL keywords found in the query.
+        """
         keywords = [
             "SELECT",
             "FROM",
@@ -320,10 +366,17 @@ class SQLMetrics:
         ]
 
         sql_upper = sql.upper()
-        return set(kw for kw in keywords if kw in sql_upper)
+        return {kw for kw in keywords if kw in sql_upper}
 
     def _count_tables(self, sql: str) -> int:
-        """Count number of tables in query."""
+        """Count number of tables in query.
+
+        Args:
+            sql: SQL query.
+
+        Returns:
+            Number of tables referenced in FROM and JOIN clauses.
+        """
         tokens = self._tokenize_sql(sql)
         count = 0
         for i, token in enumerate(tokens):
@@ -333,33 +386,44 @@ class SQLMetrics:
 
 
 class ExecutionMetrics:
-    """
-    Metrics based on SQL execution (requires database connection).
+    """Metrics based on SQL execution (requires database connection).
+
+    Provides execution-based evaluation by running queries against a
+    database and comparing results.
+
+    Attributes:
+        db_connection: Database connection for executing queries.
+        logger: Logger instance for this class.
     """
 
-    def __init__(self, db_connection=None):
-        """
-        Initialize execution metrics.
+    def __init__(self, db_connection: Any = None) -> None:
+        """Initialize execution metrics.
 
         Args:
-            db_connection: Database connection for executing queries
+            db_connection: Database connection for executing queries.
+                If None, execution methods will return error results.
         """
         self.db_connection = db_connection
         self.logger = logging.getLogger(__name__)
 
     def execution_accuracy(
         self, predicted: str, reference: str, timeout: int = 5
-    ) -> Dict[str, Any]:
-        """
-        Check if predicted SQL produces same results as reference.
+    ) -> dict[str, Any]:
+        """Check if predicted SQL produces same results as reference.
+
+        Executes both queries and compares their results.
 
         Args:
-            predicted: Predicted SQL query
-            reference: Reference SQL query
-            timeout: Query timeout in seconds
+            predicted: Predicted SQL query.
+            reference: Reference SQL query.
+            timeout: Query timeout in seconds. Defaults to 5.
 
         Returns:
-            Dict with execution_match, error info
+            Dictionary containing:
+            - execution_match: Whether results match (or None if error)
+            - predicted_executable: Whether predicted query executed
+            - reference_executable: Whether reference query executed
+            - error: Error message if any
         """
         if self.db_connection is None:
             return {
@@ -401,14 +465,38 @@ class ExecutionMetrics:
                 "reference_executable": None,
             }
 
-    def _execute_query(self, sql: str, timeout: int) -> Dict:
-        """Execute SQL query and return results."""
+    def _execute_query(self, sql: str, timeout: int) -> dict[str, Any]:
+        """Execute SQL query and return results.
+
+        Args:
+            sql: SQL query to execute.
+            timeout: Query timeout in seconds.
+
+        Returns:
+            Dictionary with execution results.
+
+        Raises:
+            NotImplementedError: This is a placeholder method that must
+                be implemented for specific database types.
+        """
         # Implementation depends on database type
         # This is a placeholder
         raise NotImplementedError("Database execution not implemented")
 
-    def _compare_results(self, result1, result2) -> bool:
-        """Compare query results."""
+    def _compare_results(self, result1: Any, result2: Any) -> bool:
+        """Compare query results.
+
+        Args:
+            result1: First query result.
+            result2: Second query result.
+
+        Returns:
+            True if results match.
+
+        Raises:
+            NotImplementedError: This is a placeholder method that must
+                be implemented for specific result formats.
+        """
         # Implementation depends on result format
         # This is a placeholder
         raise NotImplementedError("Result comparison not implemented")

@@ -6,7 +6,7 @@ with support for parallel processing and caching.
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .sql_rubric import SQLValidationRubric
 
@@ -18,6 +18,13 @@ class BatchSQLScorer:
 
     Supports parallel processing for faster scoring of large batches
     during training. Provides both simple scores and detailed metadata.
+
+    Attributes:
+        rubric: SQLValidationRubric instance to use for scoring.
+        max_workers: Maximum number of parallel workers.
+        use_parallel: Whether to use parallel processing for large batches.
+        _cache: Cache for repeated query scores.
+        _cache_enabled: Whether caching is currently enabled.
 
     Examples:
         >>> rubric = SQLValidationRubric()
@@ -35,53 +42,67 @@ class BatchSQLScorer:
     def __init__(
         self,
         rubric: SQLValidationRubric,
-        max_workers: Optional[int] = None,
+        max_workers: int | None = None,
         use_parallel: bool = True,
-    ):
+    ) -> None:
         """Initialize the batch scorer.
 
         Args:
-            rubric: SQLValidationRubric instance to use for scoring
-            max_workers: Maximum number of parallel workers (None = auto)
-            use_parallel: Whether to use parallel processing for large batches
+            rubric: SQLValidationRubric instance to use for scoring.
+            max_workers: Maximum number of parallel workers. If None,
+                uses default ThreadPoolExecutor behavior. Defaults to None.
+            use_parallel: Whether to use parallel processing for large
+                batches (>10 items). Defaults to True.
         """
         self.rubric = rubric
         self.max_workers = max_workers
         self.use_parallel = use_parallel
 
         # Cache for repeated queries (useful during evaluation)
-        self._cache: Dict[str, float] = {}
+        self._cache: dict[str, float] = {}
         self._cache_enabled = False
 
-    def enable_cache(self, enabled: bool = True):
+    def enable_cache(self, enabled: bool = True) -> None:
         """Enable or disable result caching.
 
         Args:
-            enabled: Whether to enable caching
+            enabled: Whether to enable caching. Defaults to True.
+
+        Returns:
+            None. Clears cache if disabled.
         """
         self._cache_enabled = enabled
         if not enabled:
             self._cache.clear()
 
-    def clear_cache(self):
-        """Clear the scoring cache."""
+    def clear_cache(self) -> None:
+        """Clear the scoring cache.
+
+        Returns:
+            None. Removes all cached scores.
+        """
         self._cache.clear()
 
     def score_batch(
         self,
-        outputs: List[str],
-        references: Optional[List[str]] = None,
+        outputs: list[str],
+        references: list[str] | None = None,
         use_cache: bool = False,
-    ) -> List[float]:
+    ) -> list[float]:
         """Score multiple outputs efficiently.
 
+        Automatically chooses between sequential and parallel scoring
+        based on batch size.
+
         Args:
-            outputs: List of generated SQL outputs
-            references: Optional list of reference SQLs (not currently used)
-            use_cache: Whether to use caching for this batch
+            outputs: List of generated SQL outputs to score.
+            references: Optional list of reference SQLs. Currently unused
+                in scoring. Defaults to None.
+            use_cache: Whether to use caching for this batch.
+                Defaults to False.
 
         Returns:
-            List of scores (one per output)
+            List of scores (one per output), values in range [0.0, 1.0].
         """
         if not outputs:
             return []
@@ -92,24 +113,23 @@ class BatchSQLScorer:
 
         if should_parallelize:
             return self._score_parallel(outputs, references, use_cache)
-        else:
-            return self._score_sequential(outputs, references, use_cache)
+        return self._score_sequential(outputs, references, use_cache)
 
     def _score_sequential(
         self,
-        outputs: List[str],
-        references: Optional[List[str]],
+        outputs: list[str],
+        references: list[str] | None,
         use_cache: bool,
-    ) -> List[float]:
+    ) -> list[float]:
         """Score outputs sequentially.
 
         Args:
-            outputs: List of outputs
-            references: Optional references
-            use_cache: Whether to use cache
+            outputs: List of outputs to score.
+            references: Optional references (unused).
+            use_cache: Whether to use cache.
 
         Returns:
-            List of scores
+            List of scores.
         """
         scores = []
 
@@ -133,21 +153,22 @@ class BatchSQLScorer:
 
     def _score_parallel(
         self,
-        outputs: List[str],
-        references: Optional[List[str]],
+        outputs: list[str],
+        references: list[str] | None,
         use_cache: bool,
-    ) -> List[float]:
+    ) -> list[float]:
         """Score outputs in parallel.
 
         Args:
-            outputs: List of outputs
-            references: Optional references
-            use_cache: Whether to use cache
+            outputs: List of outputs to score.
+            references: Optional references (unused).
+            use_cache: Whether to use cache.
 
         Returns:
-            List of scores
+            List of scores.
         """
-        scores: List[float] = [0.0] * len(outputs)  # Pre-allocate list with default values
+        # Pre-allocate list with default values
+        scores: list[float] = [0.0] * len(outputs)
         tasks = []
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -181,19 +202,22 @@ class BatchSQLScorer:
 
     def score_with_metadata(
         self,
-        outputs: List[str],
-        references: Optional[List[str]] = None,
+        outputs: list[str],
+        references: list[str] | None = None,
         include_extracted_sql: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return scores with detailed metadata for logging.
 
         Args:
-            outputs: List of generated SQL outputs
-            references: Optional list of reference SQLs
-            include_extracted_sql: Whether to include extracted SQL in metadata
+            outputs: List of generated SQL outputs to score.
+            references: Optional list of reference SQLs for comparison.
+                Defaults to None.
+            include_extracted_sql: Whether to include extracted SQL in
+                metadata. Defaults to True.
 
         Returns:
             List of dictionaries containing detailed scores and metadata
+            for each output.
         """
         if not outputs:
             return []
@@ -229,7 +253,7 @@ class BatchSQLScorer:
 
             except Exception as e:
                 logger.error(f"Error getting metadata for output {i}: {e}")
-                error_metadata: Dict[str, Any] = {
+                error_metadata: dict[str, Any] = {
                     "index": i,
                     "total": 0.0,
                     "syntax": 0.0,
@@ -250,19 +274,20 @@ class BatchSQLScorer:
 
     def compute_batch_statistics(
         self,
-        outputs: List[str],
-        references: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        outputs: list[str],
+        references: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Compute aggregate statistics for a batch.
 
         Useful for logging to WandB or other monitoring systems.
 
         Args:
-            outputs: List of generated SQL outputs
-            references: Optional list of reference SQLs
+            outputs: List of generated SQL outputs.
+            references: Optional list of reference SQLs. Defaults to None.
 
         Returns:
-            Dictionary with aggregate statistics
+            Dictionary with aggregate statistics including mean, std,
+            min, max, median scores and validity rates.
         """
         if not outputs:
             return {
@@ -301,21 +326,22 @@ class BatchSQLScorer:
 
     def score_and_log(
         self,
-        outputs: List[str],
-        references: Optional[List[str]] = None,
+        outputs: list[str],
+        references: list[str] | None = None,
         log_to_wandb: bool = False,
         wandb_prefix: str = "eval",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Score batch and optionally log to WandB.
 
         Args:
-            outputs: List of outputs
-            references: Optional references
-            log_to_wandb: Whether to log to WandB
-            wandb_prefix: Prefix for WandB metrics
+            outputs: List of outputs to score.
+            references: Optional references. Defaults to None.
+            log_to_wandb: Whether to log statistics to WandB.
+                Defaults to False.
+            wandb_prefix: Prefix for WandB metric names. Defaults to "eval".
 
         Returns:
-            Dictionary with statistics
+            Dictionary with batch statistics.
         """
         stats = self.compute_batch_statistics(outputs, references)
 
@@ -325,9 +351,7 @@ class BatchSQLScorer:
 
                 # Create metrics dict with prefix
                 metrics = {
-                    f"{wandb_prefix}/{k}": v
-                    for k, v in stats.items()
-                    if isinstance(v, (int, float))
+                    f"{wandb_prefix}/{k}": v for k, v in stats.items() if isinstance(v, int | float)
                 }
 
                 wandb.log(metrics)
