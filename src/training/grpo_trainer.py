@@ -5,7 +5,7 @@ integrating environment, rubric, and evaluation components.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from datasets import Dataset
 from trl import GRPOConfig, GRPOTrainer
@@ -17,9 +17,22 @@ logger = logging.getLogger(__name__)
 
 
 class SQLGRPOTrainer:
-    """
-    Wrapper around TRL's GRPOTrainer for text-to-SQL fine-tuning.
-    Handles environment integration, reward computation, and evaluation.
+    """Wrapper around TRL's GRPOTrainer for text-to-SQL fine-tuning.
+
+    Handles environment integration, reward computation, and evaluation
+    for training text-to-SQL models using GRPO (Group Relative Policy
+    Optimization).
+
+    Attributes:
+        model: Pre-trained model with PEFT adapters.
+        tokenizer: Tokenizer for the model.
+        environment: Text-to-SQL environment for prompting.
+        rubric: SQL validation rubric for computing rewards.
+        train_dataset: Training dataset.
+        eval_dataset: Optional evaluation dataset.
+        logger: Logger instance for this class.
+        config: GRPO training configuration.
+        trainer: Underlying TRL GRPOTrainer instance.
     """
 
     def __init__(
@@ -29,22 +42,22 @@ class SQLGRPOTrainer:
         environment: TextToSQLEnvironment,
         rubric: SQLValidationRubric,
         train_dataset: Dataset,
-        eval_dataset: Optional[Dataset] = None,
-        config: Optional[GRPOConfig] = None,
-        **kwargs,
-    ):
-        """
-        Initialize GRPO trainer.
+        eval_dataset: Dataset | None = None,
+        config: GRPOConfig | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize GRPO trainer.
 
         Args:
-            model: Pre-trained model with PEFT adapters
-            tokenizer: Tokenizer
-            environment: Text-to-SQL environment for prompting
-            rubric: SQL validation rubric for rewards
-            train_dataset: Training dataset
-            eval_dataset: Evaluation dataset
-            config: GRPO training configuration
-            **kwargs: Additional arguments for GRPOTrainer
+            model: Pre-trained model with PEFT adapters for fine-tuning.
+            tokenizer: Tokenizer compatible with the model.
+            environment: Text-to-SQL environment for prompt formatting and
+                response processing.
+            rubric: SQL validation rubric for computing reward scores.
+            train_dataset: Training dataset with prompts and references.
+            eval_dataset: Optional evaluation dataset. Defaults to None.
+            config: GRPO training configuration. If None, uses default config.
+            **kwargs: Additional arguments passed to GRPOTrainer.
         """
         self.model = model
         self.tokenizer = tokenizer
@@ -76,7 +89,11 @@ class SQLGRPOTrainer:
         self.logger.info("SQLGRPOTrainer initialized")
 
     def create_default_config(self) -> GRPOConfig:
-        """Create default GRPO configuration."""
+        """Create default GRPO configuration.
+
+        Returns:
+            GRPOConfig with sensible defaults for text-to-SQL training.
+        """
         return GRPOConfig(
             output_dir="./outputs",
             num_train_epochs=3,
@@ -93,19 +110,26 @@ class SQLGRPOTrainer:
             num_generations=4,
         )
 
-    def compute_rewards(self, prompts: List[str], responses: List[str], **kwargs) -> List[float]:
-        """
-        Compute rewards for generated responses.
+    def compute_rewards(
+        self,
+        prompts: list[str],  # noqa: ARG002
+        responses: list[str],
+        **kwargs: Any,  # noqa: ARG002
+    ) -> list[float]:
+        """Compute rewards for generated responses.
 
-        This function is called by GRPOTrainer during training.
+        This function is called by GRPOTrainer during training to evaluate
+        the quality of generated SQL queries.
 
         Args:
-            prompts: List of input prompts
-            responses: List of model-generated responses
-            **kwargs: Additional context
+            prompts: List of input prompts. Currently unused but required
+                by GRPOTrainer interface.
+            responses: List of model-generated SQL responses to score.
+            **kwargs: Additional context from trainer. Currently unused.
 
         Returns:
-            List of reward scores [0.0, 1.0]
+            List of reward scores in range [0.0, 1.0] corresponding to
+            each response.
         """
         # Use rubric to score SQL outputs
         rewards = self.rubric.score_batch(responses)
@@ -123,8 +147,14 @@ class SQLGRPOTrainer:
 
         return rewards  # type: ignore[no-any-return]
 
-    def train(self):
-        """Run GRPO training."""
+    def train(self) -> None:
+        """Run GRPO training.
+
+        Executes the full training loop using the underlying GRPOTrainer.
+
+        Returns:
+            None. Trains model in-place and logs progress.
+        """
         self.logger.info("Starting GRPO training")
         self.logger.info(f"Training samples: {len(self.train_dataset)}")
         if self.eval_dataset:
@@ -135,15 +165,15 @@ class SQLGRPOTrainer:
 
         self.logger.info("Training complete")
 
-    def evaluate(self, dataset: Optional[Dataset] = None) -> Dict[str, float]:
-        """
-        Run evaluation on dataset.
+    def evaluate(self, dataset: Dataset | None = None) -> dict[str, float]:
+        """Run evaluation on dataset.
 
         Args:
-            dataset: Dataset to evaluate (uses eval_dataset if None)
+            dataset: Dataset to evaluate. If None, uses the evaluation
+                dataset provided during initialization. Defaults to None.
 
         Returns:
-            Dict of evaluation metrics
+            Dictionary of evaluation metrics from the trainer.
         """
         if dataset is None:
             dataset = self.eval_dataset
@@ -155,17 +185,32 @@ class SQLGRPOTrainer:
         self.logger.info(f"Evaluating on {len(dataset)} samples")
 
         # Run evaluation
-        metrics = self.trainer.evaluate(eval_dataset=dataset)
+        return self.trainer.evaluate(eval_dataset=dataset)  # type: ignore[no-any-return]
 
-        return metrics  # type: ignore[no-any-return]
+    def save_model(self, output_dir: str) -> None:
+        """Save trained model and adapters.
 
-    def save_model(self, output_dir: str):
-        """Save trained model and adapters."""
+        Args:
+            output_dir: Directory path where model and tokenizer will
+                be saved.
+
+        Returns:
+            None. Saves model files to disk.
+        """
         self.logger.info(f"Saving model to {output_dir}")
         self.trainer.save_model(output_dir)
         self.tokenizer.save_pretrained(output_dir)
 
-    def push_to_hub(self, repo_id: str, **kwargs):
-        """Push model to HuggingFace Hub."""
+    def push_to_hub(self, repo_id: str, **kwargs: Any) -> None:
+        """Push model to HuggingFace Hub.
+
+        Args:
+            repo_id: Repository ID on HuggingFace Hub in format
+                "username/model-name".
+            **kwargs: Additional arguments passed to push_to_hub method.
+
+        Returns:
+            None. Uploads model to HuggingFace Hub.
+        """
         self.logger.info(f"Pushing model to Hub: {repo_id}")
         self.trainer.push_to_hub(repo_id=repo_id, **kwargs)

@@ -1,11 +1,14 @@
-"""
-Comprehensive SQL evaluation engine.
+"""Comprehensive SQL evaluation engine.
+
+This module provides a comprehensive evaluation framework for SQL generation
+models, including metrics computation, stratified analysis, and report
+generation.
 """
 
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pandas as pd
 from tqdm import tqdm
@@ -15,23 +18,34 @@ from src.inference.inference_engine import SQLInferenceEngine
 
 
 class SQLEvaluator:
-    """
-    Comprehensive SQL evaluation engine.
+    """Comprehensive SQL evaluation engine.
+
+    Provides end-to-end evaluation capabilities including prediction
+    generation, metrics computation, and detailed report generation with
+    complexity-stratified analysis.
+
+    Attributes:
+        engine: Inference engine for generating SQL predictions.
+        metrics: SQL metrics calculator for evaluation.
+        execution_metrics: Optional execution-based metrics calculator.
+        logger: Logger instance for this class.
     """
 
     def __init__(
         self,
         inference_engine: SQLInferenceEngine,
-        metrics: Optional[SQLMetrics] = None,
-        execution_metrics: Optional[ExecutionMetrics] = None,
-    ):
-        """
-        Initialize evaluator.
+        metrics: SQLMetrics | None = None,
+        execution_metrics: ExecutionMetrics | None = None,
+    ) -> None:
+        """Initialize evaluator.
 
         Args:
-            inference_engine: Engine for generating predictions
-            metrics: SQL metrics calculator
-            execution_metrics: Execution-based metrics (optional)
+            inference_engine: Engine for generating SQL predictions from
+                natural language questions.
+            metrics: SQL metrics calculator. If None, creates default
+                SQLMetrics instance.
+            execution_metrics: Optional execution-based metrics calculator
+                for database execution validation. Defaults to None.
         """
         self.engine = inference_engine
         self.metrics = metrics or SQLMetrics()
@@ -40,46 +54,63 @@ class SQLEvaluator:
 
     def evaluate_dataset(
         self,
-        dataset: List[Dict],
+        dataset: list[dict[str, Any]],
         batch_size: int = 8,
         compute_execution: bool = False,
-        **generation_kwargs,
-    ) -> Dict[str, Any]:
-        """
-        Evaluate model on dataset with comprehensive metrics.
+        **generation_kwargs: Any,
+    ) -> dict[str, Any]:
+        """Evaluate model on dataset with comprehensive metrics.
+
+        Generates predictions for all samples, computes metrics, and
+        produces aggregate and per-sample results.
 
         Args:
-            dataset: List of dicts with 'question', 'schema', 'sql'
-            batch_size: Batch size for generation
-            compute_execution: Whether to compute execution accuracy
-            **generation_kwargs: Generation parameters
+            dataset: List of dictionaries with 'question', 'schema', and
+                'sql' keys.
+            batch_size: Batch size for generation. Defaults to 8.
+            compute_execution: Whether to compute execution accuracy by
+                running queries against database. Defaults to False.
+            **generation_kwargs: Additional generation parameters passed to
+                inference engine (e.g., temperature, top_p).
 
         Returns:
-            Dict with aggregate metrics and per-sample results
+            Dictionary containing:
+            - aggregate: Overall metrics across all samples
+            - by_complexity: Metrics stratified by SQL complexity
+            - per_sample: Individual results for each sample
+            - total_samples: Total number of evaluated samples
         """
         self.logger.info(f"Evaluating on {len(dataset)} samples")
 
         # Generate predictions
         questions = [item["question"] for item in dataset]
-        schemas = [item.get("schema") for item in dataset]  # type: ignore[misc]
+        schemas = [item["schema"] for item in dataset if item.get("schema") is not None]
         references = [item["sql"] for item in dataset]
 
         self.logger.info("Generating predictions...")
+
         predictions = self.engine.batch_generate_sql(
-            questions=questions, schemas=schemas, batch_size=batch_size, **generation_kwargs  # type: ignore[arg-type]
+            questions=questions,
+            schemas=schemas,
+            batch_size=batch_size,
+            **generation_kwargs,  # type: ignore[arg-type]
         )
 
         # Compute metrics for each sample
         self.logger.info("Computing metrics...")
         per_sample_results = []
 
-        for i, (pred, ref, item) in enumerate(
+        for _i, (pred, ref, item) in enumerate(
             tqdm(
-                zip(predictions, references, dataset), total=len(dataset), desc="Computing metrics"
+                zip(predictions, references, dataset, strict=True),
+                total=len(dataset),
+                desc="Computing metrics",
             )
         ):
             sample_metrics = self._compute_sample_metrics(
-                predicted=pred["sql"], reference=ref, compute_execution=compute_execution
+                predicted=pred["sql"],
+                reference=ref,
+                compute_execution=compute_execution,
             )
 
             sample_metrics.update(
@@ -109,15 +140,32 @@ class SQLEvaluator:
         }
 
     def _compute_sample_metrics(
-        self, predicted: str, reference: str, compute_execution: bool = False
-    ) -> Dict[str, Any]:
-        """Compute all metrics for a single sample."""
-        metrics_dict = {}
+        self,
+        predicted: str,
+        reference: str,
+        compute_execution: bool = False,
+    ) -> dict[str, Any]:
+        """Compute all metrics for a single sample.
+
+        Args:
+            predicted: Model-generated SQL query.
+            reference: Ground truth SQL query.
+            compute_execution: Whether to compute execution-based metrics.
+
+        Returns:
+            Dictionary containing all computed metrics for this sample.
+        """
+        metrics_dict: dict[str, Any] = {}
 
         # Basic metrics
-        metrics_dict["exact_match"] = float(self.metrics.exact_match(predicted, reference))  # type: ignore[assignment]
-        metrics_dict["token_accuracy"] = float(self.metrics.token_level_accuracy(predicted, reference))  # type: ignore[assignment]
-        metrics_dict["structural_similarity"] = float(self.metrics.structural_similarity(predicted, reference))  # type: ignore[assignment]
+        exact_match = self.metrics.exact_match(predicted, reference)
+        metrics_dict["exact_match"] = float(exact_match)  # type: ignore[assignment]
+
+        token_acc = self.metrics.token_level_accuracy(predicted, reference)
+        metrics_dict["token_accuracy"] = float(token_acc)  # type: ignore[assignment]
+
+        struct_sim = self.metrics.structural_similarity(predicted, reference)
+        metrics_dict["structural_similarity"] = float(struct_sim)  # type: ignore[assignment]
 
         # Keyword F1
         keyword_scores = self.metrics.keyword_f1(predicted, reference)
@@ -135,12 +183,13 @@ class SQLEvaluator:
 
         metrics_dict["predicted_complexity"] = pred_complexity["complexity_level"]
         metrics_dict["reference_complexity"] = ref_complexity["complexity_level"]
-        metrics_dict["complexity_match"] = int(
-            pred_complexity["complexity_level"] == ref_complexity["complexity_level"]
-        )  # type: ignore[assignment]
+        pred_level = pred_complexity["complexity_level"]
+        ref_level = ref_complexity["complexity_level"]
+        metrics_dict["complexity_match"] = int(pred_level == ref_level)  # type: ignore[assignment]
 
         # Edit distance
-        metrics_dict["edit_distance"] = int(self.metrics.edit_distance(predicted, reference))
+        edit_dist = self.metrics.edit_distance(predicted, reference)
+        metrics_dict["edit_distance"] = int(edit_dist)
 
         # Execution metrics (if enabled)
         if compute_execution and self.execution_metrics:
@@ -150,64 +199,89 @@ class SQLEvaluator:
 
         return metrics_dict
 
-    def _compute_aggregate_metrics(self, results: List[Dict]) -> Dict[str, float]:
-        """Compute aggregate metrics across all samples."""
-        df = pd.DataFrame(results)
+    def _compute_aggregate_metrics(self, results: list[dict[str, Any]]) -> dict[str, float]:
+        """Compute aggregate metrics across all samples.
+
+        Args:
+            results: List of per-sample metric dictionaries.
+
+        Returns:
+            Dictionary of aggregated metrics including means and rates.
+        """
+        results_df = pd.DataFrame(results)
 
         aggregate = {
-            "exact_match_rate": df["exact_match"].mean() * 100,
-            "avg_token_accuracy": df["token_accuracy"].mean() * 100,
-            "avg_structural_similarity": df["structural_similarity"].mean() * 100,
-            "avg_keyword_f1": df["keyword_f1"].mean() * 100,
-            "avg_keyword_precision": df["keyword_precision"].mean() * 100,
-            "avg_keyword_recall": df["keyword_recall"].mean() * 100,
-            "valid_sql_rate": df["valid"].mean() * 100,
-            "complexity_match_rate": df["complexity_match"].mean() * 100,
-            "avg_edit_distance": df["edit_distance"].mean(),
+            "exact_match_rate": results_df["exact_match"].mean() * 100,
+            "avg_token_accuracy": results_df["token_accuracy"].mean() * 100,
+            "avg_structural_similarity": (results_df["structural_similarity"].mean() * 100),
+            "avg_keyword_f1": results_df["keyword_f1"].mean() * 100,
+            "avg_keyword_precision": results_df["keyword_precision"].mean() * 100,
+            "avg_keyword_recall": results_df["keyword_recall"].mean() * 100,
+            "valid_sql_rate": results_df["valid"].mean() * 100,
+            "complexity_match_rate": results_df["complexity_match"].mean() * 100,
+            "avg_edit_distance": results_df["edit_distance"].mean(),
         }
 
-        if "execution_match" in df.columns:
-            aggregate["execution_accuracy"] = df["execution_match"].mean() * 100
-            aggregate["predicted_executable_rate"] = df["predicted_executable"].mean() * 100
+        if "execution_match" in results_df.columns:
+            aggregate["execution_accuracy"] = results_df["execution_match"].mean() * 100
+            executable_rate = results_df["predicted_executable"].mean() * 100
+            aggregate["predicted_executable_rate"] = executable_rate
 
         return aggregate
 
-    def _compute_complexity_metrics(self, results: List[Dict]) -> Dict[str, Dict[str, float]]:
-        """Compute metrics stratified by SQL complexity."""
-        df = pd.DataFrame(results)
+    def _compute_complexity_metrics(
+        self, results: list[dict[str, Any]]
+    ) -> dict[str, dict[str, float]]:
+        """Compute metrics stratified by SQL complexity.
 
-        complexity_metrics = {}
+        Args:
+            results: List of per-sample metric dictionaries.
+
+        Returns:
+            Dictionary mapping complexity levels to their metrics.
+        """
+        results_df = pd.DataFrame(results)
+
+        complexity_metrics: dict[str, dict[str, float]] = {}
 
         for complexity_level in ["simple", "medium", "complex"]:
-            subset = df[df["reference_complexity"] == complexity_level]
+            subset = results_df[results_df["reference_complexity"] == complexity_level]
 
             if len(subset) == 0:
                 continue
 
+            struct_sim = subset["structural_similarity"].mean() * 100
             complexity_metrics[complexity_level] = {
                 "count": len(subset),
                 "exact_match_rate": subset["exact_match"].mean() * 100,
                 "avg_token_accuracy": subset["token_accuracy"].mean() * 100,
-                "avg_structural_similarity": subset["structural_similarity"].mean() * 100,
+                "avg_structural_similarity": struct_sim,
                 "valid_sql_rate": subset["valid"].mean() * 100,
             }
 
         return complexity_metrics
 
-    def generate_report(self, evaluation_results: Dict, output_path: str):
-        """
-        Generate detailed evaluation report.
+    def generate_report(self, evaluation_results: dict[str, Any], output_path: str) -> None:
+        """Generate detailed evaluation report.
+
+        Creates multiple output files including JSON summary, CSV with
+        per-sample results, and markdown report.
 
         Args:
-            evaluation_results: Results from evaluate_dataset
-            output_path: Path to save report
+            evaluation_results: Results dictionary from evaluate_dataset
+                method.
+            output_path: Directory path where report files will be saved.
+
+        Returns:
+            None. Saves report files to disk.
         """
-        output_path_obj = Path(output_path)  # type: ignore[assignment]
-        output_path_obj.mkdir(parents=True, exist_ok=True)  # type: ignore[attr-defined]
+        output_path_obj = Path(output_path)
+        output_path_obj.mkdir(parents=True, exist_ok=True)
 
         # Save JSON results
-        json_path = output_path_obj / "evaluation_results.json"  # type: ignore[operator]
-        with open(json_path, "w") as f:
+        json_path = output_path_obj / "evaluation_results.json"
+
+        with json_path.open("w") as f:
             # Remove per-sample results for cleaner summary
             summary = {
                 "aggregate": evaluation_results["aggregate"],
@@ -217,20 +291,28 @@ class SQLEvaluator:
             json.dump(summary, f, indent=2)
 
         # Save per-sample results as CSV
-        df = pd.DataFrame(evaluation_results["per_sample"])
-        csv_path = output_path_obj / "per_sample_results.csv"  # type: ignore[operator]
-        df.to_csv(csv_path, index=False)
+        results_df = pd.DataFrame(evaluation_results["per_sample"])
+        csv_path = output_path_obj / "per_sample_results.csv"
+        results_df.to_csv(csv_path, index=False)
 
         # Generate markdown report
-        self._generate_markdown_report(evaluation_results, output_path_obj)  # type: ignore[arg-type]
+        self._generate_markdown_report(evaluation_results, output_path_obj)
 
         self.logger.info(f"Report saved to {output_path_obj}")
 
-    def _generate_markdown_report(self, results: Dict, output_path: Path):
-        """Generate markdown evaluation report."""
+    def _generate_markdown_report(self, results: dict[str, Any], output_path: Path) -> None:
+        """Generate markdown evaluation report.
+
+        Args:
+            results: Evaluation results dictionary.
+            output_path: Path object for output directory.
+
+        Returns:
+            None. Writes markdown report to disk.
+        """
         report_path = output_path / "evaluation_report.md"
 
-        with open(report_path, "w") as f:
+        with report_path.open("w") as f:
             f.write("# SQL Evaluation Report\n\n")
 
             # Aggregate metrics
@@ -248,7 +330,8 @@ class SQLEvaluator:
                 f.write("|--------|-------|\n")
                 for key, value in metrics.items():
                     if key != "count":
-                        f.write(f"| {key.replace('_', ' ').title()} | {value:.2f} |\n")
+                        metric_name = key.replace("_", " ").title()
+                        f.write(f"| {metric_name} | {value:.2f} |\n")
                 f.write(f"\n**Sample Count:** {metrics['count']}\n\n")
 
             # Sample count

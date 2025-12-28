@@ -32,7 +32,9 @@ def _setup_wandb(cfg: DictConfig, logger):
     """Setup WandB logging if enabled."""
     if cfg.wandb.enabled:
         if not WANDB_AVAILABLE:
-            logger.warning("WandB is enabled in config but not installed. Disabling WandB logging.")
+            logger.warning(
+                "WandB is enabled in config but not installed. " "Disabling WandB logging."
+            )
         else:
             wandb.init(
                 project=cfg.wandb.project,

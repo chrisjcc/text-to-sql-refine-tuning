@@ -9,33 +9,43 @@ import logging
 import re
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
-from datasets import Dataset, DatasetDict, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
+from numpy.random import Generator
 
 logger = logging.getLogger(__name__)
 
 
 class SQLDatasetLoader:
-    """
-    Loads and manages SQL datasets for text-to-SQL training.
-    Handles b-mc2/sql-create-context and custom datasets.
+    """Loads and manages SQL datasets for text-to-SQL training.
+
+    Handles b-mc2/sql-create-context and custom datasets with utilities
+    for splitting, statistics computation, and disk I/O.
+
+    Attributes:
+        dataset_name: HuggingFace dataset identifier.
+        cache_dir: Directory for caching downloaded data.
+        seed: Random seed for reproducibility.
+        logger: Logger instance for this class.
+        rng: NumPy random number generator for reproducible sampling.
     """
 
     def __init__(
         self,
         dataset_name: str = "b-mc2/sql-create-context",
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
         seed: int = 42,
-    ):
-        """
-        Initialize dataset loader.
+    ) -> None:
+        """Initialize dataset loader.
 
         Args:
-            dataset_name: HuggingFace dataset identifier
-            cache_dir: Directory for caching downloaded data
-            seed: Random seed for reproducibility
+            dataset_name: HuggingFace dataset identifier.
+                Defaults to "b-mc2/sql-create-context".
+            cache_dir: Directory for caching downloaded data. If None,
+                uses default HuggingFace cache location.
+            seed: Random seed for reproducibility. Defaults to 42.
         """
         self.dataset_name = dataset_name
         self.cache_dir = cache_dir
@@ -43,24 +53,32 @@ class SQLDatasetLoader:
         self.logger = logging.getLogger(__name__)
 
         # Set random seed for reproducibility
-        np.random.seed(seed)
+        self.rng: Generator = np.random.default_rng(seed)
 
-    def load(self, split: Optional[str] = None, streaming: bool = False) -> DatasetDict:
-        """
-        Load dataset from HuggingFace Hub.
+    def load(self, split: str | None = None, streaming: bool = False) -> DatasetDict:
+        """Load dataset from HuggingFace Hub.
 
         Args:
-            split: Specific split to load (train/validation/test) or None for all
-            streaming: Whether to use streaming mode for large datasets
+            split: Specific split to load (train/validation/test) or None
+                for all available splits.
+            streaming: Whether to use streaming mode for large datasets.
+                Defaults to False.
 
         Returns:
-            DatasetDict with loaded splits
+            DatasetDict with loaded splits.
+
+        Raises:
+            Exception: If dataset loading fails, re-raises the original
+                exception after logging.
         """
         self.logger.info(f"Loading dataset: {self.dataset_name}")
 
         try:
             dataset = load_dataset(
-                self.dataset_name, split=split, cache_dir=self.cache_dir, streaming=streaming
+                self.dataset_name,
+                split=split,
+                cache_dir=self.cache_dir,
+                streaming=streaming,
             )
 
             if split is None:
@@ -82,25 +100,30 @@ class SQLDatasetLoader:
         test_size: float = 0.1,
         stratify: bool = False,
     ) -> DatasetDict:
-        """
-        Create train/val/test splits if not already split.
+        """Create train/val/test splits if not already split.
 
         Args:
-            dataset: Full dataset to split
-            train_size: Proportion for training
-            val_size: Proportion for validation
-            test_size: Proportion for testing
-            stratify: Whether to stratify by SQL complexity
+            dataset: Full dataset to split.
+            train_size: Proportion for training set. Defaults to 0.8.
+            val_size: Proportion for validation set. Defaults to 0.1.
+            test_size: Proportion for test set. Defaults to 0.1.
+            stratify: Whether to stratify by SQL complexity. Currently
+                falls back to random split if True. Defaults to False.
 
         Returns:
-            DatasetDict with train/val/test splits
+            DatasetDict with train/val/test splits.
+
+        Raises:
+            ValueError: If split sizes don't sum to 1.0.
         """
         # Validate split sizes
         total = train_size + val_size + test_size
         if not np.isclose(total, 1.0):
             raise ValueError(f"Split sizes must sum to 1.0, got {total}")
 
-        self.logger.info(f"Creating splits: train={train_size}, val={val_size}, test={test_size}")
+        self.logger.info(
+            f"Creating splits: train={train_size}, val={val_size}, " f"test={test_size}"
+        )
 
         if stratify:
             self.logger.info("Stratifying by SQL complexity")
@@ -127,7 +150,10 @@ class SQLDatasetLoader:
             )
         else:
             dataset_dict = DatasetDict(
-                {"train": train_test["train"], "validation": train_test["test"]}
+                {
+                    "train": train_test["train"],
+                    "validation": train_test["test"],
+                }
             )
 
         # Log split sizes
@@ -136,18 +162,22 @@ class SQLDatasetLoader:
 
         return dataset_dict
 
-    def get_statistics(self, dataset: Dataset) -> Dict[str, Any]:
-        """
-        Compute dataset statistics for analysis.
+    def get_statistics(self, dataset: Dataset) -> dict[str, Any]:
+        """Compute dataset statistics for analysis.
+
+        Computes comprehensive statistics including length distributions,
+        SQL keyword usage, and table counts.
+
+        Args:
+            dataset: Dataset to analyze.
 
         Returns:
-            Dict with stats like:
-            - total_samples
-            - avg_question_length
-            - avg_sql_length
-            - avg_schema_length
-            - unique_tables_count
-            - sql_keyword_distribution
+            Dictionary containing statistics:
+            - total_samples: Total number of samples
+            - sampled_for_stats: Number of samples analyzed
+            - avg/median/max question/sql/schema lengths
+            - unique_tables_count: Number of unique table names
+            - sql_keyword_distribution: Top 10 SQL keywords used
         """
         self.logger.info("Computing dataset statistics")
 
@@ -185,7 +215,7 @@ class SQLDatasetLoader:
 
         # Sample up to 10000 examples for statistics
         sample_size = min(len(dataset), 10000)
-        indices = np.random.choice(len(dataset), sample_size, replace=False)
+        indices = self.rng.choice(len(dataset), sample_size, replace=False)
 
         for idx in indices:
             sample = dataset[int(idx)]
@@ -214,39 +244,38 @@ class SQLDatasetLoader:
             tables.update(table_matches)
 
         # Compute statistics
-        stats = {
+        return {
             "total_samples": len(dataset),
             "sampled_for_stats": sample_size,
-            "avg_question_length": np.mean(question_lengths) if question_lengths else 0,
+            "avg_question_length": (np.mean(question_lengths) if question_lengths else 0),
             "avg_sql_length": np.mean(sql_lengths) if sql_lengths else 0,
-            "avg_schema_length": np.mean(schema_lengths) if schema_lengths else 0,
-            "median_question_length": np.median(question_lengths) if question_lengths else 0,
-            "median_sql_length": np.median(sql_lengths) if sql_lengths else 0,
-            "median_schema_length": np.median(schema_lengths) if schema_lengths else 0,
-            "max_question_length": max(question_lengths) if question_lengths else 0,
+            "avg_schema_length": (np.mean(schema_lengths) if schema_lengths else 0),
+            "median_question_length": (np.median(question_lengths) if question_lengths else 0),
+            "median_sql_length": (np.median(sql_lengths) if sql_lengths else 0),
+            "median_schema_length": (np.median(schema_lengths) if schema_lengths else 0),
+            "max_question_length": (max(question_lengths) if question_lengths else 0),
             "max_sql_length": max(sql_lengths) if sql_lengths else 0,
-            "max_schema_length": max(schema_lengths) if schema_lengths else 0,
+            "max_schema_length": (max(schema_lengths) if schema_lengths else 0),
             "unique_tables_count": len(tables),
             "sql_keyword_distribution": dict(Counter(sql_keywords).most_common(10)),
         }
 
-        return stats
-
     def load_from_disk(self, path: str) -> DatasetDict:
-        """
-        Load processed dataset from disk.
+        """Load processed dataset from disk.
 
         Args:
-            path: Path to saved dataset
+            path: Path to saved dataset directory.
 
         Returns:
-            Loaded DatasetDict
+            Loaded DatasetDict with all splits.
+
+        Raises:
+            Exception: If dataset loading fails, re-raises the original
+                exception after logging.
         """
         self.logger.info(f"Loading dataset from disk: {path}")
 
         try:
-            from datasets import load_from_disk
-
             dataset = load_from_disk(path)
             self.logger.info(f"Successfully loaded dataset from {path}")
             return dataset
@@ -255,12 +284,18 @@ class SQLDatasetLoader:
             raise
 
     def save_to_disk(self, dataset: DatasetDict, path: str) -> None:
-        """
-        Save dataset to disk.
+        """Save dataset to disk.
 
         Args:
-            dataset: Dataset to save
-            path: Path to save location
+            dataset: DatasetDict to save.
+            path: Path to save location.
+
+        Returns:
+            None. Saves dataset to specified path.
+
+        Raises:
+            Exception: If dataset saving fails, re-raises the original
+                exception after logging.
         """
         self.logger.info(f"Saving dataset to disk: {path}")
 

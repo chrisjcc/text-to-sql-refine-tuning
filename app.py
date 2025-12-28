@@ -2,7 +2,6 @@
 Gradio interface for text-to-SQL demo.
 Deploy on HuggingFace Spaces.
 """
-
 import os
 
 import gradio as gr

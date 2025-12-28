@@ -5,7 +5,6 @@ formats including markdown code blocks, inline queries, and raw SQL.
 """
 
 import re
-from typing import List, Optional
 
 
 class SQLParser:
@@ -13,6 +12,15 @@ class SQLParser:
 
     Handles markdown code blocks, inline SQL, and raw queries. Designed to
     work with LLM outputs that may contain SQL in various formats.
+
+    Attributes:
+        max_sql_length: Maximum allowed SQL query length.
+        min_sql_length: Minimum required SQL query length.
+        extract_code_blocks: Whether to extract from markdown code blocks.
+        clean_whitespace: Whether to normalize whitespace.
+        SQL_KEYWORDS: SQL keywords that typically start a query.
+        CODE_BLOCK_PATTERN: Regex pattern for markdown code blocks.
+        INLINE_CODE_PATTERN: Regex pattern for inline code.
 
     Examples:
         >>> parser = SQLParser()
@@ -52,21 +60,22 @@ class SQLParser:
         min_sql_length: int = 10,
         extract_code_blocks: bool = True,
         clean_whitespace: bool = True,
-    ):
+    ) -> None:
         """Initialize the SQL parser.
 
         Args:
-            max_sql_length: Maximum allowed SQL query length
-            min_sql_length: Minimum required SQL query length
-            extract_code_blocks: Whether to extract from markdown code blocks
-            clean_whitespace: Whether to normalize whitespace
+            max_sql_length: Maximum allowed SQL query length. Defaults to 2048.
+            min_sql_length: Minimum required SQL query length. Defaults to 10.
+            extract_code_blocks: Whether to extract from markdown code blocks.
+                Defaults to True.
+            clean_whitespace: Whether to normalize whitespace. Defaults to True.
         """
         self.max_sql_length = max_sql_length
         self.min_sql_length = min_sql_length
         self.extract_code_blocks = extract_code_blocks
         self.clean_whitespace = clean_whitespace
 
-    def extract_sql(self, text: str) -> Optional[str]:
+    def extract_sql(self, text: str) -> str | None:
         """Extract SQL query from text.
 
         Tries multiple extraction strategies in order:
@@ -75,10 +84,10 @@ class SQLParser:
         3. Raw SQL starting with keywords
 
         Args:
-            text: Input text potentially containing SQL
+            text: Input text potentially containing SQL.
 
         Returns:
-            Extracted and cleaned SQL query, or None if no valid SQL found
+            Extracted and cleaned SQL query, or None if no valid SQL found.
         """
         if not text or not isinstance(text, str):
             return None
@@ -103,14 +112,14 @@ class SQLParser:
 
         return None
 
-    def _extract_from_code_block(self, text: str) -> Optional[str]:
+    def _extract_from_code_block(self, text: str) -> str | None:
         """Extract SQL from markdown code blocks.
 
         Args:
-            text: Input text
+            text: Input text potentially containing markdown code blocks.
 
         Returns:
-            Extracted SQL or None
+            Extracted and cleaned SQL or None if no code block found.
         """
         matches = self.CODE_BLOCK_PATTERN.findall(text)
         if matches:
@@ -119,14 +128,14 @@ class SQLParser:
             return self.clean_sql(sql) if sql else None
         return None
 
-    def _extract_from_inline_code(self, text: str) -> Optional[str]:
+    def _extract_from_inline_code(self, text: str) -> str | None:
         """Extract SQL from inline code backticks.
 
         Args:
-            text: Input text
+            text: Input text potentially containing inline code.
 
         Returns:
-            Extracted SQL or None
+            Extracted and cleaned SQL or None if no valid SQL in backticks.
         """
         matches = self.INLINE_CODE_PATTERN.findall(text)
         for match in matches:
@@ -136,14 +145,14 @@ class SQLParser:
                 return self.clean_sql(match_stripped)
         return None
 
-    def _extract_raw_sql(self, text: str) -> Optional[str]:
+    def _extract_raw_sql(self, text: str) -> str | None:
         """Extract raw SQL that starts with SQL keywords.
 
         Args:
-            text: Input text
+            text: Input text potentially containing raw SQL.
 
         Returns:
-            Extracted SQL or None
+            Extracted and cleaned SQL or None if no SQL detected.
         """
         # Check if text starts with SQL keyword
         if self.detect_sql_pattern(text):
@@ -166,11 +175,13 @@ class SQLParser:
     def _extract_until_end(self, text: str) -> str:
         """Extract SQL until natural ending point.
 
+        Stops at common markers that indicate end of SQL statement.
+
         Args:
-            text: Text starting with SQL
+            text: Text starting with SQL.
 
         Returns:
-            Extracted SQL portion
+            Extracted SQL portion up to ending marker or end of text.
         """
         # Stop at common markers that indicate end of SQL
         end_markers = [
@@ -192,11 +203,14 @@ class SQLParser:
     def clean_sql(self, sql: str) -> str:
         """Clean and normalize SQL query.
 
+        Removes common prefixes, normalizes whitespace, and enforces
+        length constraints.
+
         Args:
-            sql: Raw SQL query
+            sql: Raw SQL query to clean.
 
         Returns:
-            Cleaned SQL query
+            Cleaned SQL query.
         """
         if not sql:
             return sql
@@ -222,11 +236,14 @@ class SQLParser:
     def detect_sql_pattern(self, text: str) -> bool:
         """Detect if text contains SQL patterns.
 
+        Checks for SQL keywords at the start or common SQL patterns
+        anywhere in the text.
+
         Args:
-            text: Text to check
+            text: Text to check for SQL patterns.
 
         Returns:
-            True if text appears to contain SQL
+            True if text appears to contain SQL.
         """
         if not text:
             return False
@@ -247,20 +264,16 @@ class SQLParser:
             r"\bCREATE\s+(TABLE|DATABASE|INDEX|VIEW)\b",
         ]
 
-        for pattern in sql_patterns:
-            if re.search(pattern, text, re.IGNORECASE):
-                return True
-
-        return False
+        return any(re.search(pattern, text, re.IGNORECASE) for pattern in sql_patterns)
 
     def is_valid_format(self, text: str) -> bool:
         """Check if text is in valid format for SQL extraction.
 
         Args:
-            text: Input text
+            text: Input text to validate.
 
         Returns:
-            True if format is valid for extraction
+            True if format is valid and SQL can be extracted.
         """
         if not text or not isinstance(text, str):
             return False
@@ -276,13 +289,13 @@ class SQLParser:
 
         return sql is not None and len(sql) >= self.min_sql_length
 
-    def parse_batch(self, texts: List[str]) -> List[Optional[str]]:
+    def parse_batch(self, texts: list[str]) -> list[str | None]:
         """Parse multiple texts and extract SQL from each.
 
         Args:
-            texts: List of input texts
+            texts: List of input texts to parse.
 
         Returns:
-            List of extracted SQL queries (None for texts without valid SQL)
+            List of extracted SQL queries. None for texts without valid SQL.
         """
         return [self.extract_sql(text) for text in texts]

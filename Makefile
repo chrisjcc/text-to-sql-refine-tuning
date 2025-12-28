@@ -51,19 +51,19 @@ docker-build:
 docker-run:
 	docker-compose up -d api
 
-train: install prepare-data
-	python scripts/train.py
+train: prepare-data
+	python -m scripts.train
 
-inference: install
-	python scripts/inference.py
+inference:
+	python -m scripts.inference
 
 prepare-data:
-	python scripts/prepare_data.py
+	python -m scripts.prepare_data
 
-benchmark: install
-	python scripts/benchmark.py
+benchmark:
+	python -m scripts.benchmark
 
 publish:
-	python scripts/publish_to_hub.py \
+	python -m scripts.publish_to_hub \
 		--model-path ./outputs/final_model \
 		--repo-name $(REPO_NAME)

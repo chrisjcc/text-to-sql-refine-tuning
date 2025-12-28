@@ -119,7 +119,7 @@ class TestSQLParser:
         sql = "SELECT  *   FROM    users"
         cleaned = parser.clean_sql(sql)
         assert "  " not in cleaned
-        assert "SELECT * FROM users" == cleaned
+        assert cleaned == "SELECT * FROM users"
 
     def test_detect_sql_pattern(self):
         """Test SQL pattern detection."""

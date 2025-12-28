@@ -10,29 +10,37 @@ a comprehensive quality report including:
 - Examples of each complexity level
 """
 
+import logging
 import re
-import sys
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 import numpy as np
+from datasets import Dataset, DatasetDict, load_from_disk
+from numpy.random import Generator
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+from src.utils.logging_utils import setup_logging
 
-from datasets import load_from_disk  # noqa: E402
-
-from utils.logging_utils import setup_logging  # noqa: E402
+logger = logging.getLogger(__name__)
 
 
-def analyze_complexity_distribution(dataset):
-    """Analyze distribution of SQL complexity."""
-    print("\n" + "=" * 80)
-    print("SQL COMPLEXITY DISTRIBUTION")
-    print("=" * 80)
+def analyze_complexity_distribution(dataset: Dataset) -> None:
+    """Analyze distribution of SQL complexity.
+
+    Args:
+        dataset: HuggingFace Dataset object containing SQL queries with
+            complexity labels.
+
+    Returns:
+        None. Logs complexity distribution statistics to the logger.
+    """
+    logger.info("\n" + "=" * 80)
+    logger.info("SQL COMPLEXITY DISTRIBUTION")
+    logger.info("=" * 80)
 
     if "complexity" not in dataset.column_names:
-        print("No complexity information available")
+        logger.warning("No complexity information available")
         return
 
     complexities = dataset["complexity"]
@@ -42,17 +50,25 @@ def analyze_complexity_distribution(dataset):
     for complexity in ["simple", "medium", "complex"]:
         count = complexity_counts.get(complexity, 0)
         pct = (count / total) * 100 if total > 0 else 0
-        print(f"{complexity.capitalize():10s}: {count:6d} ({pct:5.1f}%)")
+        logger.info(f"{complexity.capitalize():10s}: {count:6d} ({pct:5.1f}%)")
 
 
-def analyze_sql_patterns(dataset):
-    """Analyze common SQL patterns."""
-    print("\n" + "=" * 80)
-    print("COMMON SQL PATTERNS")
-    print("=" * 80)
+def analyze_sql_patterns(dataset: Dataset) -> None:
+    """Analyze common SQL patterns.
+
+    Args:
+        dataset: HuggingFace Dataset object containing SQL queries with
+            extracted keywords.
+
+    Returns:
+        None. Logs top SQL keywords and their frequencies to the logger.
+    """
+    logger.info("\n" + "=" * 80)
+    logger.info("COMMON SQL PATTERNS")
+    logger.info("=" * 80)
 
     if "sql_keywords" not in dataset.column_names:
-        print("No SQL keyword information available")
+        logger.warning("No SQL keyword information available")
         return
 
     all_keywords = []
@@ -61,66 +77,88 @@ def analyze_sql_patterns(dataset):
 
     keyword_counts = Counter(all_keywords)
 
-    print("\nTop 15 SQL keywords:")
+    logger.info("\nTop 15 SQL keywords:")
     for keyword, count in keyword_counts.most_common(15):
         pct = (count / len(dataset)) * 100
-        print(f"  {keyword:15s}: {count:6d} ({pct:5.1f}%)")
+        logger.info(f"  {keyword:15s}: {count:6d} ({pct:5.1f}%)")
 
 
-def analyze_length_distribution(dataset):
-    """Analyze length distributions."""
-    print("\n" + "=" * 80)
-    print("LENGTH DISTRIBUTION")
-    print("=" * 80)
+def analyze_length_distribution(dataset: Dataset) -> None:
+    """Analyze length distributions.
+
+    Analyzes the length distributions for questions, SQL queries, and schemas
+    in the dataset, including mean, median, min, max, standard deviation,
+    and percentiles.
+
+    Args:
+        dataset: HuggingFace Dataset object containing length metrics for
+            questions, SQL queries, and schemas.
+
+    Returns:
+        None. Logs length distribution statistics to the logger.
+    """
+    logger.info("\n" + "=" * 80)
+    logger.info("LENGTH DISTRIBUTION")
+    logger.info("=" * 80)
 
     if "question_length" in dataset.column_names:
         question_lengths = dataset["question_length"]
-        print("\nQuestion length (words):")
-        print(f"  Mean:   {np.mean(question_lengths):6.1f}")
-        print(f"  Median: {np.median(question_lengths):6.1f}")
-        print(f"  Min:    {np.min(question_lengths):6.0f}")
-        print(f"  Max:    {np.max(question_lengths):6.0f}")
-        print(f"  Std:    {np.std(question_lengths):6.1f}")
+        logger.info("\nQuestion length (words):")
+        logger.info(f"  Mean:   {np.mean(question_lengths):6.1f}")
+        logger.info(f"  Median: {np.median(question_lengths):6.1f}")
+        logger.info(f"  Min:    {np.min(question_lengths):6.0f}")
+        logger.info(f"  Max:    {np.max(question_lengths):6.0f}")
+        logger.info(f"  Std:    {np.std(question_lengths):6.1f}")
 
         # Percentiles
-        print("\n  Percentiles:")
+        logger.info("\n  Percentiles:")
         for p in [25, 50, 75, 90, 95, 99]:
             val = np.percentile(question_lengths, p)
-            print(f"    {p:2d}th: {val:6.1f}")
+            logger.info(f"    {p:2d}th: {val:6.1f}")
 
     if "sql_length" in dataset.column_names:
         sql_lengths = dataset["sql_length"]
-        print("\nSQL length (words):")
-        print(f"  Mean:   {np.mean(sql_lengths):6.1f}")
-        print(f"  Median: {np.median(sql_lengths):6.1f}")
-        print(f"  Min:    {np.min(sql_lengths):6.0f}")
-        print(f"  Max:    {np.max(sql_lengths):6.0f}")
-        print(f"  Std:    {np.std(sql_lengths):6.1f}")
+        logger.info("\nSQL length (words):")
+        logger.info(f"  Mean:   {np.mean(sql_lengths):6.1f}")
+        logger.info(f"  Median: {np.median(sql_lengths):6.1f}")
+        logger.info(f"  Min:    {np.min(sql_lengths):6.0f}")
+        logger.info(f"  Max:    {np.max(sql_lengths):6.0f}")
+        logger.info(f"  Std:    {np.std(sql_lengths):6.1f}")
 
         # Percentiles
-        print("\n  Percentiles:")
+        logger.info("\n  Percentiles:")
         for p in [25, 50, 75, 90, 95, 99]:
             val = np.percentile(sql_lengths, p)
-            print(f"    {p:2d}th: {val:6.1f}")
+            logger.info(f"    {p:2d}th: {val:6.1f}")
 
     if "schema_length" in dataset.column_names:
         schema_lengths = dataset["schema_length"]
-        print("\nSchema length (words):")
-        print(f"  Mean:   {np.mean(schema_lengths):6.1f}")
-        print(f"  Median: {np.median(schema_lengths):6.1f}")
-        print(f"  Min:    {np.min(schema_lengths):6.0f}")
-        print(f"  Max:    {np.max(schema_lengths):6.0f}")
-        print(f"  Std:    {np.std(schema_lengths):6.1f}")
+        logger.info("\nSchema length (words):")
+        logger.info(f"  Mean:   {np.mean(schema_lengths):6.1f}")
+        logger.info(f"  Median: {np.median(schema_lengths):6.1f}")
+        logger.info(f"  Min:    {np.min(schema_lengths):6.0f}")
+        logger.info(f"  Max:    {np.max(schema_lengths):6.0f}")
+        logger.info(f"  Std:    {np.std(schema_lengths):6.1f}")
 
 
-def analyze_schema_statistics(dataset):
-    """Analyze schema statistics."""
-    print("\n" + "=" * 80)
-    print("SCHEMA STATISTICS")
-    print("=" * 80)
+def analyze_schema_statistics(dataset: Dataset) -> None:
+    """Analyze schema statistics.
+
+    Analyzes database schema characteristics including number of tables,
+    columns, and their distributions across the dataset.
+
+    Args:
+        dataset: HuggingFace Dataset object containing database schemas.
+
+    Returns:
+        None. Logs schema statistics to the logger.
+    """
+    logger.info("\n" + "=" * 80)
+    logger.info("SCHEMA STATISTICS")
+    logger.info("=" * 80)
 
     if "schema" not in dataset.column_names:
-        print("No schema information available")
+        logger.warning("No schema information available")
         return
 
     table_counts = []
@@ -139,28 +177,38 @@ def analyze_schema_statistics(dataset):
         columns = re.findall(column_pattern, schema, re.IGNORECASE)
         column_counts.append(len(columns))
 
-    print(f"\nTotal unique tables: {len(all_tables)}")
+    logger.info(f"\nTotal unique tables: {len(all_tables)}")
 
     if table_counts:
-        print("\nTables per sample:")
-        print(f"  Mean:   {np.mean(table_counts):6.1f}")
-        print(f"  Median: {np.median(table_counts):6.1f}")
-        print(f"  Min:    {np.min(table_counts):6.0f}")
-        print(f"  Max:    {np.max(table_counts):6.0f}")
+        logger.info("\nTables per sample:")
+        logger.info(f"  Mean:   {np.mean(table_counts):6.1f}")
+        logger.info(f"  Median: {np.median(table_counts):6.1f}")
+        logger.info(f"  Min:    {np.min(table_counts):6.0f}")
+        logger.info(f"  Max:    {np.max(table_counts):6.0f}")
 
     if column_counts:
-        print("\nColumns per sample:")
-        print(f"  Mean:   {np.mean(column_counts):6.1f}")
-        print(f"  Median: {np.median(column_counts):6.1f}")
-        print(f"  Min:    {np.min(column_counts):6.0f}")
-        print(f"  Max:    {np.max(column_counts):6.0f}")
+        logger.info("\nColumns per sample:")
+        logger.info(f"  Mean:   {np.mean(column_counts):6.1f}")
+        logger.info(f"  Median: {np.median(column_counts):6.1f}")
+        logger.info(f"  Min:    {np.min(column_counts):6.0f}")
+        logger.info(f"  Max:    {np.max(column_counts):6.0f}")
 
 
-def find_quality_issues(dataset):
-    """Identify potential data quality issues."""
-    print("\n" + "=" * 80)
-    print("POTENTIAL QUALITY ISSUES")
-    print("=" * 80)
+def find_quality_issues(dataset: Dataset) -> None:
+    """Identify potential data quality issues.
+
+    Checks for various data quality problems including invalid samples,
+    empty fields, very short questions, and very long SQL queries.
+
+    Args:
+        dataset: HuggingFace Dataset object to analyze for quality issues.
+
+    Returns:
+        None. Logs identified quality issues to the logger.
+    """
+    logger.info("\n" + "=" * 80)
+    logger.info("POTENTIAL QUALITY ISSUES")
+    logger.info("=" * 80)
 
     issues_found = False
 
@@ -169,7 +217,7 @@ def find_quality_issues(dataset):
         invalid_count = sum(1 for v in dataset["is_valid"] if not v)
         if invalid_count > 0:
             pct = (invalid_count / len(dataset)) * 100
-            print(f"\n⚠ Invalid samples: {invalid_count} ({pct:.1f}%)")
+            logger.warning(f"\n⚠ Invalid samples: {invalid_count} ({pct:.1f}%)")
             issues_found = True
 
     # Check for empty fields
@@ -178,7 +226,7 @@ def find_quality_issues(dataset):
             empty_count = sum(1 for v in dataset[field] if not v or not v.strip())
             if empty_count > 0:
                 pct = (empty_count / len(dataset)) * 100
-                print(f"\n⚠ Empty {field}: {empty_count} ({pct:.1f}%)")
+                logger.warning(f"\n⚠ Empty {field}: {empty_count} ({pct:.1f}%)")
                 issues_found = True
 
     # Check for very short questions
@@ -186,7 +234,7 @@ def find_quality_issues(dataset):
         very_short = sum(1 for v in dataset["question_length"] if v < 3)
         if very_short > 0:
             pct = (very_short / len(dataset)) * 100
-            print(f"\n⚠ Very short questions (<3 words): {very_short} ({pct:.1f}%)")
+            logger.warning(f"\n⚠ Very short questions (<3 words): " f"{very_short} ({pct:.1f}%)")
             issues_found = True
 
     # Check for very long SQL
@@ -194,65 +242,88 @@ def find_quality_issues(dataset):
         very_long = sum(1 for v in dataset["sql_length"] if v > 100)
         if very_long > 0:
             pct = (very_long / len(dataset)) * 100
-            print(f"\n⚠ Very long SQL queries (>100 words): {very_long} ({pct:.1f}%)")
+            logger.warning(f"\n⚠ Very long SQL queries (>100 words): " f"{very_long} ({pct:.1f}%)")
             issues_found = True
 
     if not issues_found:
-        print("\n✓ No major quality issues detected!")
+        logger.info("\n✓ No major quality issues detected!")
 
 
-def show_examples(dataset, n_per_complexity=2):
-    """Show example queries for each complexity level."""
-    print("\n" + "=" * 80)
-    print("EXAMPLE QUERIES BY COMPLEXITY")
-    print("=" * 80)
+def show_examples(dataset: Dataset, n_per_complexity: int = 2) -> None:
+    """Show example queries for each complexity level.
+
+    Displays random sample queries from each complexity level (simple, medium,
+    complex) along with their SQL and schema information.
+
+    Args:
+        dataset: HuggingFace Dataset object containing SQL queries with
+            complexity labels.
+        n_per_complexity: Number of examples to show per complexity level.
+            Defaults to 2.
+
+    Returns:
+        None. Logs example queries to the logger.
+    """
+    logger.info("\n" + "=" * 80)
+    logger.info("EXAMPLE QUERIES BY COMPLEXITY")
+    logger.info("=" * 80)
 
     if "complexity" not in dataset.column_names:
-        print("No complexity information available")
+        logger.warning("No complexity information available")
         return
 
     required_fields = ["question", "sql", "complexity"]
     if not all(field in dataset.column_names for field in required_fields):
-        print("Missing required fields for examples")
+        logger.warning("Missing required fields for examples")
         return
 
+    # Create random generator
+    rng: Generator = np.random.default_rng()
+
     for complexity in ["simple", "medium", "complex"]:
-        print(f"\n{'-' * 80}")
-        print(f"{complexity.upper()} QUERIES")
-        print(f"{'-' * 80}")
+        logger.info(f"\n{'-' * 80}")
+        logger.info(f"{complexity.upper()} QUERIES")
+        logger.info(f"{'-' * 80}")
 
         # Find examples of this complexity
         indices = [i for i, c in enumerate(dataset["complexity"]) if c == complexity]
 
         if not indices:
-            print(f"No {complexity} examples found")
+            logger.warning(f"No {complexity} examples found")
             continue
 
         # Sample randomly
-        sample_indices = np.random.choice(
-            indices, min(n_per_complexity, len(indices)), replace=False
-        )
+        sample_indices = rng.choice(indices, min(n_per_complexity, len(indices)), replace=False)
 
         for idx, sample_idx in enumerate(sample_indices, 1):
-            sample = dataset[int(sample_idx)]
-            print(f"\nExample {idx}:")
-            print(f"Question: {sample['question']}")
-            print(f"SQL: {sample['sql']}")
+            sample: dict[str, Any] = dataset[int(sample_idx)]
+            logger.info(f"\nExample {idx}:")
+            logger.info(f"Question: {sample['question']}")
+            logger.info(f"SQL: {sample['sql']}")
 
             if "schema" in sample and sample["schema"]:
                 # Show first table definition only
-                schema = sample["schema"]
-                first_table = (
-                    schema.split("CREATE TABLE")[1] if "CREATE TABLE" in schema else schema
-                )
+                schema: str = sample["schema"]
+                if "CREATE TABLE" in schema:
+                    first_table = schema.split("CREATE TABLE")[1]
+                else:
+                    first_table = schema
                 first_table = "CREATE TABLE" + first_table.split(";")[0]
                 if len(first_table) > 200:
                     first_table = first_table[:200] + "..."
-                print(f"Schema: {first_table}")
+                logger.info(f"Schema: {first_table}")
 
 
-def main():
-    """Main analysis function."""
+def main() -> None:
+    """Main analysis function.
+
+    Orchestrates the complete dataset analysis process including loading
+    the processed dataset, running all analysis functions on each split,
+    and generating a comprehensive quality report.
+
+    Returns:
+        None. Logs analysis results to the logger and writes to log file.
+    """
     # Setup logging
     setup_logging(log_level="INFO", log_dir="logs", log_file="data_analysis.log")
 
@@ -260,34 +331,37 @@ def main():
     processed_path = Path("./data_cache/processed")
 
     if not processed_path.exists():
-        print("\n" + "=" * 80)
-        print("ERROR: Processed dataset not found!")
-        print("=" * 80)
-        print(f"\nExpected location: {processed_path}")
-        print("\nPlease run 'python scripts/prepare_data.py' first to prepare the dataset.")
+        logger.error("\n" + "=" * 80)
+        logger.error("ERROR: Processed dataset not found!")
+        logger.error("=" * 80)
+        logger.error(f"\nExpected location: {processed_path}")
+        logger.error(
+            "\nPlease run 'python scripts/prepare_data.py' first to " "prepare the dataset."
+        )
+
         return
 
-    print("\n" + "=" * 80)
-    print("DATASET QUALITY ANALYSIS REPORT")
-    print("=" * 80)
-    print(f"\nDataset location: {processed_path}")
+    logger.info("\n" + "=" * 80)
+    logger.info("DATASET QUALITY ANALYSIS REPORT")
+    logger.info("=" * 80)
+    logger.info(f"\nDataset location: {processed_path}")
 
     # Load dataset
     try:
-        dataset_dict = load_from_disk(str(processed_path))
-        print(f"Loaded splits: {list(dataset_dict.keys())}")
+        dataset_dict: DatasetDict = load_from_disk(str(processed_path))
+        logger.info(f"Loaded splits: {list(dataset_dict.keys())}")
     except Exception as e:
-        print(f"\n❌ Failed to load dataset: {e}")
+        logger.error(f"\n❌ Failed to load dataset: {e}")
         return
 
     # Analyze each split
-    for split_name in dataset_dict.keys():
-        print("\n" + "=" * 80)
-        print(f"ANALYZING {split_name.upper()} SPLIT")
-        print("=" * 80)
-        print(f"Total samples: {len(dataset_dict[split_name])}")
+    for split_name in dataset_dict:
+        logger.info("\n" + "=" * 80)
+        logger.info(f"ANALYZING {split_name.upper()} SPLIT")
+        logger.info("=" * 80)
+        logger.info(f"Total samples: {len(dataset_dict[split_name])}")
 
-        dataset = dataset_dict[split_name]
+        dataset: Dataset = dataset_dict[split_name]
 
         # Run analyses
         analyze_complexity_distribution(dataset)
@@ -297,9 +371,9 @@ def main():
         find_quality_issues(dataset)
         show_examples(dataset, n_per_complexity=2)
 
-    print("\n" + "=" * 80)
-    print("ANALYSIS COMPLETE")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("ANALYSIS COMPLETE")
+    logger.info("=" * 80)
 
 
 if __name__ == "__main__":

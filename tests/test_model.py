@@ -2,34 +2,55 @@
 
 This script tests the ModelLoader class with different configurations
 to ensure models load correctly with QLoRA and LoRA adapters.
+
+Usage:
+    # Run with pytest:
+    pytest tests/test_model.py -v
+
+    # Run standalone:
+    python tests/test_model.py
+
+    # Run with config overrides:
+    python tests/test_model.py hf.model.name=meta-llama/Llama-3-8B-Instruct
+    python tests/test_model.py training.peft.use_qlora=false
 """
 
 import sys
-from pathlib import Path
 
-import hydra
+import pytest
 import torch
 from dotenv import load_dotenv
 from omegaconf import DictConfig
 
-# Load environment variables before anything else
-load_dotenv()
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from models.config_utils import (  # noqa: E402
+from config.config import load_config
+from src.models.config_utils import (
     create_bnb_config_from_hydra,
     create_lora_config_from_hydra,
     estimate_memory_requirements,
 )
-from models.model_loader import ModelLoader  # noqa: E402
-from utils.logging_utils import setup_logging_from_config  # noqa: E402
+from src.models.model_loader import ModelLoader
+from src.utils.logging_utils import setup_logging_from_config
+
+# Load environment variables before anything else
+load_dotenv()
 
 
-@hydra.main(version_base=None, config_path="../config", config_name="config")
+@pytest.fixture(scope="module")
+def cfg() -> DictConfig:
+    """Load Hydra configuration for testing.
+
+    Returns:
+        DictConfig: Loaded configuration
+    """
+    return load_config()
+
+
 def test_model(cfg: DictConfig):
-    """Test model loading with current configuration."""
+    """Test model loading with current configuration.
+
+    Args:
+        cfg: Hydra configuration from fixture
+    """
     logger = setup_logging_from_config(cfg)
 
     # Print memory estimates
@@ -86,5 +107,31 @@ def test_model(cfg: DictConfig):
     logger.info("\nModel loading test complete!")
 
 
+def main():
+    """Entry point for standalone execution with optional config overrides.
+
+    Supports Hydra-style command line overrides:
+        python tests/test_model.py hf.model.name=meta-llama/Llama-3-8B-Instruct
+        python tests/test_model.py training.peft.use_qlora=false
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    # Parse command line arguments for config overrides
+    overrides = []
+    if len(sys.argv) > 1:
+        # Collect override arguments (format: key=value)
+        overrides = [arg for arg in sys.argv[1:] if "=" in arg]
+        if overrides:
+            logger.info(f"Applying config overrides: {overrides}")
+
+    # Load config with overrides
+    cfg = load_config(overrides=overrides if overrides else None)
+
+    # Run test
+    test_model(cfg)
+
+
 if __name__ == "__main__":
-    test_model()
+    main()

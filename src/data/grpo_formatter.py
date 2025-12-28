@@ -5,10 +5,11 @@ creating prompts and structuring data for reinforcement learning.
 """
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 from datasets import Dataset
+from numpy.random import Generator
 
 from src.environments.sql_env.environment import TextToSQLEnvironment
 
@@ -16,45 +17,64 @@ logger = logging.getLogger(__name__)
 
 
 class GRPODatasetFormatter:
-    """
-    Formats preprocessed dataset for GRPO training.
-    Creates prompts and structures data for TRL's GRPOTrainer.
+    """Formats preprocessed dataset for GRPO training.
+
+    Creates prompts and structures data for TRL's GRPOTrainer,
+    handling tokenization validation and stratified sampling.
+
+    Attributes:
+        environment: Text-to-SQL environment for prompt formatting.
+        tokenizer: Tokenizer for length validation.
+        include_reference: Whether to include reference SQL in dataset.
+        logger: Logger instance for this class.
+        rng: NumPy random number generator for reproducible sampling.
     """
 
     def __init__(
-        self, environment: TextToSQLEnvironment, tokenizer: Any, include_reference: bool = True
-    ):
-        """
-        Initialize GRPO formatter.
+        self,
+        environment: TextToSQLEnvironment,
+        tokenizer: Any,
+        include_reference: bool = True,
+    ) -> None:
+        """Initialize GRPO formatter.
 
         Args:
-            environment: Text-to-SQL environment for prompt formatting
-            tokenizer: Tokenizer for length validation
-            include_reference: Whether to include reference SQL in dataset
+            environment: Text-to-SQL environment for prompt formatting.
+            tokenizer: Tokenizer for length validation and encoding.
+            include_reference: Whether to include reference SQL in dataset.
+                Defaults to True.
         """
         self.environment = environment
         self.tokenizer = tokenizer
         self.include_reference = include_reference
         self.logger = logging.getLogger(__name__)
+        self.rng: Generator = np.random.default_rng()
 
-    def format_for_grpo(self, sample: Dict) -> Dict:
-        """
-        Format sample for GRPO training.
+    def format_for_grpo(self, sample: dict[str, Any]) -> dict[str, Any]:
+        """Format sample for GRPO training.
 
-        Input sample:
-        {
-            'question': str,
-            'schema': str,
-            'sql': str,
-            ...
-        }
+        Transforms a preprocessed sample into the format expected by
+        TRL's GRPOTrainer, including prompt generation and context
+        preservation.
 
-        Output format for GRPOTrainer:
-        {
-            'prompt': str,  # Formatted prompt for generation
-            'reference': str,  # Ground truth SQL (optional)
-            'context': Dict,  # Additional context for environment
-        }
+        Args:
+            sample: Input sample dictionary containing:
+                - question: Natural language query (required)
+                - schema: Database schema (optional)
+                - sql: Reference SQL query (optional)
+                - Additional fields preserved if present
+
+        Returns:
+            Formatted sample dictionary containing:
+            - prompt: Formatted prompt for generation
+            - question: Original question
+            - schema: Database schema
+            - reference: Ground truth SQL (if include_reference=True)
+            - context: Additional context for environment
+            - Preserved fields: complexity, sql_keywords, is_valid
+
+        Raises:
+            ValueError: If sample doesn't contain required 'question' field.
         """
         question = sample.get("question", "")
         schema = sample.get("schema", "")
@@ -68,7 +88,7 @@ class GRPODatasetFormatter:
         prompt = self.environment.format_prompt(question, context)
 
         # Build output
-        output = {
+        output: dict[str, Any] = {
             "prompt": prompt,
             "question": question,
             "schema": schema,
@@ -89,9 +109,16 @@ class GRPODatasetFormatter:
 
         return output
 
-    def _initialize_results_dict(self, examples: Dict) -> Dict:
-        """Initialize the results dictionary for formatting."""
-        results: Dict[str, List] = {
+    def _initialize_results_dict(self, examples: dict[str, Any]) -> dict[str, list[Any]]:
+        """Initialize the results dictionary for formatting.
+
+        Args:
+            examples: Input examples dictionary to check for keys.
+
+        Returns:
+            Empty results dictionary with appropriate keys initialized.
+        """
+        results: dict[str, list[Any]] = {
             "prompt": [],
             "question": [],
             "schema": [],
@@ -104,8 +131,15 @@ class GRPODatasetFormatter:
                 results[key] = []
         return results
 
-    def _normalize_examples(self, examples: Dict) -> Tuple[Dict, int]:
-        """Normalize examples to handle both batched and single examples."""
+    def _normalize_examples(self, examples: dict[str, Any]) -> tuple[dict[str, Any], int]:
+        """Normalize examples to handle both batched and single examples.
+
+        Args:
+            examples: Input examples, may be batched or single.
+
+        Returns:
+            Tuple of (normalized examples as batch, number of examples).
+        """
         if isinstance(examples["question"], list):
             num_examples = len(examples["question"])
         else:
@@ -113,8 +147,18 @@ class GRPODatasetFormatter:
             examples = {k: [v] for k, v in examples.items()}
         return examples, num_examples
 
-    def _append_formatted_sample(self, results: Dict, formatted: Dict) -> None:
-        """Append a formatted sample to the results."""
+    def _append_formatted_sample(
+        self, results: dict[str, list[Any]], formatted: dict[str, Any]
+    ) -> None:
+        """Append a formatted sample to the results.
+
+        Args:
+            results: Results dictionary to append to.
+            formatted: Formatted sample to add.
+
+        Returns:
+            None. Modifies results in place.
+        """
         results["prompt"].append(formatted["prompt"])
         results["question"].append(formatted["question"])
         results["schema"].append(formatted["schema"])
@@ -129,15 +173,21 @@ class GRPODatasetFormatter:
                 results[key].append(formatted[key])
 
     def format_dataset(self, dataset: Dataset) -> Dataset:
-        """
-        Format entire dataset for GRPO.
+        """Format entire dataset for GRPO.
+
+        Applies batch formatting to transform all samples into
+        GRPO-compatible format.
+
+        Args:
+            dataset: Preprocessed dataset to format.
 
         Returns:
-            Dataset with GRPO-compatible format
+            Dataset with GRPO-compatible format including prompts,
+            references, and context.
         """
         self.logger.info("Formatting dataset for GRPO")
 
-        def format_fn(examples):
+        def format_fn(examples: dict[str, Any]) -> dict[str, list[Any]]:
             """Batch formatting function."""
             results = self._initialize_results_dict(examples)
             examples, num_examples = self._normalize_examples(examples)
@@ -154,23 +204,33 @@ class GRPODatasetFormatter:
             return results
 
         formatted_dataset = dataset.map(
-            format_fn, batched=True, remove_columns=dataset.column_names, desc="Formatting for GRPO"
+            format_fn,
+            batched=True,
+            remove_columns=dataset.column_names,
+            desc="Formatting for GRPO",
         )
 
         self.logger.info(f"Formatted {len(formatted_dataset)} samples for GRPO")
 
         return formatted_dataset
 
-    def validate_tokenization(self, dataset: Dataset, max_length: int = 2048) -> Dict[str, Any]:
-        """
-        Validate that prompts fit within model's context window.
+    def validate_tokenization(self, dataset: Dataset, max_length: int = 2048) -> dict[str, Any]:
+        """Validate that prompts fit within model's context window.
+
+        Samples prompts from the dataset and checks their tokenized
+        lengths against the maximum length threshold.
 
         Args:
-            dataset: Formatted dataset
-            max_length: Maximum token length
+            dataset: Formatted dataset with prompts.
+            max_length: Maximum token length threshold. Defaults to 2048.
 
         Returns:
-            Statistics about token lengths
+            Dictionary containing tokenization statistics:
+            - num_samples_checked: Number of samples validated
+            - avg/median/max/min_token_length: Length statistics
+            - too_long_count: Number exceeding max_length
+            - too_long_pct: Percentage exceeding max_length
+            - max_length_threshold: The threshold used
         """
         self.logger.info("Validating tokenization")
 
@@ -179,7 +239,7 @@ class GRPODatasetFormatter:
 
         # Sample up to 1000 examples for validation
         sample_size = min(len(dataset), 1000)
-        indices = np.random.choice(len(dataset), sample_size, replace=False)
+        indices = self.rng.choice(len(dataset), sample_size, replace=False)
 
         for idx in indices:
             sample = dataset[int(idx)]
@@ -195,12 +255,12 @@ class GRPODatasetFormatter:
 
         stats = {
             "num_samples_checked": sample_size,
-            "avg_token_length": np.mean(token_lengths),
-            "median_token_length": np.median(token_lengths),
-            "max_token_length": max(token_lengths),
-            "min_token_length": min(token_lengths),
+            "avg_token_length": float(np.mean(token_lengths)),
+            "median_token_length": float(np.median(token_lengths)),
+            "max_token_length": int(max(token_lengths)),
+            "min_token_length": int(min(token_lengths)),
             "too_long_count": too_long_count,
-            "too_long_pct": (too_long_count / sample_size) * 100 if sample_size > 0 else 0,
+            "too_long_pct": ((too_long_count / sample_size) * 100 if sample_size > 0 else 0),
             "max_length_threshold": max_length,
         }
 
@@ -212,23 +272,27 @@ class GRPODatasetFormatter:
 
         if too_long_count > 0:
             self.logger.warning(
-                f"{too_long_count} samples ({stats['too_long_pct']:.1f}%) exceed "
+                f"{too_long_count} samples "
+                f"({stats['too_long_pct']:.1f}%) exceed "
                 f"max length of {max_length} tokens"
             )
 
         return stats
 
     def create_evaluation_set(self, dataset: Dataset, n_samples: int = 100) -> Dataset:
-        """
-        Create a small evaluation set for during-training eval.
-        Samples diverse examples across complexity levels.
+        """Create a small evaluation set for during-training eval.
+
+        Samples diverse examples across complexity levels using
+        stratified sampling when possible, falling back to random
+        sampling if complexity information is unavailable.
 
         Args:
-            dataset: Full dataset
-            n_samples: Number of samples to include
+            dataset: Full dataset to sample from.
+            n_samples: Number of samples to include in evaluation set.
+                Defaults to 100.
 
         Returns:
-            Evaluation dataset
+            Evaluation dataset with stratified or random sampling.
         """
         self.logger.info(f"Creating evaluation set with {n_samples} samples")
 
@@ -238,22 +302,27 @@ class GRPODatasetFormatter:
                 "Dataset doesn't have 'complexity' field. "
                 "Using random sampling instead of stratified."
             )
-            indices = np.random.choice(len(dataset), min(n_samples, len(dataset)), replace=False)
+            indices = self.rng.choice(len(dataset), min(n_samples, len(dataset)), replace=False)
             return dataset.select(list(indices))
 
         # Stratified sampling by complexity
         try:
             # Get complexity distribution
             complexities = dataset["complexity"]
-            complexity_counts: Dict[str, int] = {}
-            complexity_indices: Dict[str, List[int]] = {"simple": [], "medium": [], "complex": []}
+            complexity_counts: dict[str, int] = {}
+            complexity_indices: dict[str, list[int]] = {
+                "simple": [],
+                "medium": [],
+                "complex": [],
+            }
 
             for idx, complexity in enumerate(complexities):
                 if complexity in complexity_indices:
                     complexity_indices[complexity].append(idx)
-                    complexity_counts[complexity] = complexity_counts.get(complexity, 0) + 1
+                    current_count = complexity_counts.get(complexity, 0)
+                    complexity_counts[complexity] = current_count + 1
 
-            # Calculate samples per complexity level (proportional to distribution)
+            # Calculate samples per complexity level (proportional)
             total_samples = sum(complexity_counts.values())
             samples_per_level = {}
 
@@ -269,11 +338,11 @@ class GRPODatasetFormatter:
                 samples_per_level[largest_level] += n_samples - total_allocated
 
             # Sample from each complexity level
-            selected_indices: List[int] = []
+            selected_indices: list[int] = []
             for level, n in samples_per_level.items():
                 level_indices = list(complexity_indices[level])
                 if len(level_indices) > 0:
-                    sample_indices_arr = np.random.choice(
+                    sample_indices_arr = self.rng.choice(
                         level_indices, min(n, len(level_indices)), replace=False
                     )
                     # Convert numpy array to list of ints
@@ -281,9 +350,16 @@ class GRPODatasetFormatter:
 
             eval_dataset = dataset.select(selected_indices)
 
+            complexity_dist = dict(
+                zip(
+                    *np.unique(eval_dataset["complexity"], return_counts=True),
+                    strict=True,
+                )
+            )
+
             self.logger.info(
                 f"Created evaluation set with {len(eval_dataset)} samples. "
-                f"Distribution: {dict(zip(*np.unique(eval_dataset['complexity'], return_counts=True)))}"
+                f"Distribution: {complexity_dist}"
             )
 
             return eval_dataset
@@ -291,5 +367,5 @@ class GRPODatasetFormatter:
         except Exception as e:
             self.logger.warning(f"Failed to create stratified evaluation set: {e}")
             # Fall back to random sampling
-            indices = np.random.choice(len(dataset), min(n_samples, len(dataset)), replace=False)
+            indices = self.rng.choice(len(dataset), min(n_samples, len(dataset)), replace=False)
             return dataset.select(indices.tolist())
